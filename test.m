@@ -12,7 +12,6 @@ meshz(X, Y, Height);
 Height = Height';
 start = [X(30), Y(30), Height(30, 30) + 0.2];
 goal = [X(Xn - 30), Y(Yn - 30), Height(Xn - 30, Yn - 30) + 0.1];
-height_limit=0.1; %高度限制
 stepSize = 0.02;
 threshold = 0.02;
 maxFailedAttempts = 10000;
@@ -46,10 +45,11 @@ while failedAttempts <= maxFailedAttempts
     [A, I] = min(distanceCost(RRTree(:, 1:3), sample), [], 1);
     closestNode = RRTree(I(1), 1:3);
     %% 延展RRTree
-    movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ];%sample(3) - closestNode(3)];
-    movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
-    newPoint = closestNode(1:2) + stepSize * movingVec;
-    newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
+    newPoint = extends(sample, closestNode, stepSize, X, Y, Height);
+    % movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ];%sample(3) - closestNode(3)];
+    % movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
+    % newPoint = closestNode(1:2) + stepSize * movingVec;
+    % newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
     %% 判断延展后的新点newPoint是否满足要求（碰撞检测）
     if ~checkPath(closestNode, newPoint, Height, X, Y)
         failedAttempts = failedAttempts + 1;
@@ -153,24 +153,13 @@ function flag = checkPath(start, endp, Height, X, Y)
 
 end
 
-%     for x=start(1,1):0.001:endp(1,1)
-%         y=(x-start(1,1))/(endp(1,1)-start(1,1))*(endp(1,2)-start(1,2));
-%         z=(x-start(1,1))/(endp(1,1)-start(1,1))*(endp(1,3)-start(1,3));
-%
-%         temp=abs(map(:,1)-x);
-%         map_x=min(temp);
-%         [map_x_index,~]=find(temp==map_x);
-%
-%         temp=abs(map(:,2)-y);
-%         map_y=min(temp);
-%         [map_y_index,~]=find(temp==map_y);
-%
-%         map_x_size=size(map,1);
-%
-%         if z<map((map_y_index-1)*map_x_size+map_x_index,3)
-%             flag=false;
-%         end
-%     end
+function newPoint = extends(sample, closestNode, stepSize, X, Y, Height)
+    height_limit = 0.1;
+    movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
+    movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
+    newPoint = closestNode(1:2) + stepSize * movingVec;
+    newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
+end
 
 function new = cut_map(start, endp, map)
     %截取地图
@@ -186,13 +175,6 @@ end
 
 function h = distanceCost(a, b)
     h = sqrt(sum((a - b) .^ 2, 2));
-end
-
-function [g, num] = grid(x)
-    x_unique = unique(x);
-    a = size(x_unique);
-    num = a(1, 1);
-    g = sortrows(x_unique)';
 end
 
 function index = find_closest(x, list)
