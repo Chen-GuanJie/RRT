@@ -10,11 +10,11 @@ Height = normalize(Height);
 
 meshz(X, Y, Height);
 Height = Height';
-start = [X(30), Y(30), Height(30, 30) + 0.2];
-goal = [X(Xn - 30), Y(Yn - 30), Height(Xn - 30, Yn - 30) + 0.1];
+start = [X(30), Y(30), Height(30, 30) + 0.2, 3.14 * 45/180, 0, 0];
+goal = [X(Xn - 30), Y(Yn - 30), Height(Xn - 30, Yn - 30) + 0.1, 3.14 * 45/180, 0, 0];
 threshold = 0.02;
 maxFailedAttempts = 10000;
-searchSize = 1.3 * [goal(1) - start(1), goal(2) - start(2), goal(3) - start(3)];
+searchSize = 1.3 * [goal(1) - start(1), goal(2) - start(2), goal(3) - start(3), 0, 0, 0];
 RRTree = double([start, -1]);
 failedAttempts = 0;
 pathFound = false;
@@ -35,14 +35,14 @@ tic;
 while failedAttempts <= maxFailedAttempts
     %% 选择随机点作为延展目标 50%几率随机 50%几率goal
     if rand < 0.5
-        sample = rand(1, 3) .* searchSize + start;
+        sample = rand(1, 6) .* searchSize + start;
     else
         sample = goal;
     end
 
     %% 选择RRTree上距离sample最近的一点作为延展根节点
-    [A, I] = min(distanceCost(RRTree(:, 1:3), sample), [], 1);
-    closestNode = RRTree(I(1), 1:3);
+    [A, I] = min(distanceCost(RRTree(:, 1:6), sample), [], 1);
+    closestNode = RRTree(I(1), 1:6);
     %% 延展RRTree
     newPoint = extends(sample, closestNode, X, Y, Height);
     % movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ];%sample(3) - closestNode(3)];
@@ -161,15 +161,15 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     height_limit = 0.1;
     stepSize = 0.02;
     v = 1;
-    GammaStep = 5/360 * pai; %滚转角最大步长
-    pitchstep = 10/360 * pai; %俯仰角最大步长
+    GammaStep = 5/360 * 3.1416; %滚转角最大步长
+    pitchstep = 10/360 * 3.1416; %俯仰角最大步长
     movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
     phi1 = atan(movingVec(2) / movingVec(1));
     phi = closestNode(4);
     deltaPhi = 2 * (phi1);
     newGamma = atan(deltaPhi / stepSize);
     rotation = [cos(phi) -sin(phi);
-                sin(phi) cos(phi); ]
+                sin(phi) cos(phi); ];
 
     if abs(newGamma - closestNode(5)) > GammaStep
 
@@ -184,14 +184,17 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     deltapitch = atan((targetHeight - closestNode(3)) / distanceee);
 
     if deltapitch > pitchstep
-        z = tan(closestNode(5) + pitchstep) * distanceee;
+        pitch = closestNode(5) + pitchstep;
+        z = tan(pitch) * distanceee;
+
     elseif deltapitch <- pitchstep
-        z = tan(closestNode(5) - pitchstep) * distanceee;
+        pitch = closestNode(5) - pitchstep;
+        z = tan(pitch) * distanceee;
     else
         z = targetHeight;
     end
 
-    newPoint = [temp(1), temp(2), z, newPhi, gamma, pitch];
+    newPoint = [temp(1), temp(2), z, newPhi, newGamma, pitch];
 end
 
 function new = cut_map(start, endp, map)
