@@ -10,9 +10,9 @@ filename = 'dem500';
 
 meshz(X, Y, Height);
 Height = Height';
-start = [X(30), Y(30), Height(30, 30) + 0.2, 3.14 * 45/180, 0, 0];
-goal = [X(Xn - 30), Y(Yn - 30), Height(Xn - 30, Yn - 30) + 0.1, 3.14 * 45/180, 0, 0];
-threshold = 0.02;
+start = [X(30), Y(30), Height(30, 30) + 100, 3.14 * 45/180, 0, 0];
+goal = [X(Xn - 30), Y(Yn - 30), Height(Xn - 30, Yn - 30) + 500, 3.14 * 45/180, 0, 0];
+threshold = 1000;
 maxFailedAttempts = 10000;
 searchSize = 1.3 * [goal(1) - start(1), goal(2) - start(2), goal(3) - start(3), 0, 0, 0];
 RRTree = double([start, -1]);
@@ -26,7 +26,7 @@ bar1 = scatter3(start(1), start(2), start(3), 80, "cyan", 'filled', 'o', 'Marker
 bar2 = scatter3(goal(1), goal(2), goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
 text(start(1), start(2), start(3), '  起点');
 text(goal(1), goal(2), goal(3), '  终点');
-xlabel('x(km)'); ylabel('y(km)'); zlabel('z(km)');
+xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
 title('RRT算法UAV航迹规划路径');
 % axis equal
 % set(gcf,'unit','centimeters','position',[30 10 20 15]);
@@ -36,6 +36,7 @@ while failedAttempts <= maxFailedAttempts
     %% 选择随机点作为延展目标 50%几率随机 50%几率goal
     if rand < 0.5
         sample = rand(1, 6) .* searchSize + start;
+%         scatter3(sample(1),sample(2),sample(3));hold on;
     else
         sample = goal;
     end
@@ -45,6 +46,9 @@ while failedAttempts <= maxFailedAttempts
     closestNode = RRTree(I(1), 1:6);
     %% 延展RRTree
     newPoint = extends(sample, closestNode, X, Y, Height);
+    tmplot(1)=plot3([closestNode(1);sample(1)],[closestNode(2);sample(2)],[closestNode(3);sample(3)],'LineWidth', 3);
+    tmplot(2)=plot3([closestNode(1);newPoint(1)],[closestNode(2);newPoint(2)],[closestNode(3);newPoint(3)],'LineWidth', 3);
+    delete(tmplot);
     % movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ];%sample(3) - closestNode(3)];
     % movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
     % newPoint = closestNode(1:2) + stepSize * movingVec;
@@ -74,8 +78,8 @@ path = goal;
 prev = I(1);
 
 while prev > 0
-    path = [RRTree(prev, 1:3); path];
-    prev = RRTree(prev, 4);
+    path = [RRTree(prev, 1:6); path];
+    prev = RRTree(prev, 7);
 end
 
 bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 3, 'color', 'r');
@@ -158,23 +162,29 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     % newPoint = closestNode(1:2) + stepSize * movingVec;
     % newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
 
-    height_limit = 0.1;
-    deltaT=0.1;
-    stepSize = 0.1;
-    g=1;
-    v = 0.1;
-    GammaMax = 20/360 * 3.1416;
-    GammaMin = -20/360 * 3.1416;
-    pitchMax = 40/360 * 3.1416;
-    pitchMin = -40/360 * 3.1416;
+    height_limit = 500;
+    deltaT = 60;
+    %stepSize = 0.1;
+    g = 9.8;
+    v = 50;
+    GammaMax = 30/180 * 3.1416;
+    GammaMin = -30/180 * 3.1416;
+    pitchMax = 10/180 * 3.1416;
+    pitchMin = -10/180 * 3.1416;
 
-    GammaStep = 5/360 * 3.1416; %滚转角最大步长
-    pitchstep = 10/360 * 3.1416; %俯仰角最大步长
+    GammaStep = 10/180 * 3.1416; %滚转角最大步长
+    pitchstep = 10/180 * 3.1416; %俯仰角最大步长
     movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
     phi1 = atan(movingVec(2) / movingVec(1));
+
+    if movingVec(2)<0&&movingVec(1)>0
+        phi1=phi1+3.1416;
+    elseif movingVec(2)<0&&movingVec(1)<0
+                phi1=phi1-3.1416;
+    end
     phi = closestNode(4);
-    deltaPhi = 2 * (phi - phi1);
-    newGamma = atan(deltaPhi*v/g/deltaT);
+    deltaPhi = 2 * (-phi + phi1);
+    newGamma = atan(deltaPhi * v / g / deltaT);
 
     if (newGamma - closestNode(5)) > GammaStep
         newGamma = closestNode(5) + GammaStep;
@@ -194,22 +204,22 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
                 sin(phi) cos(phi); ];
 
     if newGamma ~= 0
-        Rou = tan(newGamma) *g/ v^2; %计算水平转弯曲率
-        deltaPhi=Rou*v*deltaT;
-        newPhi = deltaPhi+phi;
+        Rou = tan(newGamma) * g / (v ^ 2); %计算水平转弯曲率
+        deltaPhi = Rou * v * deltaT;
+        newPhi = deltaPhi + phi;
         a = [sin(deltaPhi) / Rou; ((1 - cos(deltaPhi)) / Rou)];
     else
         newPhi = phi;
-        a = [stepSize; 0];
+        a = [v * deltaT; 0];
     end
 
     temp = (rotation * a)' + [closestNode(1), closestNode(2)];
 
     targetHeight = Height(find_closest(temp(1), X), find_closest(temp(2), Y)) + height_limit;
     distanceee = distanceCost([temp(1), temp(2)], [closestNode(1), closestNode(2)]);
-    deltapitch = atan((targetHeight - closestNode(3)) / distanceee);
+    pitchangle = atan((targetHeight - closestNode(3)) / distanceee);
 
-    if deltapitch > pitchstep
+    if pitchangle - closestNode(6) > pitchstep
         pitchangle = closestNode(5) + pitchstep;
 
         if pitchangle > pitchMax
@@ -218,7 +228,7 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
 
         z = tan(pitchangle) * distanceee + closestNode(3);
 
-    elseif deltapitch <- pitchstep
+    elseif pitchangle - closestNode(6) <- pitchstep
         pitchangle = closestNode(5) - pitchstep;
 
         if pitchangle < pitchMin
@@ -227,13 +237,11 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
 
         z = tan(pitchangle) * distanceee + closestNode(3);
     else
-        pitchangle = closestNode(5) +deltapitch;
 
         if pitchangle > pitchMax
             pitchangle = pitchMax;
         elseif pitchangle < pitchMin
             pitchangle = pitchMin;
-
         end
 
         z = targetHeight;
@@ -261,8 +269,8 @@ end
 function h = distanceCost2(a, b)
     a1 = a;
     b1 = b;
-    a1(:, 4:6) = 0.4 * a(:, 4:6);
-    b1(:, 4:6) = 0.4 * b(:, 4:6);
+    a1(:, 4:6) = 0 * a(:, 4:6);
+    b1(:, 4:6) = 0 * b(:, 4:6);
     h = sqrt(sum((a1 - b1) .^ 2, 2));
 
 end
