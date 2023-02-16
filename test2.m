@@ -2,9 +2,9 @@ clc; clear; close all;
 %% 参数读取与设置
 filename = 'dem500';
 [X, Y, Height] = SquareMap(filename);
-X = normalize(X);
-Y = normalize(Y);
-Height = normalize(Height);
+% X = normalize(X);
+% Y = normalize(Y);
+% Height = normalize(Height);
 [~, Xn] = size(X);
 [~, Yn] = size(Y);
 
@@ -41,7 +41,7 @@ while failedAttempts <= maxFailedAttempts
     end
 
     %% 选择RRTree上距离sample最近的一点作为延展根节点
-    [A, I] = min(distanceCost(RRTree(:, 1:6), sample), [], 1);
+    [A, I] = min(distanceCost2(RRTree(:, 1:6), sample), [], 1);
     closestNode = RRTree(I(1), 1:6);
     %% 延展RRTree
     newPoint = extends(sample, closestNode, X, Y, Height);
@@ -58,8 +58,8 @@ while failedAttempts <= maxFailedAttempts
     % 检测newPoint是否临近目标点
     if distanceCost(newPoint, goal) < threshold, pathFound = true; break; end
     % 如果newPoint与之前RRTree上某一点的距离小于threshold说明newPoint的意义不大，舍弃
-    [A, I2] = min(distanceCost(RRTree(:, 1:3), newPoint), [], 1);
-    if distanceCost(newPoint, RRTree(I2(1), 1:3)) < threshold, failedAttempts = failedAttempts + 1; continue; end
+    [A, I2] = min(distanceCost2(RRTree(:, 1:6), newPoint), [], 1);
+    if distanceCost2(newPoint, RRTree(I2(1), 1:6)) < threshold, failedAttempts = failedAttempts + 1; continue; end
     %% 将newPoint加入RRTree
     RRTree = [RRTree; newPoint I(1)]; % add node
     failedAttempts = 0;
@@ -137,7 +137,7 @@ function flag = checkPath(start, endp, Height, X, Y)
         h = start(1, 3) + (endp(1, 3) - start(1, 3)) * i / (end_insdex(1, 1) - start_insdex(1, 1));
 
         if y_up > y_max
-            y_up = y_max
+            y_up = y_max;
         end
 
         if new_Height(start_insdex(1, 1) + i, y_up) > h
@@ -159,42 +159,87 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     % newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
 
     height_limit = 0.1;
-    stepSize = 0.02;
-    v = 1;
+    deltaT=0.1;
+    stepSize = 0.1;
+    g=1;
+    v = 0.1;
+    GammaMax = 20/360 * 3.1416;
+    GammaMin = -20/360 * 3.1416;
+    pitchMax = 40/360 * 3.1416;
+    pitchMin = -40/360 * 3.1416;
+
     GammaStep = 5/360 * 3.1416; %滚转角最大步长
     pitchstep = 10/360 * 3.1416; %俯仰角最大步长
     movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
     phi1 = atan(movingVec(2) / movingVec(1));
     phi = closestNode(4);
-    deltaPhi = 2 * (phi1);
-    newGamma = atan(deltaPhi / stepSize);
-    rotation = [cos(phi) -sin(phi);
-                sin(phi) cos(phi); ];
+    deltaPhi = 2 * (phi - phi1);
+    newGamma = atan(deltaPhi*v/g/deltaT);
 
-    if abs(newGamma - closestNode(5)) > GammaStep
+    if (newGamma - closestNode(5)) > GammaStep
+        newGamma = closestNode(5) + GammaStep;
+
+    elseif (newGamma - closestNode(5)) <- GammaStep
+        newGamma = closestNode(5) - GammaStep;
 
     end
 
-    newPhi = deltaPhi + phi;
-    Rou = 1 / v * tan(newGamma); %计算水平转弯曲率
-    a = [sin(deltaPhi) / Rou; ((1 - cos(deltaPhi)) / Rou)];
+    if newGamma > GammaMax
+        newGamma = GammaMax;
+    elseif newGamma < GammaMin
+        newGamma = GammaMin;
+    end
+
+    rotation = [cos(phi) -sin(phi);
+                sin(phi) cos(phi); ];
+
+    if newGamma ~= 0
+        Rou = tan(newGamma) *g/ v^2; %计算水平转弯曲率
+        deltaPhi=Rou*v*deltaT;
+        newPhi = deltaPhi+phi;
+        a = [sin(deltaPhi) / Rou; ((1 - cos(deltaPhi)) / Rou)];
+    else
+        newPhi = phi;
+        a = [stepSize; 0];
+    end
+
     temp = (rotation * a)' + [closestNode(1), closestNode(2)];
+
     targetHeight = Height(find_closest(temp(1), X), find_closest(temp(2), Y)) + height_limit;
     distanceee = distanceCost([temp(1), temp(2)], [closestNode(1), closestNode(2)]);
     deltapitch = atan((targetHeight - closestNode(3)) / distanceee);
 
     if deltapitch > pitchstep
-        pitch = closestNode(5) + pitchstep;
-        z = tan(pitch) * distanceee;
+        pitchangle = closestNode(5) + pitchstep;
+
+        if pitchangle > pitchMax
+            pitchangle = pitchMax;
+        end
+
+        z = tan(pitchangle) * distanceee + closestNode(3);
 
     elseif deltapitch <- pitchstep
-        pitch = closestNode(5) - pitchstep;
-        z = tan(pitch) * distanceee;
+        pitchangle = closestNode(5) - pitchstep;
+
+        if pitchangle < pitchMin
+            pitchangle = pitchMin;
+        end
+
+        z = tan(pitchangle) * distanceee + closestNode(3);
     else
+        pitchangle = closestNode(5) +deltapitch;
+
+        if pitchangle > pitchMax
+            pitchangle = pitchMax;
+        elseif pitchangle < pitchMin
+            pitchangle = pitchMin;
+
+        end
+
         z = targetHeight;
     end
 
-    newPoint = [temp(1), temp(2), z, newPhi, newGamma, pitch];
+    newPoint = [temp(1), temp(2), z, newPhi, newGamma, pitchangle];
 end
 
 function new = cut_map(start, endp, map)
@@ -211,6 +256,15 @@ end
 
 function h = distanceCost(a, b)
     h = sqrt(sum((a - b) .^ 2, 2));
+end
+
+function h = distanceCost2(a, b)
+    a1 = a;
+    b1 = b;
+    a1(:, 4:6) = 0.4 * a(:, 4:6);
+    b1(:, 4:6) = 0.4 * b(:, 4:6);
+    h = sqrt(sum((a1 - b1) .^ 2, 2));
+
 end
 
 function index = find_closest(x, list)

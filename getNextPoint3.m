@@ -1,4 +1,4 @@
-function son = getNextPoint2(father, sample)
+function son = getNextPoint3(father, sample)
     %% father 父节点(x,y,z,phi,gamma,pitch)  phi0 航迹角  Gamma 滚转角 pitch俯仰角 v速度
     pai = 3.1415926 * 2;
     v = 1; %速度
