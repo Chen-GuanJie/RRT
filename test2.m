@@ -1,6 +1,6 @@
 clc; clear; close all;
 %% 参数读取与设置
-filename = 'data/dem500';
+filename = 'data/Output_500';
 [X, Y, Height] = SquareMap(filename);
 % X = normalize(X);
 % Y = normalize(Y);
@@ -8,13 +8,14 @@ filename = 'data/dem500';
 [~, Xn] = size(X);
 [~, Yn] = size(Y);
 
-meshz(X, Y, Height);
+% meshz(X, Y, Height);
 Height = Height';
-start = [X(110), Y(30), Height(110, 30) + 100, 3.14 * 45/180, 0, 0];
-goal = [X(Xn - 150), Y(Yn - 25), Height(Xn - 150, Yn - 25) + 200, 3.14 * 45/180, 0, 0];
+start = [X(250), Y(80), Height(250, 80) + 500, 3.14 * 45/180, 0, 0];
+goal = [X(100), Y(Yn - 80), Height(Xn - 150, Yn - 25) + 200, 3.14 * 45/180, 0, 0];
 threshold = 1500;
 maxFailedAttempts = 10000;
-searchSize = 1.3 * [goal(1) - start(1), goal(2) - start(2), goal(3) - start(3), 0, 0, 0];
+searchSize =  1.6*[(goal(1) - start(1)), (goal(2) - start(2)), goal(3) - start(3), 0, 0, 0];
+
 RRTree = double([start, -1]);
 failedAttempts = 0;
 pathFound = false;
@@ -31,10 +32,12 @@ title('RRT算法UAV航迹规划路径');
 % axis equal
 % set(gcf,'unit','centimeters','position',[30 10 20 15]);
 tic;
+start(1)=start(1)-(searchSize(1)-(goal(1)-start(1)))/2;
+start(2)=start(2)-(searchSize(2)-(goal(2)-start(2)))/2;
 
 while failedAttempts <= maxFailedAttempts
     %% 选择随机点作为延展目标 50%几率随机 50%几率goal
-    if rand < 0.6
+    if rand < 0.75
         sample = rand(1, 6) .* searchSize + start;
         %         scatter3(sample(1),sample(2),sample(3));hold on;
     else
@@ -97,7 +100,14 @@ bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 3, 'color', 'r');
 % pathLength = 0;
 % for i = 1:length(path(:, 1)) - 1, pathLength = pathLength + distanceCost(path(i, 1:3), path(i + 1, 1:3)); end % calculate path length
 % fprintf('运行时间：%d \n路径长度=%d\n GS:%f°\n LS:%f°', toc, pathLength, calGs(path) / pi * 180, calLs(path) / pi * 180);
+
+t1=saves('output','path',0);
+t2=saves('output','RRTree',1);
+
+saveas(1,t1);
+save(t2,'RRTree');
 %% 碰撞检测函数
+
 function flag = checkPath(start, endp, Height, X, Y)
     flag = true;
     start_insdex = [find_closest(start(1), X), find_closest(start(2), Y)];
@@ -165,18 +175,18 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     % newPoint = closestNode(1:2) + stepSize * movingVec;
     % newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
 
-    height_limit = 300;
+    height_limit = 600;
     deltaT = 60;
     %stepSize = 0.1;
     g = 9.8;
-    v = 50;
+    v = 80;
     GammaMax = 30/180 * 3.1416;
     GammaMin = -30/180 * 3.1416;
-    pitchMax = 10/180 * 3.1416;
-    pitchMin = -10/180 * 3.1416;
+    pitchMax = 30/180 * 3.1416;
+    pitchMin = -30/180 * 3.1416;
 
-    GammaStep = 5/180 * 3.1416; %滚转角最大步长
-    pitchstep = 3/180 * 3.1416; %俯仰角最大步长
+    GammaStep = 15/180 * 3.1416; %滚转角最大步长
+    pitchstep = 10/180 * 3.1416; %俯仰角最大步长
     movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
     phi1 = atan(movingVec(2) / movingVec(1));
 
@@ -260,17 +270,6 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     newPoint = [temp(1), temp(2), z, newPhi, newGamma, pitchangle];
 end
 
-function new = cut_map(start, endp, map)
-    %截取地图
-    x_min = min([start(1, 1), endp(1, 1)]);
-    x_max = max([start(1, 1), endp(1, 1)]);
-    y_min = min([start(1, 2), endp(1, 2)]);
-    y_max = max([start(1, 2), endp(1, 2)]);
-
-    x = map(map(:, 1) > x_min & map(:, 1) < x_max);
-    y = map(map(:, 2) > y_min & map(:, 2) < y_max);
-    new = [x y];
-end
 
 function h = distanceCost(a, b)
     h = sqrt(sum((a - b) .^ 2, 2));
@@ -283,10 +282,4 @@ function h = distanceCost2(a, b)
     b1(:, 4:6) = 0 * b(:, 4:6);
     h = sqrt(sum((a1 - b1) .^ 2, 2));
 
-end
-
-function index = find_closest(x, list)
-    a = abs(list - x);
-    mini = min(a);
-    index = find(a == mini);
 end
