@@ -34,7 +34,7 @@ tic;
 
 while failedAttempts <= maxFailedAttempts
     %% 选择随机点作为延展目标 50%几率随机 50%几率goal
-    if rand < 0.6
+    if rand < 0.5
         sample = rand(1, 6) .* searchSize + start;
         %         scatter3(sample(1),sample(2),sample(3));hold on;
     else
@@ -54,9 +54,8 @@ while failedAttempts <= maxFailedAttempts
     % newPoint = closestNode(1:2) + stepSize * movingVec;
     % newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
     %% 判断延展后的新点newPoint是否满足要求（碰撞检测）
-    pause(0.05);
-    delete(tmplot);
-
+pause(0.1);
+        delete(tmplot);
     if ~checkPath(closestNode, newPoint, Height, X, Y)
         failedAttempts = failedAttempts + 1;
         continue;
@@ -66,7 +65,7 @@ while failedAttempts <= maxFailedAttempts
     if distanceCost(newPoint, goal) < threshold, pathFound = true; break; end
     % 如果newPoint与之前RRTree上某一点的距离小于threshold说明newPoint的意义不大，舍弃
     [A, I2] = min(distanceCost2(RRTree(:, 1:6), newPoint), [], 1);
-    if distanceCost2(newPoint, RRTree(I2(1), 1:6)) < 0.3 * threshold, failedAttempts = failedAttempts + 1; continue; end
+    if distanceCost2(newPoint, RRTree(I2(1), 1:6)) < 0.3*threshold, failedAttempts = failedAttempts + 1; continue; end
     %% 将newPoint加入RRTree
     RRTree = [RRTree; newPoint I(1)]; % add node
     failedAttempts = 0;
@@ -175,7 +174,7 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     pitchMax = 10/180 * 3.1416;
     pitchMin = -10/180 * 3.1416;
 
-    GammaStep = 5/180 * 3.1416; %滚转角最大步长
+    GammaStep = 2/180 * 3.1416; %滚转角最大步长
     pitchstep = 3/180 * 3.1416; %俯仰角最大步长
     movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
     phi1 = atan(movingVec(2) / movingVec(1));
@@ -187,18 +186,11 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     end
 
     phi = closestNode(4);
-    deltaPhi = (-phi + phi1);
+    deltaPhi = 2 * (-phi + phi1);
+    while deltaPhi>3.1416
+        deltaPhi=deltaPhi-
 
-    while deltaPhi > 3.1416
-        deltaPhi = deltaPhi - 6.2832;
-
-    end
-
-    while deltaPhi <- 3.1416
-        deltaPhi = deltaPhi + 6.2832;
-
-    end
-
+        end
     newGamma = atan(deltaPhi * v / g / deltaT);
 
     if (newGamma - closestNode(5)) > GammaStep
