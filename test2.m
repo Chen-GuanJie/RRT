@@ -10,9 +10,9 @@ filename = 'data/dem500';
 
 meshz(X, Y, Height);
 Height = Height';
-start = [X(30), Y(30), Height(30, 30) + 100, 3.14 * 45/180, 0, 0];
-goal = [X(Xn - 30), Y(Yn - 30), Height(Xn - 30, Yn - 30) + 500, 3.14 * 45/180, 0, 0];
-threshold = 1000;
+start = [X(110), Y(30), Height(110, 30) + 100, 3.14 * 45/180, 0, 0];
+goal = [X(Xn - 150), Y(Yn - 25), Height(Xn - 150, Yn - 25) + 200, 3.14 * 45/180, 0, 0];
+threshold = 1500;
 maxFailedAttempts = 10000;
 searchSize = 1.3 * [goal(1) - start(1), goal(2) - start(2), goal(3) - start(3), 0, 0, 0];
 RRTree = double([start, -1]);
@@ -34,9 +34,9 @@ tic;
 
 while failedAttempts <= maxFailedAttempts
     %% 选择随机点作为延展目标 50%几率随机 50%几率goal
-    if rand < 0.5
+    if rand < 0.6
         sample = rand(1, 6) .* searchSize + start;
-%         scatter3(sample(1),sample(2),sample(3));hold on;
+        %         scatter3(sample(1),sample(2),sample(3));hold on;
     else
         sample = goal;
     end
@@ -45,15 +45,18 @@ while failedAttempts <= maxFailedAttempts
     [A, I] = min(distanceCost2(RRTree(:, 1:6), sample), [], 1);
     closestNode = RRTree(I(1), 1:6);
     %% 延展RRTree
-        tmplot(1)=plot3([closestNode(1);sample(1)],[closestNode(2);sample(2)],[closestNode(3);sample(3)],'LineWidth', 3);
+    tmplot(1) = plot3([closestNode(1); sample(1)], [closestNode(2); sample(2)], [closestNode(3); sample(3)], 'LineWidth', 3);
     newPoint = extends(sample, closestNode, X, Y, Height);
-    tmplot(2)=plot3([closestNode(1);newPoint(1)],[closestNode(2);newPoint(2)],[closestNode(3);newPoint(3)],'LineWidth', 3);
-    delete(tmplot);
+    % tmplot(2) = plot3([closestNode(1); newPoint(1)], [closestNode(2); newPoint(2)], [closestNode(3); newPoint(3)], 'LineWidth', 3);
+    % delete(tmplot);
     % movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ];%sample(3) - closestNode(3)];
     % movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
     % newPoint = closestNode(1:2) + stepSize * movingVec;
     % newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
     %% 判断延展后的新点newPoint是否满足要求（碰撞检测）
+    pause(0.05);
+    delete(tmplot);
+
     if ~checkPath(closestNode, newPoint, Height, X, Y)
         failedAttempts = failedAttempts + 1;
         continue;
@@ -63,7 +66,7 @@ while failedAttempts <= maxFailedAttempts
     if distanceCost(newPoint, goal) < threshold, pathFound = true; break; end
     % 如果newPoint与之前RRTree上某一点的距离小于threshold说明newPoint的意义不大，舍弃
     [A, I2] = min(distanceCost2(RRTree(:, 1:6), newPoint), [], 1);
-    if distanceCost2(newPoint, RRTree(I2(1), 1:6)) < threshold, failedAttempts = failedAttempts + 1; continue; end
+    if distanceCost2(newPoint, RRTree(I2(1), 1:6)) < 0.3 * threshold, failedAttempts = failedAttempts + 1; continue; end
     %% 将newPoint加入RRTree
     RRTree = [RRTree; newPoint I(1)]; % add node
     failedAttempts = 0;
@@ -83,17 +86,17 @@ while prev > 0
 end
 
 bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 3, 'color', 'r');
-filPathX = [start(1), MovingAverage(path(2:end - 1, 1), 5), goal(1)];
-filPathY = [start(2), MovingAverage(path(2:end - 1, 2), 5), goal(2)];
-filPathZ = [start(3), MovingAverage(path(2:end - 1, 3), 5), goal(3)];
-bar4 = plot3(filPathX, filPathY, filPathZ, 'LineWidth', 3, 'color', 'g');
-legend([bar1, bar2, bar3, bar4], ["起始点", "终止点", "无人机航迹", "MA平滑后航迹"], 'Location', 'northwest');
-%% 存储轨迹
-writematrix(filename + 'rrt_path.csv', [filPathX', filPathY', filPathZ']);
-%% 计算轨迹长度以及解算时间
-pathLength = 0;
-for i = 1:length(path(:, 1)) - 1, pathLength = pathLength + distanceCost(path(i, 1:3), path(i + 1, 1:3)); end % calculate path length
-fprintf('运行时间：%d \n路径长度=%d\n GS:%f°\n LS:%f°', toc, pathLength, calGs(path) / pi * 180, calLs(path) / pi * 180);
+% filPathX = [start(1), MovingAverage(path(2:end - 1, 1), 5), goal(1)];
+% filPathY = [start(2), MovingAverage(path(2:end - 1, 2), 5), goal(2)];
+% filPathZ = [start(3), MovingAverage(path(2:end - 1, 3), 5), goal(3)];
+% bar4 = plot3(filPathX, filPathY, filPathZ, 'LineWidth', 3, 'color', 'g');
+% legend([bar1, bar2, bar3, bar4], ["起始点", "终止点", "无人机航迹", "MA平滑后航迹"], 'Location', 'northwest');
+% %% 存储轨迹
+% writematrix([filPathX', filPathY', filPathZ'], [filename, 'rrt_path.csv']);
+% %% 计算轨迹长度以及解算时间
+% pathLength = 0;
+% for i = 1:length(path(:, 1)) - 1, pathLength = pathLength + distanceCost(path(i, 1:3), path(i + 1, 1:3)); end % calculate path length
+% fprintf('运行时间：%d \n路径长度=%d\n GS:%f°\n LS:%f°', toc, pathLength, calGs(path) / pi * 180, calLs(path) / pi * 180);
 %% 碰撞检测函数
 function flag = checkPath(start, endp, Height, X, Y)
     flag = true;
@@ -162,7 +165,7 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     % newPoint = closestNode(1:2) + stepSize * movingVec;
     % newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
 
-    height_limit = 500;
+    height_limit = 300;
     deltaT = 60;
     %stepSize = 0.1;
     g = 9.8;
@@ -173,17 +176,29 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     pitchMin = -10/180 * 3.1416;
 
     GammaStep = 5/180 * 3.1416; %滚转角最大步长
-    pitchstep = 10/180 * 3.1416; %俯仰角最大步长
+    pitchstep = 3/180 * 3.1416; %俯仰角最大步长
     movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
     phi1 = atan(movingVec(2) / movingVec(1));
 
-    if movingVec(2)>0&&movingVec(1)<0
-        phi1=phi1+3.1416;
-    elseif movingVec(2)<0&&movingVec(1)<0
-                phi1=phi1-3.1416;
+    if movingVec(2) > 0 && movingVec(1) < 0
+        phi1 = phi1 + 3.1416;
+    elseif movingVec(2) < 0 && movingVec(1) < 0
+        phi1 = phi1 - 3.1416;
     end
+
     phi = closestNode(4);
-    deltaPhi = 2 * (-phi + phi1);
+    deltaPhi = (-phi + phi1);
+
+    while deltaPhi > 3.1416
+        deltaPhi = deltaPhi - 6.2832;
+
+    end
+
+    while deltaPhi <- 3.1416
+        deltaPhi = deltaPhi + 6.2832;
+
+    end
+
     newGamma = atan(deltaPhi * v / g / deltaT);
 
     if (newGamma - closestNode(5)) > GammaStep
@@ -219,33 +234,28 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     distanceee = distanceCost([temp(1), temp(2)], [closestNode(1), closestNode(2)]);
     pitchangle = atan((targetHeight - closestNode(3)) / distanceee);
 
+    if pitchangle > pitchMax
+        pitchangle = pitchMax;
+    elseif pitchangle < pitchMin
+        pitchangle = pitchMin;
+    end
+
     if pitchangle - closestNode(6) > pitchstep
         pitchangle = closestNode(5) + pitchstep;
 
-        if pitchangle > pitchMax
-            pitchangle = pitchMax;
-        end
-
-        z = tan(pitchangle) * distanceee + closestNode(3);
+        % z = tan(pitchangle) * distanceee + closestNode(3);
 
     elseif pitchangle - closestNode(6) <- pitchstep
         pitchangle = closestNode(5) - pitchstep;
 
-        if pitchangle < pitchMin
-            pitchangle = pitchMin;
-        end
-
-        z = tan(pitchangle) * distanceee + closestNode(3);
+        % z = tan(pitchangle) * distanceee + closestNode(3);
     else
+        % z = tan(pitchangle) * distanceee + closestNode(3);
 
-        if pitchangle > pitchMax
-            pitchangle = pitchMax;
-        elseif pitchangle < pitchMin
-            pitchangle = pitchMin;
-        end
-
-        z = targetHeight;
+        % z = targetHeight;
     end
+
+    z = pitchangle * distanceee + closestNode(3);
 
     newPoint = [temp(1), temp(2), z, newPhi, newGamma, pitchangle];
 end
