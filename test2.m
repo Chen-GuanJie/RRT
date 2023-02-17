@@ -1,6 +1,6 @@
 clc; clear; close all;
 %% 参数读取与设置
-filename = 'dem500';
+filename = 'data/dem500';
 [X, Y, Height] = SquareMap(filename);
 % X = normalize(X);
 % Y = normalize(Y);
