@@ -45,8 +45,8 @@ while failedAttempts <= maxFailedAttempts
     [A, I] = min(distanceCost2(RRTree(:, 1:6), sample), [], 1);
     closestNode = RRTree(I(1), 1:6);
     %% 延展RRTree
+        tmplot(1)=plot3([closestNode(1);sample(1)],[closestNode(2);sample(2)],[closestNode(3);sample(3)],'LineWidth', 3);
     newPoint = extends(sample, closestNode, X, Y, Height);
-    tmplot(1)=plot3([closestNode(1);sample(1)],[closestNode(2);sample(2)],[closestNode(3);sample(3)],'LineWidth', 3);
     tmplot(2)=plot3([closestNode(1);newPoint(1)],[closestNode(2);newPoint(2)],[closestNode(3);newPoint(3)],'LineWidth', 3);
     delete(tmplot);
     % movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ];%sample(3) - closestNode(3)];
@@ -172,12 +172,12 @@ function newPoint = extends(sample, closestNode, X, Y, Height)
     pitchMax = 10/180 * 3.1416;
     pitchMin = -10/180 * 3.1416;
 
-    GammaStep = 10/180 * 3.1416; %滚转角最大步长
+    GammaStep = 5/180 * 3.1416; %滚转角最大步长
     pitchstep = 10/180 * 3.1416; %俯仰角最大步长
     movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
     phi1 = atan(movingVec(2) / movingVec(1));
 
-    if movingVec(2)<0&&movingVec(1)>0
+    if movingVec(2)>0&&movingVec(1)<0
         phi1=phi1+3.1416;
     elseif movingVec(2)<0&&movingVec(1)<0
                 phi1=phi1-3.1416;
