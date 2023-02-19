@@ -1,25 +1,26 @@
 clc; clear; close all;
 %% 参数读取与设置
-filename = 'data/Output_500';
+config;
+filename = conf.filename;
 [X, Y, Height] = SquareMap(filename);
-% X = normalize(X);
-% Y = normalize(Y);
-% Height = normalize(Height);
 [~, Xn] = size(X);
 [~, Yn] = size(Y);
 
-% meshz(X, Y, Height);
 Height = Height';
-start = [X(250), Y(80), Height(250, 80) + 500, 3.14 * 45/180, 0, 0];
-goal = [X(100), Y(Yn - 80), Height(Xn - 150, Yn - 25) + 200, 3.14 * 45/180, 0, 0];
-threshold = 1500;
-maxFailedAttempts = 10000;
-searchSize =  1.6*[(goal(1) - start(1)), (goal(2) - start(2)), goal(3) - start(3), 0, 0, 0];
-
-RRTree = double([start, -1]);
+start = [X(conf.start(1)), Y(conf.start(2)), Height(conf.start(1), conf.start(2)) + conf.start(3), conf.start(4), conf.start(5), conf.start(6)];
+goal = [X(conf.goal(1)), Y(conf.goal(2)), Height(conf.goal(1), conf.goal(2)) + conf.goal(3), conf.goal(4), conf.goal(5), conf.goal(6)];
+threshold = conf.threshold;
+maxFailedAttempts = conf.maxFailedAttempts;
+searchSize =  conf.search*[(goal(1) - start(1)), (goal(2) - start(2)), goal(3) - start(3), 0, 0, 0];
+randnum=conf.randnum;
+Tree_index=2;
 failedAttempts = 0;
 pathFound = false;
 display = true;
+
+RRTree = zeros(200,8);
+RRTree(1,:)=[start, -1,0];
+
 %% 绘制
 figure(1)
 meshz(X, Y, Height'); hold on
@@ -37,9 +38,8 @@ start(2)=start(2)-(searchSize(2)-(goal(2)-start(2)))/2;
 
 while failedAttempts <= maxFailedAttempts
     %% 选择随机点作为延展目标 50%几率随机 50%几率goal
-    if rand < 0.75
+    if rand < randnum
         sample = rand(1, 6) .* searchSize + start;
-        %         scatter3(sample(1),sample(2),sample(3));hold on;
     else
         sample = goal;
     end
@@ -49,29 +49,27 @@ while failedAttempts <= maxFailedAttempts
     closestNode = RRTree(I(1), 1:6);
     %% 延展RRTree
     tmplot(1) = plot3([closestNode(1); sample(1)], [closestNode(2); sample(2)], [closestNode(3); sample(3)], 'LineWidth', 3);
-    newPoint = extends(sample, closestNode, X, Y, Height);
+    newPoint = extends(sample, closestNode, X, Y, Height,conf);
     % tmplot(2) = plot3([closestNode(1); newPoint(1)], [closestNode(2); newPoint(2)], [closestNode(3); newPoint(3)], 'LineWidth', 3);
-    % delete(tmplot);
-    % movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ];%sample(3) - closestNode(3)];
-    % movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
-    % newPoint = closestNode(1:2) + stepSize * movingVec;
-    % newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
-    %% 判断延展后的新点newPoint是否满足要求（碰撞检测）
     pause(0.05);
     delete(tmplot);
-
+    %% 判断延展后的新点newPoint是否满足要求（碰撞检测）
     if ~checkPath(closestNode, newPoint, Height, X, Y)
         failedAttempts = failedAttempts + 1;
+        RRTree(I(1),8)=RRTree(I(1),8)+1;
+        RRTree(I(1),3)=RRTree(I(1),3)*1.1;
         continue;
-    end
-
+    end 
     % 检测newPoint是否临近目标点
-    if distanceCost(newPoint, goal) < threshold, pathFound = true; break; end
+    if distanceCost(newPoint, goal) < 1.5*threshold, pathFound = true; break; end
     % 如果newPoint与之前RRTree上某一点的距离小于threshold说明newPoint的意义不大，舍弃
     [A, I2] = min(distanceCost2(RRTree(:, 1:6), newPoint), [], 1);
-    if distanceCost2(newPoint, RRTree(I2(1), 1:6)) < 0.3 * threshold, failedAttempts = failedAttempts + 1; continue; end
+    if distanceCost2(newPoint, RRTree(I2(1), 1:6)) < 0.3 * threshold
+        failedAttempts = failedAttempts + 1; continue; end
     %% 将newPoint加入RRTree
-    RRTree = [RRTree; newPoint I(1)]; % add node
+   % RRTree = [RRTree; newPoint I(1)]; % add node
+    RRTree(Tree_index,:)=[newPoint, I(1),0];
+    Tree_index=Tree_index+1;
     failedAttempts = 0;
     if display, plot3([closestNode(1); newPoint(1)], [closestNode(2); newPoint(2)], [closestNode(3); newPoint(3)], 'LineWidth', 2); end
     pause(0.05);
@@ -88,7 +86,7 @@ while prev > 0
     prev = RRTree(prev, 7);
 end
 
-bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 3, 'color', 'r');
+bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'r');
 % filPathX = [start(1), MovingAverage(path(2:end - 1, 1), 5), goal(1)];
 % filPathY = [start(2), MovingAverage(path(2:end - 1, 2), 5), goal(2)];
 % filPathZ = [start(3), MovingAverage(path(2:end - 1, 3), 5), goal(3)];
@@ -96,10 +94,10 @@ bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 3, 'color', 'r');
 % legend([bar1, bar2, bar3, bar4], ["起始点", "终止点", "无人机航迹", "MA平滑后航迹"], 'Location', 'northwest');
 % %% 存储轨迹
 % writematrix([filPathX', filPathY', filPathZ'], [filename, 'rrt_path.csv']);
-% %% 计算轨迹长度以及解算时间
-% pathLength = 0;
-% for i = 1:length(path(:, 1)) - 1, pathLength = pathLength + distanceCost(path(i, 1:3), path(i + 1, 1:3)); end % calculate path length
-% fprintf('运行时间：%d \n路径长度=%d\n GS:%f°\n LS:%f°', toc, pathLength, calGs(path) / pi * 180, calLs(path) / pi * 180);
+ %% 计算轨迹长度以及解算时间
+ pathLength = 0;
+ for i = 1:length(path(:, 1)) - 1, pathLength = pathLength + distanceCost(path(i, 1:3), path(i + 1, 1:3)); end % calculate path length
+ fprintf('运行时间：%d \n路径长度=%d\n GS:%f°\n LS:%f°', toc, pathLength, calGs(path) / pi * 180, calLs(path) / pi * 180);
 
 t1=saves('output','path',0);
 t2=saves('output','RRTree',1);
@@ -169,24 +167,23 @@ function flag = checkPath(start, endp, Height, X, Y)
 
 end
 
-function newPoint = extends(sample, closestNode, X, Y, Height)
+function newPoint = extends(sample, closestNode, X, Y, Height,conf)
     % movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
     % movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
     % newPoint = closestNode(1:2) + stepSize * movingVec;
     % newPoint(3) = Height(find_closest(newPoint(1), X), find_closest(newPoint(2), Y)) + height_limit;
 
-    height_limit = 600;
-    deltaT = 60;
-    %stepSize = 0.1;
-    g = 9.8;
-    v = 80;
-    GammaMax = 30/180 * 3.1416;
-    GammaMin = -30/180 * 3.1416;
-    pitchMax = 30/180 * 3.1416;
-    pitchMin = -30/180 * 3.1416;
+    height_limit = conf.height_limit;
+    deltaT = conf.deltaT;
+    g = conf.g;
+    v = conf.v;
+    GammaMax = conf.GammaMax;
+    GammaMin = conf.GammaMin;
+    pitchMax = conf.pitchMax;
+    pitchMin = conf.pitchMin;
 
-    GammaStep = 15/180 * 3.1416; %滚转角最大步长
-    pitchstep = 10/180 * 3.1416; %俯仰角最大步长
+    GammaStep = conf.GammaStep; %滚转角最大步长
+    pitchstep = conf.pitchstep; %俯仰角最大步长
     movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
     phi1 = atan(movingVec(2) / movingVec(1));
 
