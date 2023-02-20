@@ -15,9 +15,9 @@ classdef uav < handle
 
     end
 
-    methods (public)
+    methods (Access=public)
 
-        function this = methodName(conf)
+        function this = uav(conf)
             this.height_limit = conf.height_limit;
             this.deltaT = conf.deltaT;
             this.g = conf.g;
@@ -55,7 +55,7 @@ classdef uav < handle
 
             end
 
-            newGamma = atan(deltaPhi * v / g / deltaT);
+            newGamma = atan(deltaPhi * this.v / this.g / this.deltaT);
 
             if (newGamma - closestNode(5)) > this.GammaStep
                 newGamma = closestNode(5) + this.GammaStep;
@@ -109,7 +109,9 @@ classdef uav < handle
             newNode = [temp(1), temp(2), z, newPhi, newGamma, pitchangle];
 
         end
-
+        function consumption = calc_consumption(this)
+            consumption=0;
+        end
     end
 
 end
