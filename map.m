@@ -9,26 +9,26 @@ classdef map < handle
         Z_num
     end
 
-    methods
+    methods (Access = public)
 
         function this = map(arg)
 
-            if isa(arg, 'str') && exist(arg, 'file')
-                load(filename, 'dem_data')
-                dem_data = sortrows(dem_data);
-            elseif isa(arg, 'double')
-                dem_data = arg;
-            end
+            %             if isa(arg, 'str') && exist(arg, 'file')
+            load(arg, 'dem_data')
+            dem_data = sortrows(dem_data);
+            %             elseif isa(arg, 'double')
+            %                 dem_data = arg;
+            %             end
 
             x = dem_data(:, 1);
             y = dem_data(:, 2);
             z = dem_data(:, 3);
-            [X, Xn] = grid(x);
-            [Y, Yn] = grid(y);
+            [X, Xn] = this.grid(x);
+            [Y, Yn] = this.grid(y);
             this.X_num = Xn;
             this.Y_num = Yn;
             this.Z_num = Xn * Yn;
-            x_index = get_uniqu_index(x);
+            x_index = this.get_uniqu_index(x);
             [x_size, ~] = size(x);
             x_index(Xn) = x_size;
             x_num = zeros(Xn, 1);
@@ -152,6 +152,11 @@ classdef map < handle
                 end
 
             end
+
+        end
+
+        function display_map(this)
+            meshz(this.X, this.Y, this.Z'); hold on
 
         end
 
