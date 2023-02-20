@@ -1,4 +1,3 @@
-clc;clear;
 conf.filename='data/Output_500';
 conf.start=[280 80 500 3.14 * 45/180 0 0];
 conf.goal=[70 600 600 3.14 * 45/180 0 0];
