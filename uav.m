@@ -15,7 +15,7 @@ classdef uav < handle
 
     end
 
-    methods (Access=public)
+    methods (Access = public)
 
         function this = uav(conf)
             this.height_limit = conf.height_limit;
@@ -32,7 +32,7 @@ classdef uav < handle
 
         end
 
-        function newNode = transfer(this, sample, closestNode)
+        function newNode = transfer(this, sample, closestNode, map)
             movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
             phi1 = atan(movingVec(2) / movingVec(1));
 
@@ -86,8 +86,8 @@ classdef uav < handle
 
             temp = (rotation * a)' + [closestNode(1), closestNode(2)];
 
-            targetHeight = Height(find_closest(temp(1), X), find_closest(temp(2), Y)) + this.height_limit;
-            distanceee = distanceCost([temp(1), temp(2)], [closestNode(1), closestNode(2)]);
+            targetHeight = map.Z(map.find_closest(temp(1), 0), map.find_closest(temp(2), 1)) + this.height_limit;
+            distanceee = norm(temp - closestNode(1:2)); %distanceCost([temp(1), temp(2)], [closestNode(1), closestNode(2)]);
             pitchangle = atan((targetHeight - closestNode(3)) / distanceee);
 
             if pitchangle > this.pitchMax
@@ -109,9 +109,11 @@ classdef uav < handle
             newNode = [temp(1), temp(2), z, newPhi, newGamma, pitchangle];
 
         end
+
         function consumption = calc_consumption(this)
-            consumption=0;
+            consumption = 0;
         end
+
     end
 
 end

@@ -1,6 +1,6 @@
 classdef map < handle
 
-    properties (SetAccess = private)
+    properties (SetAccess = public)
         X
         Y
         Z
