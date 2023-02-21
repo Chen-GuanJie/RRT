@@ -20,4 +20,5 @@ conf.pitchMin = -30/180 * 3.1416;
 conf.GammaStep = 15/180 * 3.1416; %滚转角最大步长
 conf.pitchstep = 10/180 * 3.1416; %俯仰角最大步长
 r = rrt(conf);
-r.starts(true);
+r.starts(false);
+numel

@@ -105,7 +105,11 @@ bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'r');
 % writematrix([filPathX', filPathY', filPathZ'], [filename, 'rrt_path.csv']);
 %% 计算轨迹长度以及解算时间
 pathLength = 0;
-for i = 1:length(path(:, 1)) - 1, pathLength = pathLength + distanceCost(path(i, 1:3), path(i + 1, 1:3)); end % calculate path length
+
+for i = 1:length(path(:, 1)) - 1
+    pathLength = pathLength + distanceCost(path(i, 1:3), path(i + 1, 1:3));
+end % calculate path length
+
 fprintf('运行时间：%d \n路径长度=%d\n GS:%f°\n LS:%f°', toc, pathLength, calGs(path) / pi * 180, calLs(path) / pi * 180);
 
 t1 = saves('output', 'path', 0);
@@ -260,16 +264,9 @@ function newPoint = extends(sample, closestNode, X, Y, Height, conf)
     if pitchangle - closestNode(6) > pitchstep
         pitchangle = closestNode(5) + pitchstep;
 
-        % z = tan(pitchangle) * distanceee + closestNode(3);
-
     elseif pitchangle - closestNode(6) <- pitchstep
         pitchangle = closestNode(5) - pitchstep;
 
-        % z = tan(pitchangle) * distanceee + closestNode(3);
-    else
-        % z = tan(pitchangle) * distanceee + closestNode(3);
-
-        % z = targetHeight;
     end
 
     z = pitchangle * distanceee + closestNode(3);
@@ -287,5 +284,12 @@ function h = distanceCost2(a, b)
     a1(:, 4:6) = 0 * a(:, 4:6);
     b1(:, 4:6) = 0 * b(:, 4:6);
     h = sqrt(sum((a1 - b1) .^ 2, 2));
+
+end
+
+function cost = calc_cost(from_node, dest_node)
+    cost_dist = norm(from_node(1:3) - dest_node(1:3));
+    cost_angle = norm(0.5 * (from_node(4:6) + dest_node(4:6)));
+    cost = norm([cost_dist, cost_angle]);
 
 end
