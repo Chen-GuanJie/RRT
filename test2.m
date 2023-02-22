@@ -262,10 +262,10 @@ function newPoint = extends(sample, closestNode, X, Y, Height, conf)
     end
 
     if pitchangle - closestNode(6) > pitchstep
-        pitchangle = closestNode(5) + pitchstep;
+        pitchangle = closestNode(6) + pitchstep;
 
     elseif pitchangle - closestNode(6) <- pitchstep
-        pitchangle = closestNode(5) - pitchstep;
+        pitchangle = closestNode(6) - pitchstep;
 
     end
 

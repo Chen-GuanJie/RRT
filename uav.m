@@ -97,10 +97,10 @@ classdef uav < handle
             end
 
             if pitchangle - closestNode(6) > this.pitchstep
-                pitchangle = closestNode(5) + this.pitchstep;
+                pitchangle = closestNode(6) + this.pitchstep;
 
             elseif pitchangle - closestNode(6) <- this.pitchstep
-                pitchangle = closestNode(5) - this.pitchstep;
+                pitchangle = closestNode(6) - this.pitchstep;
 
             end
 
@@ -112,6 +112,46 @@ classdef uav < handle
 
         function consumption = calc_consumption(this)
             consumption = 0;
+        end
+
+        function flag = transferable(this, from, to)
+            %判断是否可以从 from 到 to
+            flag = false;
+            movingVec = [to(1) - from(1), to(2) - from(2)];
+            phi1 = atan(movingVec(2) / movingVec(1));
+
+            if movingVec(2) > 0 && movingVec(1) < 0
+                phi1 = phi1 + 3.1416;
+            elseif movingVec(2) < 0 && movingVec(1) < 0
+                phi1 = phi1 - 3.1416;
+            end
+
+            phi = from(4);
+            deltaPhi = (-phi + phi1);
+
+            while deltaPhi > 3.1416
+                deltaPhi = deltaPhi - 6.2832;
+
+            end
+
+            while deltaPhi <- 3.1416
+                deltaPhi = deltaPhi + 6.2832;
+
+            end
+
+            distanceee = norm(movingVec);
+
+            newGamma = atan(deltaPhi * this.v ^ 2 / this.g / distanceee);
+
+            if (abs(newGamma - from(5)) < this.GammaStep) && (newGamma < this.GammaMax) && (newGamma > this.GammaMin)
+                pitchangle = atan((to(3) - from(3)) / distanceee);
+
+                if (abs(pitchangle - from(6)) < this.pitchstep * distanceee / this.v / this.deltaT) && (pitchangle < this.pitchMax) && (pitchangle > this.pitchMin)
+                    flag = true;
+                end
+
+            end
+
         end
 
     end

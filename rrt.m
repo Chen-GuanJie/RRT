@@ -11,6 +11,7 @@ classdef rrt < handle
         searchSize
         searchbBase
         randnum
+        edges
 
         nearNodes
         distances
@@ -31,16 +32,17 @@ classdef rrt < handle
 
         end
 
-        function neighbors(this, sample, dis)
+        function neighbors(this, dis)
             %找附近的点
-            t = this.tree(1:this.nodenum - 1, 1:6) - sample;
-            this.distances = sqrt(sum(t(:, 1:6) .^ 2, 2));
+            t = this.tree(1:this.nodenum - 1, 1:6) - this.newNode;
+            this.distances = sqrt(sum(t(:, 1:3) .^ 2, 2));
             this.nearNodes = this.tree(find(this.distances < dis), :);
         end
 
-        function [node, index] = get_closest(this)
+        function [node, index] = get_closest(this, sample)
             %找最近点
-            [~, I] = min(this.distances);
+            t = this.tree(1:this.nodenum - 1, 1:6) - sample;
+            [~, I] = min(sqrt(sum(t(:, 1:3) .^ 2, 2)));
             index = I(1);
             node = this.tree(index, :);
         end
@@ -84,8 +86,9 @@ classdef rrt < handle
 
         function insert_node(this, parent_id)
             %插入节点
-            this.tree(this.nodenum, 1:6) = this.newNode;
-            this.tree(this.nodenum,8) = parent_id;
+            this.newNode(8) = parent_id;
+            this.newNode(9) = this.nodenum;
+            this.tree(this.nodenum, 1:9) = this.newNode;
             this.nodenum = this.nodenum + 1;
         end
 
@@ -96,43 +99,74 @@ classdef rrt < handle
 
             while prev > 0
                 path = [this.tree(prev, 1:6); path];
-                prev = this.tree(prev,8);
+                prev = this.tree(prev, 8);
             end
 
             bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'r');
 
         end
 
-        function new_parent_id = choose_parent(this, closestNode)
-            %RRT star 找新的父节点
-            mini_cost = this.calc_cost(closestNode, this.newNode);
-            new_parent_id = 0;
+        function flag = transferable(this, from, to)
 
-            for i = 1:numel(this.nearNodes)
-
-                if (~this.maps.checkPath(this.newNode, this.nearNodes(i)))
-                    tmpcost = this.calc_cost(this.nearNodes(i), this.newNode);
-
-                    if tmpcost < mini_cost
-                        mini_cost = tmpcost;
-                        new_parent_id = i;
-                    end
-
-                end
-
+            if this.robot.transferable(from, to)
+                flag = this.maps.checkPath(from, to);
+            else
+                flag = false;
             end
 
         end
 
-        function rewire(this)
+        function new_parent_id = choose_parent(this, closestNode)
+            %RRT star 找新的父节点
+            mini_cost = this.calc_cost(closestNode, this.newNode) + closestNode(7);
+            new_parent_id = closestNode(9);
+            i = 1;
+            n = numel(this.nearNodes(:, 1));
 
-            for i = 1:numel(this.nearNodes)
+            while i <= n
 
-                if new_parent_id ~= i
-                    tmpcost = this.calc_cost(this.newNode, this.nearNodes(i));
+                if (this.maps.checkPath(this.nearNodes(i, :), this.newNode)) %无碰撞
 
-                    if tmpcost < this.nearNodes(i, 7)
-                        this.nearNodes(i, 7)=tmpcost;
+                    if (this.robot.transferable(this.nearNodes(i, :), this.newNode)) %可转移
+
+                        tmpcost = this.calc_cost(this.nearNodes(i, :), this.newNode) + this.nearNodes(i, 7);
+
+                        if tmpcost < mini_cost
+                            mini_cost = tmpcost;
+                            new_parent_id = this.nearNodes(i, 9);
+                        end
+
+                    end
+
+                    i = i + 1;
+                else %删去集合中有碰撞的附近点
+                    this.nearNodes(i, :) = [];
+                    i = i - 1;
+                    n = n - 1;
+                end
+
+            end
+
+            this.newNode(7) = mini_cost;
+
+        end
+
+        function replot = rewire(this, new_parent_id)
+            replot = [];
+
+            for i = 1:numel(this.nearNodes(:, 1))
+
+                if new_parent_id ~= this.nearNodes(i,8) %不是新节点的父节点
+
+                    if this.robot.transferable(this.newNode, this.nearNodes(i,:))
+                        tmpcost = this.calc_cost(this.newNode, this.nearNodes(i,:)) + this.newNode(7);
+
+                        if tmpcost < this.nearNodes(i, 7)
+                            % id parentid newparentid
+                            replot (end + 1, :) = [this.nearNodes(i, 9) this.nearNodes(i, 8) this.newNode(9)];
+                            this.nearNodes(i, 7) = tmpcost;
+                            this.nearNodes(i, 8) = this.newNode(9);
+                        end
 
                     end
 
@@ -151,7 +185,22 @@ classdef rrt < handle
         end
 
         function tmplot = display_line(~, s, e)
-            tmplot = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1);
+            tmplot = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1, 'Color', 'b');
+        end
+
+        function redisplay(this, replot)
+
+            if ~isempty(replot)
+
+                for i = 1:numel(replot(:, 1))
+                    delete(this.edges(replot(i, 1)));
+                    s = this.tree(replot(3), 1:3);
+                    e = this.tree(replot(1), 1:3);
+                    this.edges(replot(i, 1)) = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 2, 'Color', 'r');
+                end
+
+            end
+
         end
 
         function this = rrt(conf)
@@ -171,11 +220,10 @@ classdef rrt < handle
             this.searchbBase = [min(X), min(Y), min(min(Height)), -3.1416, -3.1416, -3.1416];
             this.searchSize = [max(X) - min(X), max(Y) - min(Y), max(max(Height)) - min(min(Height)), 2 * 3.1416, 2 * 3.1416, 2 * 3.1416];
 
-            this.tree = zeros(100, 8);
-
         end
 
         function starts(this, ifdispaly)
+            this.tree = zeros(100, 6);
 
             figure(1)
             this.maps.display_map()
@@ -192,8 +240,8 @@ classdef rrt < handle
 
             while this.failedAttempts <= this.maxFailedAttempts
                 sample = this.get_sample();
-                this.neighbors(sample, 100000);
-                [closestNode, parentid] = this.get_closest();
+                %this.neighbors(sample, 100000);
+                [closestNode, parentid] = this.get_closest(sample);
                 this.extends(sample, closestNode);
 
                 if ifdispaly
@@ -230,7 +278,8 @@ classdef rrt < handle
         end
 
         function start_star(this, ifdispaly)
-
+            this.tree = zeros(300, 10); % cost parentid id tmp
+            this.edges = matlab.graphics.chart.primitive.Line(300);
             figure(1)
             this.maps.display_map()
             scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
@@ -240,14 +289,14 @@ classdef rrt < handle
             xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
             title('RRT算法UAV航迹规划路径');
             this.newNode = this.start;
+            this.newNode(7) = 0;
             this.insert_node(-1);
-
+            neigh = 2 * this.robot.v * this.robot.deltaT;
             tic
 
-            while this.failedAttempts <= this.maxFailedAttempts
+            while toc <= 70 %this.failedAttempts <= this.maxFailedAttempts
                 sample = this.get_sample();
-                this.neighbors(sample, 100000);
-                [closestNode, parentid] = this.get_closest();
+                [closestNode, parentid] = this.get_closest(sample);
                 this.extends(sample, closestNode);
 
                 if ifdispaly
@@ -257,18 +306,25 @@ classdef rrt < handle
                 end
 
                 flag = this.check_newNode(closestNode);
-
-                if flag == 0
-                    this.insert_node(parentid);
-
-                elseif flag == 2
+                    this.neighbors(neigh);
+                    new_id = this.choose_parent(closestNode);
+                    this.insert_node(new_id);
+                    replot = this.rewire(new_id);
+%                 if flag == 0
+%                     this.neighbors(neigh);
+%                     new_id = this.choose_parent(closestNode);
+%                     this.insert_node(new_id);
+%                     replot = this.rewire(new_id);
+%                 else
+                if flag == 2
 
                     this.trace_back(parentid);
-                    break;
+                    %break;
                 end
 
                 if ifdispaly
-                    this.display_line(closestNode, this.newNode);
+                    this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
+                    this.redisplay(replot);
                     pause(0.05);
                 end
 
