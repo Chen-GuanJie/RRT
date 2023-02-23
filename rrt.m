@@ -35,14 +35,14 @@ classdef rrt < handle
         function neighbors(this, dis)
             %找附近的点
             t = this.tree(1:this.nodenum - 1, 1:6) - this.newNode;
-            this.distances = sqrt(sum(t(:, 1:3) .^ 2, 2));
+            this.distances = sum(t(:, 1:3) .^ 2, 2);
             this.nearNodes = this.tree(find(this.distances < dis), :);
         end
 
         function [node, index] = get_closest(this, sample)
             %找最近点
             t = this.tree(1:this.nodenum - 1, 1:6) - sample;
-            [~, I] = min(sqrt(sum(t(:, 1:3) .^ 2, 2)));
+            [~, I] = min(sum(t(:, 1:3) .^ 2, 2));
             index = I(1);
             node = this.tree(index, :);
         end
@@ -54,10 +54,11 @@ classdef rrt < handle
 
         function cost = calc_cost(this, from_node, dest_node)
             %计算相邻两点的代价
-            cost_dist = norm(from_node(1:3) - dest_node(1:3));
+            cost_dist = norm(from_node(1:2) - dest_node(1:2));
+            cost_hight = 3 * norm(from_node(3) - dest_node(3));
             cost_angle = norm(from_node(4:6) - dest_node(4:6));
-            consumption = this.robot.calc_consumption();
-            cost = norm([cost_dist, cost_angle, consumption]);
+            %consumption = this.robot.calc_consumption();
+            cost = norm([cost_dist, cost_angle, cost_hight]);
         end
 
         function flag = check_newNode(this)
@@ -77,7 +78,8 @@ classdef rrt < handle
             % 如果newPoint与之前RRTree上某一点的距离小于threshold说明newPoint的意义不大，舍弃
             [~, index] = min(this.distances);
 
-            if norm(this.tree(index(1), 1:6) - this.newNode(1:6)) < 1 * this.threshold
+            %if norm(this.tree(index(1), 1:3) - this.newNode(1:3)) < 1 * this.threshold
+            if sqrt(this.distances(index(1))) < this.threshold
                 this.failedAttempts = this.failedAttempts + 1;
                 flag = 1;
 
@@ -103,14 +105,20 @@ classdef rrt < handle
                 prev = this.tree(prev, 8);
             end
 
-            bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'r');
+            bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'g');
 
         end
 
         function new_parent_id = choose_parent(this, closestNode)
             %RRT star 找新的父节点
-            mini_cost = this.calc_cost(closestNode, this.newNode) + closestNode(7);
-            new_parent_id = closestNode(9);
+            if this.maps.checkPath(closestNode, this.newNode)
+                mini_cost = this.calc_cost(closestNode, this.newNode) + closestNode(7);
+                new_parent_id = closestNode(9);
+            else
+                mini_cost = 0;
+                new_parent_id = 0;
+            end
+
             i = 1;
             n = numel(this.nearNodes(:, 1));
 
@@ -211,11 +219,6 @@ classdef rrt < handle
             this.searchbBase = [min(X), min(Y), min(min(Height)), -3.1416, -3.1416, -3.1416];
             this.searchSize = [max(X) - min(X), max(Y) - min(Y), max(max(Height)) - min(min(Height)), 2 * 3.1416, 2 * 3.1416, 2 * 3.1416];
 
-        end
-
-        function starts(this, ifdispaly)
-            this.tree = zeros(100, 6);
-
             figure(1)
             this.maps.display_map()
             scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
@@ -224,6 +227,12 @@ classdef rrt < handle
             text(this.goal(1), this.goal(2), this.goal(3), '  终点');
             xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
             title('RRT算法UAV航迹规划路径');
+
+        end
+
+        function starts(this, ifdispaly)
+            this.tree = zeros(100, 6);
+
             this.newNode = this.start;
             this.insert_node(-1);
 
@@ -269,23 +278,15 @@ classdef rrt < handle
         end
 
         function start_star(this, ifdispaly)
-            this.tree = zeros(300, 10); % cost parentid id tmp
-            this.edges = matlab.graphics.chart.primitive.Line(300);
-            figure(1)
-            this.maps.display_map()
-            scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
-            scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
-            text(this.start(1), this.start(2), this.start(3), '  起点');
-            text(this.goal(1), this.goal(2), this.goal(3), '  终点');
-            xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
-            title('RRT算法UAV航迹规划路径');
+            this.tree = zeros(3000, 10); % cost parentid id tmp
+            this.edges = matlab.graphics.chart.primitive.Line(3000);
             this.newNode = this.start;
             this.newNode(7) = 0;
             this.insert_node(-1);
-            neigh = 2 * this.robot.v * this.robot.deltaT;
+            neigh = (2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
 
-            while toc <= 70 %this.failedAttempts <= this.maxFailedAttempts
+            while 1 %toc <= 70 %this.failedAttempts <= this.maxFailedAttempts
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
                 this.extends(sample, closestNode);
@@ -296,21 +297,26 @@ classdef rrt < handle
                     delete(tp);
                 end
 
+                this.neighbors(neigh);
                 flag = this.check_newNode();
                 % this.neighbors(neigh);
                 % new_id = this.choose_parent(closestNode);
                 % this.insert_node(new_id);
                 % replot = this.rewire(new_id);
                 if flag == 0
-                    this.neighbors(neigh);
-                    new_id = this.choose_parent(closestNode);
-                    this.insert_node(new_id);
-                    replot = this.rewire(new_id);
 
-                    if ifdispaly
-                        this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
-                        this.redisplay(replot);
-                        pause(0.05);
+                    new_id = this.choose_parent(closestNode);
+
+                    if new_id > 0
+                        this.insert_node(new_id);
+                        replot = this.rewire(new_id);
+
+                        if ifdispaly
+                            this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
+                            this.redisplay(replot);
+                            pause(0.05);
+                        end
+
                     end
 
                 elseif flag == 2
