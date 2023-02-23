@@ -60,21 +60,22 @@ classdef rrt < handle
             cost = norm([cost_dist, cost_angle, consumption]);
         end
 
-        function flag = check_newNode(this, closestNode)
+        function flag = check_newNode(this)
             flag = 0;
 
-            if ~this.maps.checkPath(closestNode, this.newNode)
-                this.failedAttempts = this.failedAttempts + 1;
-                % RRTree(I(1), 8) = RRTree(I(1), 8) + 1;
-                % RRTree(I(1), 3) = RRTree(I(1), 3) * 1.1;
-                flag = 1;
+            % if ~this.maps.checkPath(closestNode, this.newNode)
+            %     this.failedAttempts = this.failedAttempts + 1;
+            %     % RRTree(I(1), 8) = RRTree(I(1), 8) + 1;
+            %     % RRTree(I(1), 3) = RRTree(I(1), 3) * 1.1;
+            %     flag = 1;
 
-            elseif norm(this.newNode(1:3) - this.goal(1:3)) < 2 * this.threshold
+            % else
+            if norm(this.newNode(1:3) - this.goal(1:3)) < 2 * this.threshold
                 flag = 2;
             end
 
             % 如果newPoint与之前RRTree上某一点的距离小于threshold说明newPoint的意义不大，舍弃
-            [~, index] = min(norm(this.tree(:, 1:6) - this.newNode(1:6)), [], 1);
+            [~, index] = min(this.distances);
 
             if norm(this.tree(index(1), 1:6) - this.newNode(1:6)) < 1 * this.threshold
                 this.failedAttempts = this.failedAttempts + 1;
@@ -103,16 +104,6 @@ classdef rrt < handle
             end
 
             bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'r');
-
-        end
-
-        function flag = transferable(this, from, to)
-
-            if this.robot.transferable(from, to)
-                flag = this.maps.checkPath(from, to);
-            else
-                flag = false;
-            end
 
         end
 
@@ -156,10 +147,10 @@ classdef rrt < handle
 
             for i = 1:numel(this.nearNodes(:, 1))
 
-                if new_parent_id ~= this.nearNodes(i,8) %不是新节点的父节点
+                if new_parent_id ~= this.nearNodes(i, 8) %不是新节点的父节点
 
-                    if this.robot.transferable(this.newNode, this.nearNodes(i,:))
-                        tmpcost = this.calc_cost(this.newNode, this.nearNodes(i,:)) + this.newNode(7);
+                    if this.robot.transferable(this.newNode, this.nearNodes(i, :))
+                        tmpcost = this.calc_cost(this.newNode, this.nearNodes(i, :)) + this.newNode(7);
 
                         if tmpcost < this.nearNodes(i, 7)
                             % id parentid newparentid
@@ -305,27 +296,27 @@ classdef rrt < handle
                     delete(tp);
                 end
 
-                flag = this.check_newNode(closestNode);
+                flag = this.check_newNode();
+                % this.neighbors(neigh);
+                % new_id = this.choose_parent(closestNode);
+                % this.insert_node(new_id);
+                % replot = this.rewire(new_id);
+                if flag == 0
                     this.neighbors(neigh);
                     new_id = this.choose_parent(closestNode);
                     this.insert_node(new_id);
                     replot = this.rewire(new_id);
-%                 if flag == 0
-%                     this.neighbors(neigh);
-%                     new_id = this.choose_parent(closestNode);
-%                     this.insert_node(new_id);
-%                     replot = this.rewire(new_id);
-%                 else
-                if flag == 2
+
+                    if ifdispaly
+                        this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
+                        this.redisplay(replot);
+                        pause(0.05);
+                    end
+
+                elseif flag == 2
 
                     this.trace_back(parentid);
                     %break;
-                end
-
-                if ifdispaly
-                    this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
-                    this.redisplay(replot);
-                    pause(0.05);
                 end
 
             end
