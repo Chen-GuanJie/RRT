@@ -26,7 +26,6 @@ classdef uav < handle
             this.GammaMin = conf.GammaMin;
             this.pitchMax = conf.pitchMax;
             this.pitchMin = conf.pitchMin;
-
             this.GammaStep = conf.GammaStep;
             this.pitchstep = conf.pitchstep;
 
