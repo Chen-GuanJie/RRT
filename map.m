@@ -168,7 +168,7 @@ classdef map < handle
             x_diff = diff(x);
             x_index = find(x_diff ~= 0);
         end
-
+        
         function [g, num] = grid(x)
             x_unique = unique(x);
             a = size(x_unique);
