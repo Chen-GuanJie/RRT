@@ -12,6 +12,7 @@ classdef rrt < handle
         searchbBase
         randnum
         edges
+        tmpclose
 
         nearNodes
         distances
@@ -32,11 +33,22 @@ classdef rrt < handle
 
         end
 
-        function neighbors(this, dis)
+        function flag = neighbors(this, dis)
             %找附近的点
+            flag = 0;
             t = this.tree(1:this.nodenum - 1, 1:6) - this.newNode;
             this.distances = sum(t(:, 1:3) .^ 2, 2);
             this.nearNodes = this.tree(find(this.distances < dis), :);
+            [~, index] = min(this.distances);
+            tmpdis = sqrt(this.distances(index(1)));
+
+            if tmpdis < this.threshold
+                % this.failedAttempts = this.failedAttempts + 1;
+                flag = 1;
+                this.tmpclose(end + 1) = tmpdis;
+
+            end
+
         end
 
         function [node, index] = get_closest(this, sample)
@@ -76,14 +88,14 @@ classdef rrt < handle
             end
 
             % 如果newPoint与之前RRTree上某一点的距离小于threshold说明newPoint的意义不大，舍弃
-            [~, index] = min(this.distances);
+            % [~, index] = min(this.distances);
 
             %if norm(this.tree(index(1), 1:3) - this.newNode(1:3)) < 1 * this.threshold
-            if sqrt(this.distances(index(1))) < this.threshold
-                this.failedAttempts = this.failedAttempts + 1;
-                flag = 1;
+            % if sqrt(this.distances(index(1))) < this.threshold
+            %     this.failedAttempts = this.failedAttempts + 1;
+            %     flag = 1;
 
-            end
+            % end
 
         end
 
@@ -175,18 +187,6 @@ classdef rrt < handle
 
         end
 
-    end
-
-    methods (Access = public)
-
-        function tmplot = display_searchline(~, s, e)
-            tmplot = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 3);
-        end
-
-        function tmplot = display_line(~, s, e)
-            tmplot = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1, 'Color', 'b');
-        end
-
         function redisplay(this, replot)
 
             if ~isempty(replot)
@@ -202,6 +202,22 @@ classdef rrt < handle
 
         end
 
+    end
+
+    methods (Static)
+
+        function tmplot = display_searchline(s, e)
+            tmplot = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 3);
+        end
+
+        function tmplot = display_line(s, e)
+            tmplot = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1, 'Color', 'b');
+        end
+
+    end
+
+    methods (Access = public)
+
         function this = rrt(conf)
             this.maps = map(conf.filename);
             this.robot = uav(conf);
@@ -216,8 +232,8 @@ classdef rrt < handle
             this.randnum = conf.randnum;
             this.failedAttempts = 0;
             this.nodenum = 1;
-            this.searchbBase = [min(X), min(Y), min(min(Height)), -3.1416, -3.1416, -3.1416];
-            this.searchSize = [max(X) - min(X), max(Y) - min(Y), max(max(Height)) - min(min(Height)), 2 * 3.1416, 2 * 3.1416, 2 * 3.1416];
+            this.searchbBase = [min(X), min(Y), min(min(Height)), -pi, -pi, -pi];
+            this.searchSize = [max(X) - min(X), max(Y) - min(Y), max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
 
             figure(1)
             this.maps.display_map()
@@ -277,26 +293,35 @@ classdef rrt < handle
         end
 
         function start_star(this, ifdispaly)
-            this.tree = zeros(3000, 10); % cost parentid id v
+            this.tree = zeros(1500, 10); % cost parentid id v
             this.edges = matlab.graphics.chart.primitive.Line(3000);
             this.newNode = this.start;
             this.newNode(7) = 0;
             this.insert_node(-1);
             neigh = (2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
+            numb = 0;
+            tooclose = 0;
+            isgoal = 0;
 
-            while 1 %toc <= 70 %this.failedAttempts <= this.maxFailedAttempts
+            while toc <= 15 %this.failedAttempts <= this.maxFailedAttempts
+                numb = numb + 1;
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
                 this.extends(sample, closestNode);
 
                 if ifdispaly
                     tp = this.display_searchline(closestNode, sample);
-                    pause(0.05);
+                    % pause(0.05);
                     delete(tp);
                 end
 
-                this.neighbors(neigh);
+                if this.neighbors(neigh)
+                    tooclose = tooclose + 1;
+
+                    continue
+                end
+
                 flag = this.check_newNode();
                 % this.neighbors(neigh);
                 % new_id = this.choose_parent(closestNode);
@@ -313,20 +338,24 @@ classdef rrt < handle
                         if ifdispaly
                             this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
                             this.redisplay(replot);
-                            pause(0.05);
+                            % pause(0.05);
                         end
 
                     end
 
                 elseif flag == 2
-
+                    isgoal = isgoal + 1;
+                    this.randnum = 2;
                     this.trace_back(parentid);
                     %break;
                 end
 
             end
 
-            toc
+            numb
+            tooclose
+            isgoal
+            % toc
             % t1 = saves('output', 'path', 0);
             % t2 = saves('output', 'RRTree', 1);
 
