@@ -9,6 +9,7 @@ classdef uav < handle
         GammaMin
         pitchMax
         pitchMin
+        mini_stable_distance
 
         GammaStep %滚转角最大步长
         pitchstep %俯仰角最大步长
@@ -22,13 +23,31 @@ classdef uav < handle
             this.deltaT = conf.deltaT;
             this.g = conf.g;
             this.v = conf.v;
+            this.a = conf.a;
             this.GammaMax = conf.GammaMax;
             this.GammaMin = conf.GammaMin;
             this.pitchMax = conf.pitchMax;
             this.pitchMin = conf.pitchMin;
             this.GammaStep = conf.GammaStep;
             this.pitchstep = conf.pitchstep;
+            this.mini_stable_distance = conf.mini_stable_distance;
 
+        end
+
+        function newNode = transfer_stable(this, sample, closestNode)
+            movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2)];
+            phi1 = atan(movingVec(2) / movingVec(1));
+
+            if movingVec(2) > 0 && movingVec(1) < 0
+                phi1 = phi1 + 3.1416;
+            elseif movingVec(2) < 0 && movingVec(1) < 0
+                phi1 = phi1 - 3.1416;
+            end
+
+            phi = closestNode(4);
+            deltaPhi = (-phi + phi1);
+
+            this.mini_stable_distance(closestNode, deltaPhi);
         end
 
         function newNode = transfer(this, sample, closestNode, map)
