@@ -1,15 +1,16 @@
 classdef uav < handle
 
     properties (SetAccess = private)
-        height_limit
-        deltaT
-        g
-        v
-        GammaMax
-        GammaMin
-        pitchMax
-        pitchMin
-        mini_stable_distance
+        height_limit %贴地高度限制
+        deltaT %每步长飞行时间
+        g %重力加速度
+        v %恒速度
+        acc %加速度
+        GammaMax %滚转角最大
+        GammaMin %滚转角最小
+        pitchMax %俯仰角最大
+        pitchMin %俯仰角最小
+        mini_stable_distance %最短稳定距离
 
         GammaStep %滚转角最大步长
         pitchstep %俯仰角最大步长
@@ -23,7 +24,7 @@ classdef uav < handle
             this.deltaT = conf.deltaT;
             this.g = conf.g;
             this.v = conf.v;
-            this.a = conf.a;
+            this.acc = conf.acc;
             this.GammaMax = conf.GammaMax;
             this.GammaMin = conf.GammaMin;
             this.pitchMax = conf.pitchMax;
@@ -45,12 +46,13 @@ classdef uav < handle
             end
 
             phi = closestNode(4);
-            deltaPhi = (-phi + phi1);
+            deltaPhi = mod((phi1 - phi), 6.2832) - 3.1416;
 
             this.mini_stable_distance(closestNode, deltaPhi);
         end
 
         function newNode = transfer(this, sample, closestNode, map)
+            %根据动力学约束的状态转移
             movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
             phi1 = atan(movingVec(2) / movingVec(1));
 
@@ -61,33 +63,10 @@ classdef uav < handle
             end
 
             phi = closestNode(4);
-            deltaPhi = (-phi + phi1);
-
-            while deltaPhi > 3.1416
-                deltaPhi = deltaPhi - 6.2832;
-
-            end
-
-            while deltaPhi <- 3.1416
-                deltaPhi = deltaPhi + 6.2832;
-
-            end
-
+            deltaPhi = mod((phi1 - phi), 6.2832) - 3.1416;
             newGamma = atan(deltaPhi * this.v / this.g / this.deltaT);
-
-            if (newGamma - closestNode(5)) > this.GammaStep
-                newGamma = closestNode(5) + this.GammaStep;
-
-            elseif (newGamma - closestNode(5)) <- this.GammaStep
-                newGamma = closestNode(5) - this.GammaStep;
-
-            end
-
-            if newGamma > this.GammaMax
-                newGamma = this.GammaMax;
-            elseif newGamma < this.GammaMin
-                newGamma = this.GammaMin;
-            end
+            newGamma = this.limiter(newGamma, closestNode(5) + this.GammaStep, closestNode(5) - this.GammaStep);
+            newGamma = this.limiter(newGamma, this.GammaMax, this.GammaMin);
 
             rotation = [cos(phi) -sin(phi);
                         sin(phi) cos(phi); ];
@@ -107,21 +86,8 @@ classdef uav < handle
             targetHeight = map.Z(map.find_closest(temp(1), 0), map.find_closest(temp(2), 1)) + this.height_limit;
             distanceee = norm(temp - closestNode(1:2)); %distanceCost([temp(1), temp(2)], [closestNode(1), closestNode(2)]);
             pitchangle = atan((targetHeight - closestNode(3)) / distanceee);
-
-            if pitchangle > this.pitchMax
-                pitchangle = this.pitchMax;
-            elseif pitchangle < this.pitchMin
-                pitchangle = this.pitchMin;
-            end
-
-            if pitchangle - closestNode(6) > this.pitchstep
-                pitchangle = closestNode(6) + this.pitchstep;
-
-            elseif pitchangle - closestNode(6) <- this.pitchstep
-                pitchangle = closestNode(6) - this.pitchstep;
-
-            end
-
+            pitchangle = this.limiter(pitchangle, this.pitchMax, this.pitchMin);
+            pitchangle = this.limiter(pitchangle, closestNode(6) + this.pitchstep, closestNode(6) - this.pitchstep);
             z = pitchangle * distanceee + closestNode(3);
 
             newNode = [temp(1), temp(2), z, newPhi, newGamma, pitchangle];
@@ -129,6 +95,7 @@ classdef uav < handle
         end
 
         function consumption = calc_consumption(this)
+            %飞机动力学cost
             consumption = 0;
         end
 
@@ -168,6 +135,20 @@ classdef uav < handle
                     flag = true;
                 end
 
+            end
+
+        end
+
+    end
+
+    methods (Static)
+
+        function x = limiter(x, xmax, xmin)
+
+            if x > xmax
+                x = xmax;
+            elseif x < xmin
+                x = xmin;
             end
 
         end
