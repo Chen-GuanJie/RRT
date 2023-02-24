@@ -52,7 +52,7 @@ classdef rrt < handle
             this.newNode = this.robot.transfer(sample, closestNode, this.maps);
         end
 
-        function cost = calc_cost(this, from_node, dest_node)
+        function cost = calc_cost(~, from_node, dest_node)
             %计算相邻两点的代价
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
             cost_hight = 3 * norm(from_node(3) - dest_node(3));
@@ -271,14 +271,13 @@ classdef rrt < handle
             toc
             % t1 = saves('output', 'path', 0);
             % t2 = saves('output', 'RRTree', 1);
-
             % saveas(1, t1);
             % save(t2, 'RRTree');
 
         end
 
         function start_star(this, ifdispaly)
-            this.tree = zeros(3000, 10); % cost parentid id tmp
+            this.tree = zeros(3000, 10); % cost parentid id v
             this.edges = matlab.graphics.chart.primitive.Line(3000);
             this.newNode = this.start;
             this.newNode(7) = 0;
