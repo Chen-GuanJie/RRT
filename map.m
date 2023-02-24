@@ -90,8 +90,7 @@ classdef map < handle
                 a = abs(this.Y - x);
             end
 
-            mini = min(a);
-            index = find(a == mini);
+            [~, index] = min(a);
         end
 
         function flag = checkPath(this, start, endp)
@@ -126,18 +125,20 @@ classdef map < handle
                 new_Height = this.Z;
             end
 
-            if end_insdex(1, 1) - start_insdex(1, 1) < 0
+            deltaX = end_insdex(1, 1) - start_insdex(1, 1);
+
+            if deltaX < 0
                 increase = -1;
-            elseif end_insdex(1, 1) - start_insdex(1, 1) > 0
+            elseif deltaX > 0
                 increase = 1;
             else
                 return
             end
 
-            for i = 0:increase:(end_insdex(1, 1) - start_insdex(1, 1))
+            for i = 0:increase:(deltaX)
                 y_up = ceil((i) * k_index + start_insdex(1, 2));
                 y_down = floor((i) * k_index + start_insdex(1, 2));
-                h = start(1, 3) + (endp(1, 3) - start(1, 3)) * i / (end_insdex(1, 1) - start_insdex(1, 1));
+                h = start(1, 3) + (endp(1, 3) - start(1, 3)) * i / (deltaX);
 
                 if y_up > y_max
                     y_up = y_max;
@@ -168,7 +169,7 @@ classdef map < handle
             x_diff = diff(x);
             x_index = find(x_diff ~= 0);
         end
-        
+
         function [g, num] = grid(x)
             x_unique = unique(x);
             a = size(x_unique);

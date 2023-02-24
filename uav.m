@@ -24,7 +24,7 @@ classdef uav < handle
             this.deltaT = conf.deltaT;
             this.g = conf.g;
             this.v = conf.v;
-            this.acc = conf.acc;
+            %             this.acc = conf.acc;
             this.GammaMax = conf.GammaMax;
             this.GammaMin = conf.GammaMin;
             this.pitchMax = conf.pitchMax;
@@ -36,34 +36,19 @@ classdef uav < handle
         end
 
         function newNode = transfer_stable(this, sample, closestNode)
-            movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2)];
-            phi1 = atan(movingVec(2) / movingVec(1));
-
-            if movingVec(2) > 0 && movingVec(1) < 0
-                phi1 = phi1 + 3.1416;
-            elseif movingVec(2) < 0 && movingVec(1) < 0
-                phi1 = phi1 - 3.1416;
-            end
-
+            phi1 = atan2(sample(2) - closestNode(2), sample(1) - closestNode(1));
             phi = closestNode(4);
-            deltaPhi = mod((phi1 - phi), 6.2832) - 3.1416;
+            deltaPhi = this.limit2pi(phi1 - phi);
 
             this.mini_stable_distance(closestNode, deltaPhi);
         end
 
         function newNode = transfer(this, sample, closestNode, map)
             %根据动力学约束的状态转移
-            movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), ]; %sample(3) - closestNode(3)];
-            phi1 = atan(movingVec(2) / movingVec(1));
-
-            if movingVec(2) > 0 && movingVec(1) < 0
-                phi1 = phi1 + 3.1416;
-            elseif movingVec(2) < 0 && movingVec(1) < 0
-                phi1 = phi1 - 3.1416;
-            end
-
+            phi1 = atan2(sample(2) - closestNode(2), sample(1) - closestNode(1));
             phi = closestNode(4);
-            deltaPhi = mod((phi1 - phi), 6.2832) - 3.1416;
+            deltaPhi = this.limit2pi(phi1 - phi);
+
             newGamma = atan(deltaPhi * this.v / this.g / this.deltaT);
             newGamma = this.limiter(newGamma, closestNode(5) + this.GammaStep, closestNode(5) - this.GammaStep);
             newGamma = this.limiter(newGamma, this.GammaMax, this.GammaMin);
@@ -103,26 +88,10 @@ classdef uav < handle
             %判断是否可以从 from 到 to
             flag = false;
             movingVec = [to(1) - from(1), to(2) - from(2)];
-            phi1 = atan(movingVec(2) / movingVec(1));
-
-            if movingVec(2) > 0 && movingVec(1) < 0
-                phi1 = phi1 + 3.1416;
-            elseif movingVec(2) < 0 && movingVec(1) < 0
-                phi1 = phi1 - 3.1416;
-            end
+            phi1 = atan2(movingVec(2), movingVec(1));
 
             phi = from(4);
-            deltaPhi = (-phi + phi1);
-
-            while deltaPhi > 3.1416
-                deltaPhi = deltaPhi - 6.2832;
-
-            end
-
-            while deltaPhi <- 3.1416
-                deltaPhi = deltaPhi + 6.2832;
-
-            end
+            deltaPhi = this.limit2pi(phi1 - phi);
 
             distanceee = norm(movingVec);
 
@@ -143,12 +112,27 @@ classdef uav < handle
 
     methods (Static)
 
-        function x = limiter(x, xmax, xmin)
+        function y = limiter(x, xmax, xmin)
 
             if x > xmax
                 x = xmax;
             elseif x < xmin
                 x = xmin;
+            end
+
+            y = x;
+        end
+
+        function x = limit2pi(x)
+
+            while x > 3.1416
+                x = x - 6.2832;
+
+            end
+
+            while x <- 3.1416
+                x = x + 6.2832;
+
             end
 
         end

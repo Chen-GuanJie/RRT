@@ -20,8 +20,9 @@ conf.pitchMin = -30/180 * 3.1416;
 conf.GammaStep = 15/180 * 3.1416; %滚转角最大步长
 conf.pitchstep = 10/180 * 3.1416; %俯仰角最大步长
 stable_distance = 'data/mini_stable_distance';
-conf.mini_stable_distance=[];
 load(stable_distance, 'mini_stable_distance')
+conf.mini_stable_distance=mini_stable_distance;
+
 % mini_stable_distance=[0.9 1 1.2 1.3 1.5 1.6 1.8 2 2.2 2.6 3 3.4 3.9 4.5 5;
 %     1 1.1 1.3 1.4 1.6 1.8 2 2.2 2.4 2.8 3.3 3.8 4.3 4.9 5.5;
 %     1.1 1.2 1.4 1.5 1.7 1.9 2.1 2.3 2.6 3 3.5 4.1 4.7 5.3 6;
@@ -38,5 +39,5 @@ load(stable_distance, 'mini_stable_distance')
 %     2.3 2.7 3 3.5 3.9 4.4 4.9 5.4 6 7.2 8.5 9.9 11.4 13 14.8;
 %     2.5 2.9 3.3 3.8 4.3 4.8 5.4 5.9 6.5 7.9 9.3 10.8 12.5 14.3 16.2];
 % mesh(mini_stable_distance)
-% r = rrt(conf);
-% r.start_star(true);
+r = rrt(conf);
+r.start_star(true);
