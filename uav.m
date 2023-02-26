@@ -16,6 +16,11 @@ classdef uav < handle
         pitchstep %俯仰角最大步长
 
     end
+    methods (Access = private)
+        % function
+
+        % end
+    end
 
     methods (Access = public)
 
@@ -24,7 +29,7 @@ classdef uav < handle
             this.deltaT = conf.deltaT;
             this.g = conf.g;
             this.v = conf.v;
-            %             this.acc = conf.acc;
+            this.acc = conf.acc;
             this.GammaMax = conf.GammaMax;
             this.GammaMin = conf.GammaMin;
             this.pitchMax = conf.pitchMax;

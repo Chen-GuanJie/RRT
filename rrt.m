@@ -305,8 +305,8 @@ break;
         end
 
         function start_star(this, ifdispaly)
-            this.tree = zeros(3000, 10); 
-            this.edges = matlab.graphics.chart.primitive.Line(3000);
+            this.tree = zeros(30000, 10); 
+            this.edges = matlab.graphics.chart.primitive.Line(30000);
             this.newNode = this.start;
             this.newNode(7) = 0;
             this.insert_node(-1);
@@ -357,7 +357,7 @@ break;
 
                 elseif flag == 2
                     isgoal = isgoal + 1;
-                    this.randnum = 2;
+                    %this.randnum = 2;
                     this.trace_back(parentid);
                     %break;
                 end
