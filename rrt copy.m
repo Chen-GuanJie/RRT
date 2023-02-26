@@ -316,7 +316,7 @@ break;
             tooclose = 0;
             isgoal = 0;
 
-            while toc <= 7 %this.failedAttempts <= this.maxFailedAttempts
+            while toc <= 16 %this.failedAttempts <= this.maxFailedAttempts
                 numb = numb + 1;
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);

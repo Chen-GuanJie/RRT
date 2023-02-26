@@ -95,8 +95,8 @@ classdef map < handle
 
         function flag = checkPath(this, start, endp)
             flag = true;
-            start_insdex = [find_closest(start(1), 0), find_closest(start(2), 1)];
-            end_insdex = [find_closest(endp(1), 0), find_closest(endp(2), 1)];
+            start_insdex = [this.find_closest(start(1), 0), this.find_closest(start(2), 1)];
+            end_insdex = [this.find_closest(endp(1), 0), this.find_closest(endp(2), 1)];
             Xn = this.X_num;
             Yn = this.Y_num;
 
@@ -142,6 +142,10 @@ classdef map < handle
 
                 if y_up > y_max
                     y_up = y_max;
+                end
+
+                if y_down < 1
+                    y_down = 1;
                 end
 
                 if new_Height(start_insdex(1, 1) + i, y_up) > h
