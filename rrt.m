@@ -1,11 +1,11 @@
 classdef rrt < handle
 
     properties (SetAccess = private)
-        tree      %节点位置    % cost parentid id v
-        parent    %父节点索引
+        tree %节点位置 % cost parentid id v
+        parent %父节点索引
         time_cost %时间消耗
         energe_cost %能量消耗
-        velocity  %速度
+        velocity %速度
 
         maps
         robot
@@ -106,6 +106,18 @@ classdef rrt < handle
 
         end
 
+        function flag = collisionCheck(this)
+            flag = 0;
+
+            if ~this.maps.checkPath(closestNode, this.newNode)
+                this.failedAttempts = this.failedAttempts + 1;
+                % RRTree(I(1), 8) = RRTree(I(1), 8) + 1;
+                this.tree(I(1), 3) = this.tree(I(1), 3) * 1.1;
+                flag = 1;
+            end
+
+        end
+
         function insert_node(this, parent_id)
             %插入节点
             this.newNode(8) = parent_id;
@@ -142,7 +154,6 @@ classdef rrt < handle
             n = numel(this.nearNodes(:, 1));
 
             while i <= n
-            
 
                 if (this.maps.checkPath(this.nearNodes(i, :), this.newNode)) %无碰撞
 
@@ -162,9 +173,11 @@ classdef rrt < handle
                     this.nearNodes(i, :) = [];
                     i = i - 1;
                     n = n - 1;
-                    if i==0
-break;
+
+                    if i == 0
+                        break;
                     end
+
                 end
 
             end
@@ -305,7 +318,7 @@ break;
         end
 
         function start_star(this, ifdispaly)
-            this.tree = zeros(30000, 10); 
+            this.tree = zeros(30000, 10);
             this.edges = matlab.graphics.chart.primitive.Line(30000);
             this.newNode = this.start;
             this.newNode(7) = 0;
@@ -316,7 +329,7 @@ break;
             tooclose = 0;
             isgoal = 0;
 
-            while toc <= 7 %this.failedAttempts <= this.maxFailedAttempts
+            while toc <= 70 %this.failedAttempts <= this.maxFailedAttempts
                 numb = numb + 1;
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
@@ -324,7 +337,7 @@ break;
 
                 if ifdispaly
                     tp = this.display_searchline(closestNode, sample);
-                    % pause(0.05);
+                    pause(0.05);
                     delete(tp);
                 end
 
@@ -350,7 +363,7 @@ break;
                         if ifdispaly
                             this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
                             this.redisplay(replot);
-                            % pause(0.05);
+                            pause(0.05);
                         end
 
                     end
