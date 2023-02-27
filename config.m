@@ -5,13 +5,13 @@ conf.goal = [70 600 600 3.14 * 45/180 0 0];
 conf.threshold = 3000;
 conf.maxFailedAttempts = 10000;
 conf.search = 1.6;
-conf.randnum = 0.4;
+conf.randnum = 0.6;
 
 conf.height_limit = 600;
 conf.deltaT = 40;
 %stepSize = 0.1;
 conf.g = 9.8;
-conf.v = 200;
+conf.v = 80;
 conf.acc = 999999999;
 conf.GammaMax = 30/180 * 3.1416;
 conf.GammaMin = -30/180 * 3.1416;
