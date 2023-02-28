@@ -179,6 +179,7 @@ classdef map < handle
             a = size(x_unique);
             num = a(1, 1);
             g = sortrows(x_unique)';
+            g=g-min(g);
         end
 
     end
