@@ -10,14 +10,14 @@ filename = 'data/Output_500';
 [~, Yn] = size(Y);
 
 Height = Height';
-start = [X(250), Y(80), Height(250, 80) + 500];
-goal = [X(100), Y(Yn - 80), Height(Xn - 150, Yn - 25) + 200];
+start = [X(280), Y(80), Height(280, 80) + 500];
+goal = [X(70), Y(600), Height(70, 600) + 600];
 
 Alldirec = [[1, 0, 0]; [0, 1, 0]; [0, 0, 1]; [-1, 0, 0]; [0, -1, 0]; [0, 0, -1]; ...
-                                                           [1, 1, 0]; [1, 0, 1]; [0, 1, 1]; [-1, -1, 0]; [-1, 0, -1]; [0, -1, -1]; ...
-                                                           [1, -1, 0]; [-1, 1, 0]; [1, 0, -1]; [-1, 0, 1]; [0, 1, -1]; [0, -1, 1]; ...
-                                                           [1, 1, 1]; [-1, -1, -1]; [1, -1, -1]; [-1, 1, -1]; [-1, -1, 1]; [1, 1, -1]; ...
-                                                           [1, -1, 1]; [-1, 1, 1]];
+                                                                          [1, 1, 0]; [1, 0, 1]; [0, 1, 1]; [-1, -1, 0]; [-1, 0, -1]; [0, -1, -1]; ...
+                                                                          [1, -1, 0]; [-1, 1, 0]; [1, 0, -1]; [-1, 0, 1]; [0, 1, -1]; [0, -1, 1]; ...
+                                                                          [1, 1, 1]; [-1, -1, -1]; [1, -1, -1]; [-1, 1, -1]; [-1, -1, 1]; [1, 1, -1]; ...
+                                                                          [1, -1, 1]; [-1, 1, 1]];
 threshold = 5000;
 stop = threshold * 1.5;
 g = [start, 0; goal, inf]; % 每一行前三个数为点坐标，第四个数为路径耗散
@@ -46,8 +46,8 @@ while ~isempty(Open)
         break;
     end
 
-    children = getChildren(xi, Alldirec, threshold,Height,X,Y);
-    scatter3(children(:, 1), children(:, 2), children(:, 3), 1, 'filled', 'o');
+    children = getChildren(xi, Alldirec, threshold, Height, X, Y);
+    %scatter3(children(:, 1), children(:, 2), children(:, 3), 1, 'filled', 'o');
     drawnow;
     [n, ~] = size(children);
 
@@ -111,7 +111,7 @@ fprintf('计算时间:%f秒\n路径的长度为:%f\n GS:%f°\n LS:%f°', toc, pa
 %% 存储轨迹
 csvwrite('F:\MasterDegree\毕业设计\实验数据\静态环境轨迹联合绘制/Astar_path.csv', [filPathX', filPathY', filPathZ']);
 %% 函数
-function children = getChildren(pos, Alldirec, step,Height,X,Y)
+function children = getChildren(pos, Alldirec, step, Height, X, Y)
     allchild = [];
     [n, ~] = size(Alldirec);
 
@@ -214,4 +214,9 @@ end
 function [pos, index] = findMin(Open)
     [~, index] = min(Open(:, 4));
     pos = Open(index, 1:3);
+end
+
+function index = find_closest(x, list)
+    a = abs(list - x);
+    [~, index] = min(a);
 end

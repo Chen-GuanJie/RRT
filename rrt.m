@@ -37,7 +37,6 @@ classdef rrt < handle
             else
                 sample = this.goal;
             end
-
         end
 
         function flag = neighbors(this, dis)
@@ -45,7 +44,6 @@ classdef rrt < handle
             flag = 0;
             this.compare_table = this.tree(1:this.nodenum - 1, 1:6) - this.newNode;
             this.distances = sum(this.compare_table(:, 1:3) .^ 2, 2);
-            this.nearNodes = this.tree(find(this.distances < dis), :);
             [~, index] = min(this.distances);
             tmpdis = sqrt(this.distances(index(1)));
 
@@ -53,9 +51,9 @@ classdef rrt < handle
                 % this.failedAttempts = this.failedAttempts + 1;
                 flag = 1;
                 this.tmpclose(end + 1) = tmpdis;
-
             end
 
+            this.nearNodes = this.tree(find(this.distances < dis), :);
         end
 
         function [node, index] = get_closest(this, sample)
@@ -68,7 +66,7 @@ classdef rrt < handle
 
         function extends(this, sample, closestNode)
             %延申
-            this.newNode = this.robot.transfer(sample, closestNode, this.maps);
+            this.newNode = this.robot.transfer_stable(sample, closestNode, this.maps);
         end
 
         function cost = calc_cost(~, from_node, dest_node)
@@ -82,40 +80,19 @@ classdef rrt < handle
 
         function flag = check_newNode(this)
             flag = 0;
-
-            % if ~this.maps.checkPath(closestNode, this.newNode)
-            %     this.failedAttempts = this.failedAttempts + 1;
-            %     % RRTree(I(1), 8) = RRTree(I(1), 8) + 1;
-            %     % RRTree(I(1), 3) = RRTree(I(1), 3) * 1.1;
-            %     flag = 1;
-
-            % else
             if norm(this.newNode(1:3) - this.goal(1:3)) < 2 * this.threshold
                 flag = 2;
             end
-
-            % 如果newPoint与之前RRTree上某一点的距离小于threshold说明newPoint的意义不大，舍弃
-            % [~, index] = min(this.distances);
-
-            %if norm(this.tree(index(1), 1:3) - this.newNode(1:3)) < 1 * this.threshold
-            % if sqrt(this.distances(index(1))) < this.threshold
-            %     this.failedAttempts = this.failedAttempts + 1;
-            %     flag = 1;
-
-            % end
-
         end
 
-        function flag = collisionCheck(this)
-            flag = 0;
-
-            if ~this.maps.checkPath(closestNode, this.newNode)
-                this.failedAttempts = this.failedAttempts + 1;
+        function flag = collisionCheck(this, from, new)
+            flag = 1;
+            if ~this.maps.checkPath(from, new)
+                % this.failedAttempts = this.failedAttempts + 1;
                 % RRTree(I(1), 8) = RRTree(I(1), 8) + 1;
-                this.tree(I(1), 3) = this.tree(I(1), 3) * 1.1;
-                flag = 1;
+                this.tree(from(9), 3) = this.tree(from(9), 3) * 1.02;
+                flag = 0;
             end
-
         end
 
         function insert_node(this, parent_id)
@@ -140,22 +117,24 @@ classdef rrt < handle
 
         end
 
-        function new_parent_id = choose_parent(this, closestNode)
+        function new_parent_id = choose_parent(this)
             %RRT star 找新的父节点
-            if this.maps.checkPath(closestNode, this.newNode)
-                mini_cost = this.calc_cost(closestNode, this.newNode) + closestNode(7);
-                new_parent_id = closestNode(9);
-            else
-                mini_cost = 0;
-                new_parent_id = 0;
-            end
+            % if this.collisionCheck(closestNode, this.newNode)
+            %     mini_cost = this.calc_cost(closestNode, this.newNode) + closestNode(7);
+            %     new_parent_id = closestNode(9);
+            % else
+            %     mini_cost = 0;
+            %     new_parent_id = 0;
+            % end
+            mini_cost = Inf;
+            new_parent_id = 0;
 
             i = 1;
             n = numel(this.nearNodes(:, 1));
 
             while i <= n
 
-                if (this.maps.checkPath(this.nearNodes(i, :), this.newNode)) %无碰撞
+                if (this.collisionCheck(this.nearNodes(i, :), this.newNode)) %无碰撞
 
                     if (this.robot.transferable(this.nearNodes(i, :), this.newNode)) %可转移
 
@@ -320,8 +299,7 @@ classdef rrt < handle
         function start_star(this, ifdispaly)
             this.tree = zeros(30000, 10);
             this.edges = matlab.graphics.chart.primitive.Line(30000);
-            this.newNode = this.start;
-            this.newNode(7) = 0;
+            this.newNode = [this.start 0];
             this.insert_node(-1);
             neigh = (2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
@@ -329,7 +307,7 @@ classdef rrt < handle
             tooclose = 0;
             isgoal = 0;
 
-            while toc <= 70 %this.failedAttempts <= this.maxFailedAttempts
+            while 1%toc <= 7 %this.failedAttempts <= this.maxFailedAttempts
                 numb = numb + 1;
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
@@ -337,16 +315,14 @@ classdef rrt < handle
 
                 if ifdispaly
                     tp = this.display_searchline(closestNode, sample);
-                    pause(0.05);
+                    %pause(0.05);
                     delete(tp);
                 end
 
                 if this.neighbors(neigh)
                     tooclose = tooclose + 1;
-
                     continue
                 end
-
                 flag = this.check_newNode();
                 % this.neighbors(neigh);
                 % new_id = this.choose_parent(closestNode);
@@ -354,7 +330,7 @@ classdef rrt < handle
                 % replot = this.rewire(new_id);
                 if flag == 0
 
-                    new_id = this.choose_parent(closestNode);
+                    new_id = this.choose_parent();
 
                     if new_id > 0
                         this.insert_node(new_id);
@@ -363,7 +339,7 @@ classdef rrt < handle
                         if ifdispaly
                             this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
                             this.redisplay(replot);
-                            pause(0.05);
+                            %pause(0.05);
                         end
 
                     end
