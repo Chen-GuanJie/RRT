@@ -25,7 +25,7 @@ load(stable_distance, 'mini_stable_distance')
 conf.mini_stable_distance = mini_stable_distance;
 conf.speeds=[240 260 280 300 320 340 360 380 400 440 480 520 560 600 640];
 r = rrt(conf);
-%r.start_star(true);
+r.start_star(true);
 
 % mini_stable_distance=[0.9 1 1.2 1.3 1.5 1.6 1.8 2 2.2 2.6 3 3.4 3.9 4.5 5;
 %     1 1.1 1.3 1.4 1.6 1.8 2 2.2 2.4 2.8 3.3 3.8 4.3 4.9 5.5;

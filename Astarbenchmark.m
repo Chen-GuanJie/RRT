@@ -220,3 +220,313 @@ function index = find_closest(x, list)
     a = abs(list - x);
     [~, index] = min(a);
 end
+
+function LS = calLs(path)
+    % 此函数计算整个过程中的最大飞行方向变化
+    [n, ~] = size(path);
+    mu1 = 0.5; mu2 = 0.5; % 对偏航角和爬升角的加权因子
+    Max = 0;
+
+    for i = 2:n - 1
+        qBefore = path(i - 1, :);
+        q = path(i, :);
+        qNext = path(i + 1, :);
+        % 计算qBefore到q航迹角x1,gam1
+        qBefore2q = q - qBefore;
+        gam1 = asin(qBefore2q(3) / sqrt(sum(qBefore2q .^ 2)));
+
+        if qBefore2q(1) ~= 0 || qBefore2q(2) ~= 0
+            x1 = asin(abs(qBefore2q(2) / sqrt(qBefore2q(1) ^ 2 + qBefore2q(2) ^ 2)));
+        else
+            x1 = 0;
+        end
+
+        % 计算q到qNext航迹角x2, gam2
+        q2qNext = qNext - q;
+        gam2 = asin(q2qNext(3) / sqrt(sum(q2qNext .^ 2)));
+
+        if q2qNext(1) ~= 0 || q2qNext(2) ~= 0
+            x2 = asin(abs(q2qNext(2) / sqrt(q2qNext(1) ^ 2 + q2qNext(2) ^ 2)));
+        else
+            x2 = 0;
+        end
+
+        % 根据不同象限计算矢量相对于x正半轴的角度 0-2 * pi
+        if qBefore2q(1) > 0 && qBefore2q(2) > 0
+            x1 = x1;
+        end
+
+        if qBefore2q(1) < 0 && qBefore2q(2) > 0
+            x1 = pi - x1;
+        end
+
+        if qBefore2q(1) < 0 && qBefore2q(2) < 0
+            x1 = pi + x1;
+        end
+
+        if qBefore2q(1) > 0 && qBefore2q(2) < 0
+            x1 = 2 * pi - x1;
+        end
+
+        if qBefore2q(1) > 0 && qBefore2q(2) == 0
+            x1 = 0;
+        end
+
+        if qBefore2q(1) == 0 && qBefore2q(2) > 0
+            x1 = pi / 2;
+        end
+
+        if qBefore2q(1) < 0 && qBefore2q(2) == 0
+            x1 = pi;
+        end
+
+        if qBefore2q(1) == 0 && qBefore2q(2) < 0
+            x1 = 3 * pi / 2;
+        end
+
+        if q2qNext(1) > 0 && q2qNext(2) > 0
+            x2 = x2;
+        end
+
+        if q2qNext(1) < 0 && q2qNext(2) > 0
+            x2 = pi - x2;
+        end
+
+        if q2qNext(1) < 0 && q2qNext(2) < 0
+            x2 = pi + x2;
+        end
+
+        if q2qNext(1) > 0 && q2qNext(2) < 0
+            x2 = 2 * pi - x2;
+        end
+
+        if q2qNext(1) > 0 && q2qNext(2) == 0
+            x2 = 0;
+        end
+
+        if q2qNext(1) == 0 && q2qNext(2) > 0
+            x2 = pi / 2;
+        end
+
+        if q2qNext(1) < 0 && q2qNext(2) == 0
+            x2 = pi;
+        end
+
+        if q2qNext(1) == 0 && q2qNext(2) < 0
+            x2 = 3 * pi / 2;
+        end
+
+        % 判断角度变化是否超过Max
+        if abs(x1 - x2) >= pi
+            deltaX = 2 * pi - abs(x1 - x2);
+        else
+            deltaX = abs(x1 - x2);
+        end
+
+        if mu1 * abs(deltaX) + mu2 * abs(gam2 - gam1) > Max
+            Max = mu1 * abs(deltaX) + mu2 * abs(gam2 - gam1);
+        end
+
+    end
+
+    LS = Max;
+end
+
+function GS = calGs(path)
+    % 这个函数用来计算一条轨迹的GS（平均转角弯度）
+    [n, ~] = size(path);
+    mu1 = 0.5; mu2 = 0.5; % 对偏航角和爬升角的加权因子
+    GsSum = 0;
+
+    for i = 2:n - 1
+        qBefore = path(i - 1, :);
+        q = path(i, :);
+        qNext = path(i + 1, :);
+        % 计算qBefore到q航迹角x1,gam1
+        qBefore2q = q - qBefore;
+        gam1 = asin(qBefore2q(3) / sqrt(sum(qBefore2q .^ 2)));
+
+        if qBefore2q(1) ~= 0 || qBefore2q(2) ~= 0
+            x1 = asin(abs(qBefore2q(2) / sqrt(qBefore2q(1) ^ 2 + qBefore2q(2) ^ 2)));
+        else
+            x1 = 0;
+        end
+
+        % 计算q到qNext航迹角x2, gam2
+        q2qNext = qNext - q;
+        gam2 = asin(q2qNext(3) / sqrt(sum(q2qNext .^ 2)));
+
+        if q2qNext(1) ~= 0 || q2qNext(2) ~= 0
+            x2 = asin(abs(q2qNext(2) / sqrt(q2qNext(1) ^ 2 + q2qNext(2) ^ 2)));
+        else
+            x2 = 0;
+        end
+
+        % 根据不同象限计算矢量相对于x正半轴的角度 0-2 * pi
+        if qBefore2q(1) > 0 && qBefore2q(2) > 0
+            x1 = x1;
+        end
+
+        if qBefore2q(1) < 0 && qBefore2q(2) > 0
+            x1 = pi - x1;
+        end
+
+        if qBefore2q(1) < 0 && qBefore2q(2) < 0
+            x1 = pi + x1;
+        end
+
+        if qBefore2q(1) > 0 && qBefore2q(2) < 0
+            x1 = 2 * pi - x1;
+        end
+
+        if qBefore2q(1) > 0 && qBefore2q(2) == 0
+            x1 = 0;
+        end
+
+        if qBefore2q(1) == 0 && qBefore2q(2) > 0
+            x1 = pi / 2;
+        end
+
+        if qBefore2q(1) < 0 && qBefore2q(2) == 0
+            x1 = pi;
+        end
+
+        if qBefore2q(1) == 0 && qBefore2q(2) < 0
+            x1 = 3 * pi / 2;
+        end
+
+        if q2qNext(1) > 0 && q2qNext(2) > 0
+            x2 = x2;
+        end
+
+        if q2qNext(1) < 0 && q2qNext(2) > 0
+            x2 = pi - x2;
+        end
+
+        if q2qNext(1) < 0 && q2qNext(2) < 0
+            x2 = pi + x2;
+        end
+
+        if q2qNext(1) > 0 && q2qNext(2) < 0
+            x2 = 2 * pi - x2;
+        end
+
+        if q2qNext(1) > 0 && q2qNext(2) == 0
+            x2 = 0;
+        end
+
+        if q2qNext(1) == 0 && q2qNext(2) > 0
+            x2 = pi / 2;
+        end
+
+        if q2qNext(1) < 0 && q2qNext(2) == 0
+            x2 = pi;
+        end
+
+        if q2qNext(1) == 0 && q2qNext(2) < 0
+            x2 = 3 * pi / 2;
+        end
+
+        % 累计GS
+        if abs(x1 - x2) >= pi
+            deltaX = 2 * pi - abs(x1 - x2);
+        else
+            deltaX = abs(x1 - x2);
+        end
+
+        GsSum = GsSum + (mu1 * abs(deltaX) + mu2 * abs(gam1 - gam2));
+    end
+
+    % 计算GS
+    GS = GsSum / (n - 2);
+end
+function [x_data, y_data, z_data] = SquareMap(filename)
+    load(filename, 'dem_data')
+    dem_data = sortrows(dem_data);
+    x = dem_data(:, 1);
+    y = dem_data(:, 2);
+    z = dem_data(:, 3);
+    [X, Xn] = grid(x);
+    [Y, Yn] = grid(y);
+    x_index = get_uniqu_index(x);
+    [x_size, ~] = size(x);
+    x_index(Xn) = x_size;
+    x_num = zeros(Xn, 1);
+    x_num(1) = x_index(1);
+    x_num(2:Xn) = diff(x_index);
+    Height = zeros(Xn, Yn);
+
+    for i = 1:1:Xn
+
+        for j = 1:x_num(i)
+
+            if i == 1
+                start = 1;
+            else
+                start = x_index(i - 1) + 1;
+            end
+
+            stop = x_index(i);
+
+            if (stop - start + 1) == Yn
+                Height(i, :) = z(start:stop);
+            else
+                a = find(Y == y(start));
+                b = find(Y == y(stop));
+
+                if (b - a) == stop - start
+                    Height(i, a:b) = z((start:stop));
+                else
+                    m = 1;
+
+                    for k = 1:stop - start + 1
+
+                        while Y(m) ~= y(k)
+                            m = m + 1;
+                        end
+
+                        Height(i, m) = z(start + k - 1);
+                    end
+
+                end
+
+            end
+
+        end
+
+    end
+
+    x_data = X;
+    y_data = Y;
+    z_data = Height';
+end
+
+function x_index = get_uniqu_index(x)
+    x_diff = diff(x);
+    x_index = find(x_diff ~= 0);
+end
+
+function [g, num] = grid(x)
+    x_unique = unique(x);
+    a = size(x_unique);
+    num = a(1, 1);
+    g = sortrows(x_unique)';
+end
+function res = MovingAverage(input,N)
+    %% input为平滑前序列(列向量和行向量均可)；N为平滑点数（奇数）；res返回平滑后的序列(默认行向量)。
+    sz = max(size(input));
+    n = (N-1)/2;
+    res = [];
+    for i = 1:length(input)
+        if i <= n
+            res(i) = sum(input(1:2*i-1))/(2*i-1);
+        elseif i < length(input)-n+1
+            res(i) = sum(input(i-n:i+n))/(2*n+1);
+        else
+            temp = length(input)-i+1;
+            res(i) = sum(input(end-(2*temp-1)+1:end))/(2*temp-1);
+        end
+    end
+    end
+    
+    
