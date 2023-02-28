@@ -23,6 +23,9 @@ classdef map < handle
             x = dem_data(:, 1);
             y = dem_data(:, 2);
             z = dem_data(:, 3);
+            x = x - min(x);
+            y = y - min(y);
+
             [X, Xn] = this.grid(x);
             [Y, Yn] = this.grid(y);
             this.X_num = Xn;
@@ -94,6 +97,7 @@ classdef map < handle
         end
 
         function flag = checkPath(this, start, endp)
+            %检查两点连线是否与地形碰撞
             flag = true;
             start_insdex = [this.find_closest(start(1), 0), this.find_closest(start(2), 1)];
             end_insdex = [this.find_closest(endp(1), 0), this.find_closest(endp(2), 1)];
@@ -162,7 +166,6 @@ classdef map < handle
 
         function display_map(this)
             meshz(this.X, this.Y, this.Z'); hold on
-
         end
 
     end
@@ -179,7 +182,6 @@ classdef map < handle
             a = size(x_unique);
             num = a(1, 1);
             g = sortrows(x_unique)';
-            g=g-min(g);
         end
 
     end

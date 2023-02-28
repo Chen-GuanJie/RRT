@@ -37,6 +37,7 @@ classdef rrt < handle
             else
                 sample = this.goal;
             end
+
         end
 
         function flag = neighbors(this, dis)
@@ -80,19 +81,23 @@ classdef rrt < handle
 
         function flag = check_newNode(this)
             flag = 0;
+
             if norm(this.newNode(1:3) - this.goal(1:3)) < 2 * this.threshold
                 flag = 2;
             end
+
         end
 
         function flag = collisionCheck(this, from, new)
             flag = 1;
+
             if ~this.maps.checkPath(from, new)
                 % this.failedAttempts = this.failedAttempts + 1;
                 % RRTree(I(1), 8) = RRTree(I(1), 8) + 1;
                 this.tree(from(9), 3) = this.tree(from(9), 3) * 1.02;
                 flag = 0;
             end
+
         end
 
         function insert_node(this, parent_id)
@@ -307,7 +312,7 @@ classdef rrt < handle
             tooclose = 0;
             isgoal = 0;
 
-            while 1%toc <= 7 %this.failedAttempts <= this.maxFailedAttempts
+            while toc <= 7 %this.failedAttempts <= this.maxFailedAttempts
                 numb = numb + 1;
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
@@ -323,6 +328,7 @@ classdef rrt < handle
                     tooclose = tooclose + 1;
                     continue
                 end
+
                 flag = this.check_newNode();
                 % this.neighbors(neigh);
                 % new_id = this.choose_parent(closestNode);
