@@ -6,7 +6,7 @@ classdef rrt < handle
         time_cost %时间消耗
         energe_cost %能量消耗
         velocity %速度
-
+        max_nodes
         maps
         robot
         start
@@ -223,6 +223,10 @@ classdef rrt < handle
             tmplot = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1, 'Color', 'b');
         end
 
+        function tmplot = display_arrow(p)
+            tmplot = quiver3(p(1), p(2), p(3), 6000 * cos(p(4)), 6000 * sin(p(4)), 6000 * sin(p(6)), 'LineWidth', 1.5, 'MaxHeadSize', 50);
+        end
+
     end
 
     methods (Access = public)
@@ -243,7 +247,7 @@ classdef rrt < handle
             this.nodenum = 1;
             this.searchbBase = [min(X), min(Y), min(min(Height)), -pi, -pi, -pi];
             this.searchSize = [max(X) - min(X), max(Y) - min(Y), max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
-
+            this.max_nodes = conf.max_nodes;
             figure(1)
             this.maps.display_map()
             scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
@@ -256,11 +260,9 @@ classdef rrt < handle
         end
 
         function starts(this, ifdispaly)
-            this.tree = zeros(100, 6);
-
+            this.tree = zeros(this.max_nodes, 6);
             this.newNode = this.start;
             this.insert_node(-1);
-
             tic
 
             while this.failedAttempts <= this.maxFailedAttempts
@@ -302,17 +304,17 @@ classdef rrt < handle
         end
 
         function start_star(this, ifdispaly)
-            this.tree = zeros(30000, 10);
-            this.edges = matlab.graphics.chart.primitive.Line(30000);
+            this.tree = zeros(this.max_nodes, 10);
+            this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
             this.newNode = [this.start 0];
             this.insert_node(-1);
-            neigh = (2 * this.robot.v * this.robot.deltaT) ^ 2;
+            neigh = 10000 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
             numb = 0;
             tooclose = 0;
             isgoal = 0;
 
-            while toc <= 7 %this.failedAttempts <= this.maxFailedAttempts
+            while 1 %toc <= 7 %this.failedAttempts <= this.maxFailedAttempts
                 numb = numb + 1;
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
@@ -320,7 +322,7 @@ classdef rrt < handle
 
                 if ifdispaly
                     tp = this.display_searchline(closestNode, sample);
-                    %pause(0.05);
+                    pause(0.05);
                     delete(tp);
                 end
 
@@ -343,16 +345,17 @@ classdef rrt < handle
                         replot = this.rewire(new_id);
 
                         if ifdispaly
+                            this.display_arrow(this.newNode); %
                             this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
                             this.redisplay(replot);
-                            %pause(0.05);
+                            pause(0.05);
                         end
 
                     end
 
                 elseif flag == 2
                     isgoal = isgoal + 1;
-                    %this.randnum = 2;
+                    this.randnum = 2;
                     this.trace_back(parentid);
                     %break;
                 end
