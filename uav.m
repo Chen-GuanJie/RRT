@@ -90,12 +90,12 @@ classdef uav < handle
 
         function flag = transferable_stable(this, from, to)
             %判断是否可以从 from 到 to
-            flag = false;
-            movingVec = [to(1) - from(1), to(2) - from(2)];
-            phi1 = atan2(movingVec(2), movingVec(1));
-            phi = from(4);
-            deltaPhi = 2 * this.limit2pi(phi1 - phi);
-
+            %flag = false;
+            % movingVec = [to(1) - from(1), to(2) - from(2)];
+            % phi1 = atan2(movingVec(2), movingVec(1));
+            % phi = from(4);
+            % deltaPhi = 2 * this.limit2pi(phi1 - phi);
+            flag=true;
         end
 
         function newNode = transfer(this, sample, closestNode, map)

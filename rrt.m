@@ -25,17 +25,41 @@ classdef rrt < handle
         failedAttempts
         nodenum
 
+        informed
+        long_axis % 长轴
+        short_axis %短轴
+        ellipse_rotation
+        ellipse_displace
+
         compare_table
+
     end
 
     methods (Access = private)
 
         function sample = get_sample(this)
             %采样
-            if rand < this.randnum
-                sample = rand(1, 6) .* this.searchSize + this.searchbBase;
+            sample = [0 inf 0 0 0 0]';
+
+            if this.informed
+                y = 0;
+
+                while abs(sample(2)) > y
+                    sample(1:2) = [rand * 2 * this.long_axis; rand * 2 * this.short_axis] - [this.long_axis; this.short_axis];
+                    y = this.short_axis * sqrt(1 - (sample(1) / this.long_axis) ^ 2);
+                end
+
+                sample(3) = rand * this.searchSize(3) + this.searchbBase(3);
+                sample(1:2) = this.ellipse_rotation * sample(1:2) + this.ellipse_displace;
+                sample = sample';
             else
-                sample = this.goal;
+
+                if rand < this.randnum
+                    sample = rand(1, 6) .* this.searchSize + this.searchbBase;
+                else
+                    sample = this.goal;
+                end
+
             end
 
         end
@@ -59,7 +83,7 @@ classdef rrt < handle
 
         function [node, index] = get_closest(this, sample)
             %找最近点
-            this.compare_table = this.tree(1:this.nodenum - 1, 1:6) - sample;
+            this.compare_table = this.tree(1:this.nodenum - 1, 1:3) - sample(1:3);
             [~, I] = min(sum(this.compare_table(:, 1:3) .^ 2, 2));
             index = I(1);
             node = this.tree(index, :);
@@ -108,7 +132,7 @@ classdef rrt < handle
             this.nodenum = this.nodenum + 1;
         end
 
-        function trace_back(this, id)
+        function [path_len, path_plot] = trace_back(this, id)
             %回溯轨迹
             path = this.goal;
             prev = id;
@@ -118,7 +142,10 @@ classdef rrt < handle
                 prev = this.tree(prev, 8);
             end
 
-            bar3 = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'g');
+            [path_size, ~] = size(path);
+            tmp = path(2:path_size, 1:3) - path(1:path_size - 1, 1:3);
+            path_len = sum(sqrt(sum(tmp .^ 2, 2)));
+            path_plot = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'g');
 
         end
 
@@ -248,6 +275,7 @@ classdef rrt < handle
             this.searchbBase = [min(X), min(Y), min(min(Height)), -pi, -pi, -pi];
             this.searchSize = [max(X) - min(X), max(Y) - min(Y), max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
             this.max_nodes = conf.max_nodes;
+            this.informed = false;
             figure(1)
             this.maps.display_map()
             scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
@@ -259,7 +287,92 @@ classdef rrt < handle
 
         end
 
-        function starts(this, ifdispaly)
+        function start_star(this, ifdispaly, max_time, delay_time)
+            this.tree = zeros(this.max_nodes, 10);
+            this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
+            this.newNode = [this.start 0];
+            this.insert_node(-1);
+            neigh = 10000 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
+
+            tic
+            numb = 0;
+            tooclose = 0;
+            isgoal = 0;
+            no_parent = 0;
+
+            while toc <= max_time %this.failedAttempts <= this.maxFailedAttempts
+                numb = numb + 1;
+                sample = this.get_sample();
+                [closestNode, parentid] = this.get_closest(sample);
+                this.extends(sample, closestNode);
+
+                if ifdispaly
+                    tp = this.display_searchline(closestNode, sample);
+
+                    if delay_time ~= 0
+                        pause(delay_time);
+                    end
+
+
+                end
+
+                if this.neighbors(neigh)
+                    tooclose = tooclose + 1;
+                    continue
+                end
+
+                flag = this.check_newNode();
+
+                if flag == 0
+
+                    new_id = this.choose_parent();
+
+                    if new_id > 0
+                        this.insert_node(new_id);
+                        replot = this.rewire(new_id);
+
+                        if ifdispaly
+                            this.display_arrow(this.newNode); %
+                            this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
+                            this.redisplay(replot);
+
+                            if delay_time ~= 0
+                                pause(delay_time);
+                            end
+                            delete(tp);
+
+                        end
+
+                    else
+                        no_parent = no_parent + 1;
+
+                    end
+
+                elseif flag == 2
+                    isgoal = isgoal + 1;
+                    this.randnum = 2; %搜索点不取goal
+                    [path_len, ~] = this.trace_back(parentid);
+
+                    this.informed = true; %开始informed搜索
+                    dist = norm(this.start(1:3) - this.goal(1:3)) / 2;
+
+                    this.long_axis = path_len / 2; % 长轴 %1.05 * dist;
+                    this.short_axis = sqrt(this.long_axis ^ 2 - dist ^ 2); %短轴
+                    ang = atan2(this.goal(2) - this.start(2), this.goal(1) - this.start(1));
+                    this.ellipse_rotation = [cos(ang) -sin(ang); sin(ang) cos(ang)];
+                    this.ellipse_displace = [dist * cos(ang); dist * sin(ang)] + [this.start(1); this.start(2)];
+                    %break;
+                end
+
+            end
+
+            numb
+            tooclose
+            isgoal
+            no_parent
+        end
+
+        function start_rrt(this, ifdispaly)
             this.tree = zeros(this.max_nodes, 6);
             this.newNode = this.start;
             this.insert_node(-1);
@@ -300,71 +413,6 @@ classdef rrt < handle
             % t2 = saves('output', 'RRTree', 1);
             % saveas(1, t1);
             % save(t2, 'RRTree');
-
-        end
-
-        function start_star(this, ifdispaly)
-            this.tree = zeros(this.max_nodes, 10);
-            this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
-            this.newNode = [this.start 0];
-            this.insert_node(-1);
-            neigh = 10000 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
-            tic
-            numb = 0;
-            tooclose = 0;
-            isgoal = 0;
-
-            while 1 %toc <= 7 %this.failedAttempts <= this.maxFailedAttempts
-                numb = numb + 1;
-                sample = this.get_sample();
-                [closestNode, parentid] = this.get_closest(sample);
-                this.extends(sample, closestNode);
-
-                if ifdispaly
-                    tp = this.display_searchline(closestNode, sample);
-                    pause(0.05);
-                    delete(tp);
-                end
-
-                if this.neighbors(neigh)
-                    tooclose = tooclose + 1;
-                    continue
-                end
-
-                flag = this.check_newNode();
-                % this.neighbors(neigh);
-                % new_id = this.choose_parent(closestNode);
-                % this.insert_node(new_id);
-                % replot = this.rewire(new_id);
-                if flag == 0
-
-                    new_id = this.choose_parent();
-
-                    if new_id > 0
-                        this.insert_node(new_id);
-                        replot = this.rewire(new_id);
-
-                        if ifdispaly
-                            this.display_arrow(this.newNode); %
-                            this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode);
-                            this.redisplay(replot);
-                            pause(0.05);
-                        end
-
-                    end
-
-                elseif flag == 2
-                    isgoal = isgoal + 1;
-                    this.randnum = 2;
-                    this.trace_back(parentid);
-                    %break;
-                end
-
-            end
-
-            numb
-            tooclose
-            isgoal
 
         end
 
