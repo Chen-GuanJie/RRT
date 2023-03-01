@@ -95,7 +95,7 @@ classdef uav < handle
             % phi1 = atan2(movingVec(2), movingVec(1));
             % phi = from(4);
             % deltaPhi = 2 * this.limit2pi(phi1 - phi);
-            flag=true;
+            flag = true;
         end
 
         function newNode = transfer(this, sample, closestNode, map)
