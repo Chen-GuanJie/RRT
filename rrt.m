@@ -50,25 +50,27 @@ classdef rrt < handle
             %采样
             sample = [0 inf 0 0 0 0]';
 
-            if this.informed
-                y = 0;
+            if rand < this.randnum
 
-                while abs(sample(2)) > y
-                    sample(1:2) = [rand * 2 * this.long_axis; rand * 2 * this.short_axis] - [this.long_axis; this.short_axis];
-                    y = this.short_axis * sqrt(1 - (sample(1) / this.long_axis) ^ 2);
-                end
+                if this.informed
+                    y = 0;
 
-                sample(3) = rand * this.searchSize(3) + this.searchbBase(3);
-                sample(1:2) = this.ellipse_rotation * sample(1:2) + this.ellipse_displace;
-                sample = sample';
-            else
+                    while abs(sample(2)) > y
+                        sample(1:2) = [rand * 2 * this.long_axis; rand * 2 * this.short_axis] - [this.long_axis; this.short_axis];
+                        y = this.short_axis * sqrt(1 - (sample(1) / this.long_axis) ^ 2);
+                    end
 
-                if rand < this.randnum
-                    sample = rand(1, 6) .* this.searchSize + this.searchbBase;
+                    sample(3) = rand * this.searchSize(3) + this.searchbBase(3);
+                    sample(1:2) = this.ellipse_rotation * sample(1:2) + this.ellipse_displace;
+                    sample = sample';
                 else
-                    sample = this.goal;
+
+                    sample = rand(1, 6) .* this.searchSize + this.searchbBase;
+
                 end
 
+            else
+                sample = this.goal;
             end
 
         end
@@ -335,7 +337,7 @@ classdef rrt < handle
 
                 elseif flag == 2
                     this.isgoal = this.isgoal + 1;
-                    this.randnum = 2; %搜索点不取goal
+                    this.randnum = 0.7; %搜索点不取goal
                     path_len = this.trace_back(parentid);
                     this.prepare_informed(path_len);
                 end
