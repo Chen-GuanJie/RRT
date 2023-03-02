@@ -5,13 +5,13 @@ conf.goal = [70 600 600 3.14 * 45/180 0 0];
 conf.threshold_close = 300;
 conf.threshold_goal = 6000;
 conf.search = 1.6;
-conf.randnum = 0.6;
+conf.randnum = 0.4;
 conf.max_nodes = 3000;
 
 conf.height_limit = 600;
-conf.deltaT = 150; %s
+conf.deltaT = 200; %s
 conf.g = 9.8;
-conf.v = 30; %m/s
+conf.v = 10; %m/s
 conf.acc = 999999999;
 conf.GammaMax = 30/180 * 3.1416;
 conf.GammaMin = -30/180 * 3.1416;

@@ -78,7 +78,7 @@ classdef rrt < handle
         function flag = neighbors(this, dis)
             %找附近的点
             flag = 0;
-            this.compare_table = this.tree(1:this.nodenum - 1, 1:6) - this.newNode;
+            this.compare_table = this.tree(1:this.nodenum - 1, 1:6) - this.newNode(1:6);
             this.distances = sum(this.compare_table(:, 1:3) .^ 2, 2);
             [~, index] = min(this.distances);
             tmpdis = sqrt(this.distances(index(1)));
@@ -125,7 +125,6 @@ classdef rrt < handle
             flag = 1;
 
             if ~this.maps.checkPath(from, new)
-                % RRTree(I(1), 8) = RRTree(I(1), 8) + 1;
                 this.tree(from(9), 3) = this.tree(from(9), 3) * 1.02;
                 flag = 0;
             end
@@ -140,15 +139,15 @@ classdef rrt < handle
             this.nodenum = this.nodenum + 1;
         end
 
-        function path_len = trace_back(this, id)
+        function [path_len, path_num] = trace_back(this, id)
             %回溯轨迹
             this.tmp_ind = 1;
-            this.path(this.tmp_ind, :) = this.goal;
+            this.path(this.tmp_ind, :) = [this.goal 0 0 0 0];
             prev = id;
 
             while prev > 0
                 this.tmp_ind = this.tmp_ind + 1;
-                this.path(this.tmp_ind, :) = this.tree(prev, 1:6);
+                this.path(this.tmp_ind, :) = this.tree(prev, :);
                 prev = this.tree(prev, 8);
             end
 
@@ -159,7 +158,8 @@ classdef rrt < handle
                 delete(this.path_plot);
             end
 
-            this.path_plot = plot3(this.path(:, 1), this.path(:, 2), this.path(:, 3), 'LineWidth', 2, 'color', 'g');
+            path_num = this.tmp_ind;
+            this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
 
         end
 
@@ -237,7 +237,7 @@ classdef rrt < handle
                 delete(this.edges(this.replot(i, 1)));
                 s = this.tree(this.replot(i, 3), 1:3);
                 e = this.tree(this.replot(i, 1), 1:3);
-                this.edges(this.replot(i, 1)) = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1.5, 'Color', 'b');
+                this.edges(this.replot(i, 1)) = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1, 'Color', 'r');
             end
 
         end
@@ -251,6 +251,19 @@ classdef rrt < handle
             ang = atan2(this.goal(2) - this.start(2), this.goal(1) - this.start(1));
             this.ellipse_rotation = [cos(ang) -sin(ang); sin(ang) cos(ang)];
             this.ellipse_displace = [dist * cos(ang); dist * sin(ang)] + [this.start(1); this.start(2)];
+
+        end
+
+        function path_evaluate(this, path_num)
+            figure(2)
+            subplot(4, 1, 1)
+            plot(1:path_num, this.path(path_num:-1:1, 4), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '航向角'); legend
+            subplot(4, 1, 2)
+            plot(1:path_num, this.path(path_num:-1:1, 5), 'LineWidth', 1.5, 'color', 'g', 'DisplayName', '滚转角'); legend
+            subplot(4, 1, 3)
+            plot(1:path_num, this.path(path_num:-1:1, 6), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '俯仰角'); legend
+            subplot(4, 1, 4)
+            plot(1:path_num, this.path(path_num:-1:1, 7), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', 'cost'); legend
 
         end
 
@@ -273,6 +286,7 @@ classdef rrt < handle
         function start_star(this, ifdispaly, max_time, delay_time)
             this.tree = zeros(this.max_nodes, 10);
             this.multi_state = zeros(this.max_nodes, 4);
+            this.path = zeros(100, 10);
             this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
             this.newNode = [this.start 0];
             this.insert_node(-1);
@@ -338,7 +352,7 @@ classdef rrt < handle
                 elseif flag == 2
                     this.isgoal = this.isgoal + 1;
                     this.randnum = 0.7; %搜索点不取goal
-                    path_len = this.trace_back(parentid);
+                    [path_len, path_num] = this.trace_back(parentid);
                     this.prepare_informed(path_len);
                 end
 
@@ -349,10 +363,12 @@ classdef rrt < handle
             this.isgoal
             this.no_parent
             this.collision
+            this.path_evaluate(path_num);
         end
 
         function start_rrt(this, ifdispaly, max_time, delay_time)
             this.tree = zeros(this.max_nodes, 6);
+            this.path = zeros(100, 6);
             this.newNode = this.start;
             this.insert_node(-1);
             tic
@@ -427,7 +443,6 @@ classdef rrt < handle
 
             this.max_nodes = conf.max_nodes;
             this.informed = false;
-            this.path = zeros(100, 6);
             this.replot = zeros(10, 3);
 
             this.threshold_close = conf.threshold_close / conf.map_scale;

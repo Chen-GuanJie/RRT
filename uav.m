@@ -139,12 +139,12 @@ classdef uav < handle
             phi = from(4);
             deltaPhi = this.limit2pi(phi1 - phi);
             distanceee = norm(movingVec);
-            newGamma = atan(deltaPhi * this.v ^ 2 / this.g / (distanceee*this.map_scale));
+            newGamma = atan(deltaPhi * this.v ^ 2 / this.g / (distanceee * this.map_scale));
 
             if (abs(newGamma - from(5)) < this.GammaStep) && (newGamma < this.GammaMax) && (newGamma > this.GammaMin)
                 pitchangle = atan((to(3) - from(3)) / distanceee);
 
-                if (abs(pitchangle - from(6)) < this.pitchstep * this.map_scale*distanceee / this.v / this.deltaT) && (pitchangle < this.pitchMax) && (pitchangle > this.pitchMin)
+                if (abs(pitchangle - from(6)) < this.pitchstep * this.map_scale * distanceee / this.v / this.deltaT) && (pitchangle < this.pitchMax) && (pitchangle > this.pitchMin)
                     flag = true;
                 end
 
@@ -155,6 +155,15 @@ classdef uav < handle
     end
 
     methods (Static)
+
+        function newNode = transfer_directly(sample, closestNode, map)
+            movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), sample(3) - closestNode(3)];
+            movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
+            newNode(1:3) = closestNode(1:3) + 4 * movingVec;
+            newNode(4:6) = [0 0 0];
+            newNode(3) = map.Z(round(newNode(1)), round(newNode(2))) + 1.2; %目标点的目标高度
+
+        end
 
         function index = find_closest(x, list)
             a = abs(list - x);
