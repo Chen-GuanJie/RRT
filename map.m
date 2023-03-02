@@ -81,7 +81,7 @@ classdef map < handle
 
             this.X = X;
             this.Y = Y;
-            this.Z = Height;
+            this.Z = Height/(X(2)-X(1));
 
         end
 
@@ -96,11 +96,13 @@ classdef map < handle
             [~, index] = min(a);
         end
 
-        function flag = checkPath(this, start, endp)
+        function flag = checkPath(this, start_insdex, end_insdex)
             %检查两点连线是否与地形碰撞
             flag = true;
-            start_insdex = [this.find_closest(start(1), 0), this.find_closest(start(2), 1)];
-            end_insdex = [this.find_closest(endp(1), 0), this.find_closest(endp(2), 1)];
+            start_insdex(1:2)=round(start_insdex(1:2));
+            end_insdex(1:2)=round(end_insdex(1:2));
+            % start_insdex = [this.find_closest(start(1), 0), this.find_closest(start(2), 1)];
+            % end_insdex = [this.find_closest(endp(1), 0), this.find_closest(endp(2), 1)];
             Xn = this.X_num;
             Yn = this.Y_num;
 
@@ -142,7 +144,7 @@ classdef map < handle
             for i = 0:increase:(deltaX)
                 y_up = ceil((i) * k_index + start_insdex(1, 2));
                 y_down = floor((i) * k_index + start_insdex(1, 2));
-                h = start(1, 3) + (endp(1, 3) - start(1, 3)) * i / (deltaX);
+                h = start_insdex(1, 3) + (end_insdex(1, 3) - end_insdex(1, 3)) * i / (deltaX);
 
                 if y_up > y_max
                     y_up = y_max;
@@ -165,7 +167,7 @@ classdef map < handle
         end
 
         function display_map(this)
-            meshz(this.X, this.Y, this.Z'); hold on
+            meshz(1:this.X_num, 1:this.Y_num, this.Z'); hold on
         end
 
     end

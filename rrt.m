@@ -10,7 +10,8 @@ classdef rrt < handle
         robot
         start
         goal
-        threshold
+        threshold_close
+        threshold_goal
         searchSize
         searchbBase
         randnum
@@ -21,6 +22,7 @@ classdef rrt < handle
         distances
         newNode
         nodenum
+        map_scale
 
         informed
         long_axis % 长轴
@@ -79,7 +81,7 @@ classdef rrt < handle
             [~, index] = min(this.distances);
             tmpdis = sqrt(this.distances(index(1)));
 
-            if tmpdis < this.threshold %太近
+            if tmpdis < this.threshold_close %太近
                 flag = 1;
             end
 
@@ -111,7 +113,7 @@ classdef rrt < handle
         function flag = check_newNode(this)
             flag = 0;
 
-            if norm(this.newNode(1:3) - this.goal(1:3)) < 2 * 3000; % this.threshold
+            if norm(this.newNode(1:3) - this.goal(1:3)) < this.threshold_goal
                 flag = 2;
             end
 
@@ -258,8 +260,8 @@ classdef rrt < handle
             tmplot = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', LineWidth, 'Color', color);
         end
 
-        function tmplot = display_arrow(p)
-            tmplot = quiver3(p(1), p(2), p(3), 6000 * cos(p(4)), 6000 * sin(p(4)), 6000 * sin(p(6)), 'LineWidth', 1.5, 'MaxHeadSize', 50);
+        function tmplot = display_arrow(p, len)
+            tmplot = quiver3(p(1), p(2), p(3), len * cos(p(4)), len * sin(p(4)), len * sin(p(6)), 'LineWidth', 1.5, 'MaxHeadSize', 50);
         end
 
     end
@@ -272,7 +274,7 @@ classdef rrt < handle
             this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
             this.newNode = [this.start 0];
             this.insert_node(-1);
-            neigh = 10000 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
+            neigh = 20 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
 
             tic
             this.search_num = 0;
@@ -315,7 +317,7 @@ classdef rrt < handle
 
                         if ifdispaly
 
-                            this.display_arrow(this.newNode); %
+                            this.display_arrow(this.newNode, 10); %
 
                             this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode, 1, 'b');
                             this.redisplay();
@@ -347,24 +349,28 @@ classdef rrt < handle
             this.collision
         end
 
-        function start_rrt(this, ifdispaly)
+        function start_rrt(this, ifdispaly, max_time, delay_time)
             this.tree = zeros(this.max_nodes, 6);
             this.newNode = this.start;
             this.insert_node(-1);
             tic
 
-            while tov < 7
+            while toc < max_time
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
                 this.extends(sample, closestNode);
 
                 if ifdispaly
-                    tp = this.display_line(closestNode, sample);
-                    pause(0.05);
+                    tp = this.display_line(closestNode, sample, 3, 'k');
+
+                    if delay_time ~= 0
+                        pause(delay_time);
+                    end
+
                     delete(tp);
                 end
 
-                flag = this.check_newNode(closestNode);
+                flag = this.check_newNode();
 
                 if flag == 0
                     this.insert_node(parentid);
@@ -376,8 +382,12 @@ classdef rrt < handle
                 end
 
                 if ifdispaly
-                    this.display_line(closestNode, this.newNode);
-                    pause(0.05);
+                    this.display_line(this.tree(this.newNode(8), :), this.newNode, 1, 'b');
+
+                    if delay_time ~= 0
+                        pause(delay_time);
+                    end
+
                 end
 
             end
@@ -392,22 +402,36 @@ classdef rrt < handle
 
         function this = rrt(conf)
             this.maps = map(conf.filename);
-            this.robot = uav(conf);
-            X = this.maps.X;
-            Y = this.maps.Y;
+            conf.map_scale = this.maps.X(2) - this.maps.X(1);
+            this.map_scale = conf.map_scale;
+
+            % X = this.maps.X;
+            % Y = this.maps.Y;
             Height = this.maps.Z;
-            this.start = [X(conf.start(1)), Y(conf.start(2)), Height(conf.start(1), conf.start(2)) + conf.start(3), conf.start(4), conf.start(5), conf.start(6)];
-            this.goal = [X(conf.goal(1)), Y(conf.goal(2)), Height(conf.goal(1), conf.goal(2)) + conf.goal(3), conf.goal(4), conf.goal(5), conf.goal(6)];
-            this.threshold = conf.threshold;
+            % this.start = [X(conf.start(1)), Y(conf.start(2)), Height(conf.start(1), conf.start(2)) + conf.start(3), conf.start(4), conf.start(5), conf.start(6)];
+            % this.goal = [X(conf.goal(1)), Y(conf.goal(2)), Height(conf.goal(1), conf.goal(2)) + conf.goal(3), conf.goal(4), conf.goal(5), conf.goal(6)];
+            this.start = [conf.start(1), conf.start(2), Height(conf.start(1), conf.start(2)) + conf.start(3) / this.map_scale, conf.start(4), conf.start(5), conf.start(6)];
+            this.goal = [conf.goal(1), conf.goal(2), Height(conf.goal(1), conf.goal(2)) + conf.goal(3) / this.map_scale, conf.goal(4), conf.goal(5), conf.goal(6)];
+
+            % this.threshold = conf.threshold;
             %this.searchSize = conf.search * [(goal(1) - start(1)), (goal(2) - start(2)), goal(3) - start(3), 0, 0, 0];
             this.randnum = conf.randnum;
             this.nodenum = 1;
-            this.searchbBase = [min(X), min(Y), min(min(Height)), -pi, -pi, -pi];
-            this.searchSize = [max(X) - min(X), max(Y) - min(Y), max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
+            % this.searchbBase = [min(X), min(Y), min(min(Height)), -pi, -pi, -pi];
+            % this.searchSize = [max(X) - min(X), max(Y) - min(Y), max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
+
+            this.searchbBase = [1, 1, min(min(Height)), -pi, -pi, -pi];
+            this.searchSize = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
+
             this.max_nodes = conf.max_nodes;
             this.informed = false;
             this.path = zeros(100, 6);
             this.replot = zeros(10, 3);
+
+            this.threshold_close = conf.threshold_close / conf.map_scale;
+            this.threshold_goal = conf.threshold_goal / conf.map_scale;
+
+            this.robot = uav(conf);
 
             figure(1)
             this.maps.display_map()
