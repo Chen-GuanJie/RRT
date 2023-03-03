@@ -254,16 +254,65 @@ classdef rrt < handle
 
         end
 
+        function s = interpolation(this, path_num)
+            interp_num = 0.1;
+            tmp = interp1(1:path_num, this.path(1:path_num, 1:6), 1:interp_num:path_num, 'spline');
+            [s, ~] = size(tmp);
+            this.path(1:s, 1:6) = tmp;
+            this.path(s, 7) = 0;
+
+            for i = s - 1:-1:1
+                this.path(i, 7) = this.calc_cost(this.path(i + 1, :), this.path(i, :)) + this.path(i + 1, 7);
+            end
+
+            for i = 1:s
+                this.path(i, 9) = this.maps.Z(round(this.path(i, 1)), round(this.path(i, 2)));
+                this.path(i, 8) = this.path(i, 3) - this.path(i, 9);
+            end
+
+            % this.path(:,1:3)=this.path(:,1:3)*this.map_scale;
+            % this.path(:,8:9)=this.path(:,8:9)*this.map_scale;
+
+            % for i = 1:6
+            %     this.path(1:interp_num:path_num,i)=interp1(1:path_num,this.path(1:path_num,i ),1:interp_num:path_num,'spline');
+            % end
+
+        end
+
         function path_evaluate(this, path_num)
             figure(2)
-            subplot(4, 1, 1)
-            plot(1:path_num, this.path(path_num:-1:1, 4), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '航向角'); legend
-            subplot(4, 1, 2)
-            plot(1:path_num, this.path(path_num:-1:1, 5), 'LineWidth', 1.5, 'color', 'g', 'DisplayName', '滚转角'); legend
-            subplot(4, 1, 3)
-            plot(1:path_num, this.path(path_num:-1:1, 6), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '俯仰角'); legend
-            subplot(4, 1, 4)
-            plot(1:path_num, this.path(path_num:-1:1, 7), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', 'cost'); legend
+            % subplot(5, 1, 1)
+            % plot(1:path_num, this.path(path_num:-1:1, 4), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '航向角'); legend
+            % subplot(5, 1, 2)
+            % plot(1:path_num, this.path(path_num:-1:1, 5), 'LineWidth', 1.5, 'color', 'g', 'DisplayName', '滚转角'); legend
+            % subplot(5, 1, 3)
+            % plot(1:path_num, this.path(path_num:-1:1, 6), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '俯仰角'); legend
+            % subplot(5, 1, 4)
+            % plot(1:path_num, this.path(path_num:-1:1, 7), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', 'cost'); legend
+            % subplot(5, 1, 5)
+            % plot(1:path_num, this.path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度'); legend
+            distan = norm(this.path(1, 1:2) - this.path(path_num, 1:2)) * this.map_scale;
+            distan = 400 * distan / path_num
+            clear gca
+            subplot(3, 1, 1)
+            this.path(:, 1:3) = this.path(:, 1:3) * this.map_scale;
+            this.path(:, 8:9) = this.path(:, 8:9) * this.map_scale;
+
+            plot(1:path_num, this.path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度');
+            % set(gca, 'Xtick', [0  1000 distan]);
+
+            legend
+
+            subplot(3, 1, 2)
+            plot(1:path_num, this.path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
+            % set(gca, 'Xtick', [0 1000 distan]);
+
+            legend
+
+            subplot(3, 1, 3)
+            plot(1:path_num, this.path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
+            % set(gca, 'Xtick', [0 50000 distan]);
+            legend
 
         end
 
@@ -293,11 +342,6 @@ classdef rrt < handle
             neigh = 20 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
 
             tic
-            this.search_num = 0;
-            this.tooclose = 0;
-            this.isgoal = 0;
-            this.no_parent = 0;
-            this.collision = 0;
 
             while toc <= max_time
                 this.search_num = this.search_num + 1;
@@ -358,12 +402,20 @@ classdef rrt < handle
 
             end
 
-            this.search_num
-            this.tooclose
-            this.isgoal
-            this.no_parent
-            this.collision
-            this.path_evaluate(path_num);
+            % this.search_num
+            % this.tooclose
+            % this.isgoal
+            % this.no_parent
+            % this.collision
+            interp_num = this.interpolation(path_num);
+
+            if ~isempty(this.path_plot)
+                delete(this.path_plot);
+            end
+
+            plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
+
+            this.path_evaluate(interp_num);
         end
 
         function start_rrt(this, ifdispaly, max_time, delay_time)
