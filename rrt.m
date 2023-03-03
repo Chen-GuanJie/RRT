@@ -93,8 +93,7 @@ classdef rrt < handle
         function [node, index] = get_closest(this, sample)
             %找最近点
             this.compare_table = this.tree(1:this.nodenum - 1, 1:3) - sample(1:3);
-            [~, I] = min(sum(this.compare_table(:, 1:3) .^ 2, 2));
-            index = I(1);
+            [~, index] = min(sum(this.compare_table(:, 1:3) .^ 2, 2));
             node = this.tree(index, :);
         end
 
@@ -128,6 +127,14 @@ classdef rrt < handle
                 this.tree(from(9), 3) = this.tree(from(9), 3) * 1.02;
                 flag = 0;
             end
+
+            % tmp=this.maps.checkPath(from, new);
+            % if tmp==2
+            %     this.tree(from(9), 3) = this.tree(from(9), 3) * 1.02;
+            %     flag = 0;
+            % elseif tmp==3
+            %     flag=0;
+            % end
 
         end
 
@@ -298,8 +305,9 @@ classdef rrt < handle
             this.path(:, 1:3) = this.path(:, 1:3) * this.map_scale;
             this.path(:, 8:9) = this.path(:, 8:9) * this.map_scale;
 
-            plot(1:path_num, this.path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度');
+            plot(1:path_num, this.path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
             % set(gca, 'Xtick', [0  1000 distan]);
+            plot(1:path_num, this.path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
 
             legend
 
@@ -474,7 +482,7 @@ classdef rrt < handle
             this.maps = map(conf.filename);
             conf.map_scale = this.maps.X(2) - this.maps.X(1);
             this.map_scale = conf.map_scale;
-
+            this.maps.set_height_limit(conf.height_limit / this.map_scale);
             % X = this.maps.X;
             % Y = this.maps.Y;
             Height = this.maps.Z;
