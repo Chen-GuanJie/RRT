@@ -4,9 +4,12 @@ classdef map < handle
         X
         Y
         Z
+        ZT %地图转置
         X_num
         Y_num
         Z_num
+        %temp value
+        tmp_h
     end
 
     methods (Access = public)
@@ -81,8 +84,9 @@ classdef map < handle
 
             this.X = X;
             this.Y = Y;
-            this.Z = Height/(X(2)-X(1));
-
+            this.Z = Height / (X(2) - X(1));
+            this.ZT = this.Z';
+            this.tmp_h=zeros(1,10);
         end
 
         function index = find_closest(this, x, axis)
@@ -99,12 +103,10 @@ classdef map < handle
         function flag = checkPath(this, start_insdex, end_insdex)
             %检查两点连线是否与地形碰撞
             flag = true;
-            start_insdex(1:2)=round(start_insdex(1:2));
-            end_insdex(1:2)=round(end_insdex(1:2));
+            start_insdex(1:2) = round(start_insdex(1:2));
+            end_insdex(1:2) = round(end_insdex(1:2));
             % start_insdex = [this.find_closest(start(1), 0), this.find_closest(start(2), 1)];
             % end_insdex = [this.find_closest(endp(1), 0), this.find_closest(endp(2), 1)];
-            Xn = this.X_num;
-            Yn = this.Y_num;
 
             if end_insdex(1, 1) ~= start_insdex (1, 1)
                 k_index = (end_insdex(1, 2) - start_insdex(1, 2)) / (end_insdex(1, 1) - start_insdex(1, 1));
@@ -113,35 +115,26 @@ classdef map < handle
             end
 
             if abs(k_index) > 1
-                % x_max = Yn;
-                y_max = Xn;
-                new_Height = this.Z';
-                xx = start_insdex(1, 1);
-                yy = start_insdex(1, 2);
-                start_insdex(1, 1) = yy;
-                start_insdex(1, 2) = xx;
-                xx = end_insdex(1, 1);
-                yy = end_insdex(1, 2);
-                end_insdex(1, 1) = yy;
-                end_insdex(1, 2) = xx;
+                y_max = this.X_num;
+                new_Height = this.ZT;
+                start_insdex(1, [1 2]) = start_insdex(1, [2 1]);
+                end_insdex(1, [1 2]) = end_insdex(1, [2 1]);
                 k_index = 1 / k_index;
             else
-                % x_max = Xn;
-                y_max = Yn;
+                y_max = this.Y_num;
                 new_Height = this.Z;
             end
 
             deltaX = end_insdex(1, 1) - start_insdex(1, 1);
+            increase = 1;
 
             if deltaX < 0
                 increase = -1;
-            elseif deltaX > 0
-                increase = 1;
-            else
+            elseif deltaX == 0
                 return
             end
 
-            for i = 0:increase:(deltaX)
+            for i = 0:increase:(deltaX / abs(deltaX))
                 y_up = ceil((i) * k_index + start_insdex(1, 2));
                 y_down = floor((i) * k_index + start_insdex(1, 2));
                 h = start_insdex(1, 3) + (end_insdex(1, 3) - end_insdex(1, 3)) * i / (deltaX);
@@ -181,8 +174,8 @@ classdef map < handle
 
         function [g, num] = grid(x)
             x_unique = unique(x);
-            a = size(x_unique);
-            num = a(1, 1);
+            [num, ~] = size(x_unique);
+            % num = a(1, 1);
             g = sortrows(x_unique)';
         end
 
