@@ -4,15 +4,31 @@ classdef map < handle
         X
         Y
         Z
-        ZT %地图转置
         X_num
         Y_num
         Z_num
+    end
+
+    properties (SetAccess = private)
+        ZT %地图转置
+        height_limit
+        threshold_high %离地最高高度
+        threshold_low %离地最低高度
         %temp value
+        tmp_ind
+        h_up
+        h_down
         tmp_h
+        y_up
+        y_down
+        x_ind
     end
 
     methods (Access = public)
+
+        function set_height_limit(this, height_limit)
+            this.height_limit = height_limit;
+        end
 
         function this = map(arg)
 
@@ -86,7 +102,7 @@ classdef map < handle
             this.Y = Y;
             this.Z = Height / (X(2) - X(1));
             this.ZT = this.Z';
-            this.tmp_h=zeros(1,10);
+            this.tmp_h = zeros(1, 10);
         end
 
         function index = find_closest(this, x, axis)
@@ -126,36 +142,55 @@ classdef map < handle
             end
 
             deltaX = end_insdex(1, 1) - start_insdex(1, 1);
-            increase = 1;
 
-            if deltaX < 0
-                increase = -1;
-            elseif deltaX == 0
+            if deltaX > 0
+                this.tmp_ind = 0:1:deltaX;
+
+            elseif deltaX < 0
+                this.tmp_ind = 0:-1:deltaX;
+            else
                 return
             end
 
-            for i = 0:increase:(deltaX / abs(deltaX))
-                y_up = ceil((i) * k_index + start_insdex(1, 2));
-                y_down = floor((i) * k_index + start_insdex(1, 2));
-                h = start_insdex(1, 3) + (end_insdex(1, 3) - end_insdex(1, 3)) * i / (deltaX);
+            this.h_up = zeros(1, abs(deltaX) + 1);
+            this.h_down = zeros(1, abs(deltaX) + 1);
+            this.tmp_h = start_insdex(1, 3) + (end_insdex(1, 3) - start_insdex(1, 3)) * this.tmp_ind / (deltaX); %轨迹高度
+            this.y_up = ceil((this.tmp_ind) * k_index + start_insdex(1, 2));
+            this.y_down = floor((this.tmp_ind) * k_index + start_insdex(1, 2));
+            this.x_ind = start_insdex(1, 1) + this.tmp_ind;
+            this.y_up(this.y_up > y_max) = y_max;
+            this.y_down(this.y_down < 1) = 1;
 
-                if y_up > y_max
-                    y_up = y_max;
-                end
+            for i = 1:1:abs(deltaX) + 1
 
-                if y_down < 1
-                    y_down = 1;
-                end
-
-                if new_Height(start_insdex(1, 1) + i, y_up) > h
-                    flag = false; break;
-                end
-
-                if new_Height(start_insdex(1, 1) + i, y_down) > h
-                    flag = false; break;
-                end
+                this.h_up(1, i) = new_Height(this.x_ind(i), this.y_up(i));
+                this.h_down(1, i) = new_Height(this.x_ind(i), this.y_down(i));
 
             end
+
+            ground_h = 0.5 .* (this.h_up + this.h_down); %地形高度
+            target_h = this.height_limit + ground_h; %跟踪高度
+
+            this.tmp_h = this.tmp_h - ground_h; %离地高度
+            too_hight = this.tmp_h > this.threshold_high;
+            too_low = this.tmp_h < this.threshold_low;
+
+            retval = [this.x_ind this.y_up target_h too_hight too_low];
+            % this.tmp_h = (this.tmp_h - this.height_limit) ./ this.height_limit;
+            % if min(this.tmp_h) < 0
+            %     flag = false;
+            %     return
+            % end
+
+            % if min(this.tmp_h) < 0.4
+            %     flag = true;
+            % end
+
+            % if min(this.tmp_h) < 0
+            %     % flag = false;
+            % else
+            %     [h, i] = min(this.tmp_h);
+            % end
 
         end
 
