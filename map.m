@@ -116,9 +116,9 @@ classdef map < handle
             [~, index] = min(a);
         end
 
-        function flag = checkPath(this, start_insdex, end_insdex)
+        function [target_h,k_index] = checkPath(this, start_insdex, end_insdex)
             %检查两点连线是否与地形碰撞
-            flag = true;
+            % flag = true;
             start_insdex(1:2) = round(start_insdex(1:2));
             end_insdex(1:2) = round(end_insdex(1:2));
             % start_insdex = [this.find_closest(start(1), 0), this.find_closest(start(2), 1)];
@@ -168,15 +168,14 @@ classdef map < handle
 
             end
 
-            ground_h = 0.5 .* (this.h_up + this.h_down); %地形高度
-            target_h = this.height_limit + ground_h; %跟踪高度
+            % ground_h = 0.5 .* (this.h_up + this.h_down); %地形高度
+            target_h = this.height_limit + 0.5 .* (this.h_up + this.h_down); %跟踪高度
+            % this.tmp_h = this.tmp_h - ground_h; %离地高度
+            % too_hight = this.tmp_h > this.threshold_high;
+            % too_low = this.tmp_h < this.threshold_low;
+            % retval =  k_index target_h;
 
-            this.tmp_h = this.tmp_h - ground_h; %离地高度
-            too_hight = this.tmp_h > this.threshold_high;
-            too_low = this.tmp_h < this.threshold_low;
-
-            retval = [this.x_ind this.y_up target_h too_hight too_low];
-            % this.tmp_h = (this.tmp_h - this.height_limit) ./ this.height_limit;
+            % this.tmp_h = (this.tmp_h - target_h) ./ target_h;
             % if min(this.tmp_h) < 0
             %     flag = false;
             %     return

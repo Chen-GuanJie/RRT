@@ -121,6 +121,9 @@ classdef rrt < handle
         end
 
         function flag = collisionCheck(this, from, new)
+
+            % retval=this.maps.checkPath(from, new);
+
             flag = 1;
 
             if ~this.maps.checkPath(from, new)
@@ -179,7 +182,7 @@ classdef rrt < handle
             n = numel(this.nearNodes(:, 1));
 
             while i <= n
-
+                
                 if (this.collisionCheck(this.nearNodes(i, :), this.newNode)) %无碰撞
 
                     if (this.robot.transferable(this.nearNodes(i, :), this.newNode)) %可转移
@@ -299,7 +302,7 @@ classdef rrt < handle
             % subplot(5, 1, 5)
             % plot(1:path_num, this.path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度'); legend
             distan = norm(this.path(1, 1:2) - this.path(path_num, 1:2)) * this.map_scale;
-            distan = 400 * distan / path_num
+            distan = 400 * distan / path_num;
             clear gca
             subplot(3, 1, 1)
             this.path(:, 1:3) = this.path(:, 1:3) * this.map_scale;
@@ -386,7 +389,6 @@ classdef rrt < handle
                         if ifdispaly
 
                             this.display_arrow(this.newNode, 10); %
-
                             this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode, 1, 'b');
                             this.redisplay();
 
@@ -422,7 +424,6 @@ classdef rrt < handle
             end
 
             plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
-
             this.path_evaluate(interp_num);
         end
 
