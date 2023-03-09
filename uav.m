@@ -21,6 +21,7 @@ classdef uav < handle
         acc %加速度
 
         map_scale
+        map_step %地图相邻点的距离
 
     end
 
@@ -131,8 +132,24 @@ classdef uav < handle
             consumption = 0;
         end
 
+        function flag = follow(this, from, to, target_h, k_index)
+            % todo:平滑轨迹
+
+            if this.transferable(from, to)
+                flag = false;
+                delta_dist = this.map_step * sqrt(1 + k_index ^ 2);
+                tmp = diff(target_h) ./ delta_dist;
+
+                if max(abs(tmp)) < tan(this.pitchMax)
+                    flag = true;
+                end
+
+            end
+
+        end
+
         function flag = transferable(this, from, to)
-            %判断是否可以从 from 到 to
+            %判断是否可以从 from 直线到 to
             flag = false;
             movingVec = [to(1) - from(1), to(2) - from(2)];
             phi1 = atan2(movingVec(2), movingVec(1));
