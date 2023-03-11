@@ -121,13 +121,16 @@ classdef map < handle
             [~, index] = min(a);
         end
 
-        function [target_loc, delta_dist, flag] = checkPath_v2(this, start_insdex, end_insdex)
+        function [target_loc, delta_dist, flag] = checkPath_v2(this, from, to)
             %检查两点连线是否与地形碰撞
             flag = true;
-            delta_dist = norm(start_insdex(1:2) - end_insdex(1:2));
+            delta_dist = norm(from(1:2) - to(1:2));
 
-            start_insdex(1:2) = round(start_insdex(1:2));
-            end_insdex(1:2) = round(end_insdex(1:2));
+            start_insdex(1:2) = round(from(1:2));
+            end_insdex(1:2) = round(to(1:2));
+            start_insdex(3) = from(3);
+            end_insdex(3) = to(3);
+
             % start_insdex = [this.find_closest(start(1), 0), this.find_closest(start(2), 1)];
             % end_insdex = [this.find_closest(endp(1), 0), this.find_closest(endp(2), 1)];
 
@@ -138,14 +141,14 @@ classdef map < handle
             end
 
             if abs(k_index) > 1
-                switched = true;
+                % switched = true;
                 y_max = this.X_num;
                 new_Height = this.ZT;
                 start_insdex(1, [1 2]) = start_insdex(1, [2 1]);
                 end_insdex(1, [1 2]) = end_insdex(1, [2 1]);
                 k_index = 1 / k_index;
             else
-                switched = false;
+                % switched = false;
                 y_max = this.Y_num;
                 new_Height = this.Z;
             end
@@ -184,13 +187,15 @@ classdef map < handle
             ground_h = 0.5 .* (this.h_up + this.h_down); %地形高度
             delta_dist = delta_dist / num;
             target_h = this.height_limit + ground_h; %跟踪高度
+            target1=from(1):(to(1) - from(1)) / (num-1):to(1);
+            target2=from(2):(to(2) - from(2)) / (num-1):to(2);
+            target_loc = [target1', target2', target_h, ground_h];
+            % if switched
+            %     target_loc = [this.y_up, this.x_ind, target_h, ground_h];
+            % else
+            %     target_loc = [this.x_ind, this.y_up, target_h, ground_h];
 
-            if switched
-                target_loc = [this.y_up, this.x_ind, target_h, ground_h];
-            else
-                target_loc = [this.x_ind, this.y_up, target_h, ground_h];
-
-            end
+            % end
 
         end
 

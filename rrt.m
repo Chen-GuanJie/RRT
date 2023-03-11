@@ -43,7 +43,9 @@ classdef rrt < handle
         isgoal = 0
         no_parent = 0
         collision = 0
+        rewire_num = 0
         path
+        path_sample
     end
 
     methods (Access = private)
@@ -185,7 +187,7 @@ classdef rrt < handle
                     [new_target_h, this.tmp_flag] = this.robot.follow(this.nearNodes(i, :), this.newNode, target_h(:, 3), delta_dist);
 
                     if this.tmp_flag
-                        this.tmp_value = this.calc_cost_v2(this.nearNodes(i, :), this.newNode, new_target_h) + this.nearNodes(i, 7);
+                        this.tmp_value = this.calc_cost_v2(this.nearNodes(i, :), this.newNode, new_target_h); % 新节点与附近的相邻转移代价 + this.nearNodes(i, 7);
                     else
                         this.tmp_value = inf;
                     end
@@ -197,8 +199,10 @@ classdef rrt < handle
                 this.nearNodes(i, 10) = this.tmp_value;
             end
 
-            [~, this.tmp_ind] = min(this.nearNodes(:, 10));
+            this.compare_table = this.nearNodes(:, 10) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
+            [this.newNode(7), this.tmp_ind] = min(this.compare_table);
             new_parent_id = this.nearNodes(this.tmp_ind, 9);
+            % this.newNode(7) = mini_cost;
 
         end
 
@@ -272,29 +276,15 @@ classdef rrt < handle
 
         function rewire_v2(this, new_parent_id)
             %重布线
-            this.replot_num = 0;
-            this.nearNodes(this.nearNodes(:, 8) == new_parent_id, :) = [];
-            this.compare_table = this.nearNodes(:, 10) + this.newNode(7);
-            
-
-            for i = 1:numel(this.nearNodes(:, 1))
-
-                if new_parent_id ~= this.nearNodes(i, 8) %不是新节点的父节点
-                    this.tmp_value = this.nearNodes(i, 10) + this.newNode(7);
-
-                    if this.tmp_value < this.nearNodes(i, 7)
-                        % id parentid newparentid
-                        this.replot_num = this.replot_num + 1;
-                        this.replot (this.replot_num, 1:3) = [this.nearNodes(i, 9) this.nearNodes(i, 8) this.newNode(9)];
-                        this.nearNodes(i, 7:8) = [this.tmp_value this.newNode(9)];
-                        % this.nearNodes(i, 7) = this.tmp_value;
-                        % this.nearNodes(i, 8) = this.newNode(9);
-                    end
-
-                end
-
-            end
-
+            this.nearNodes(this.nearNodes(:, 9) == new_parent_id, :) = [];
+            this.compare_table = this.nearNodes(:, 10) + this.newNode(7); %新节点作为附近点的父节点后的代价
+            index = this.compare_table(:, 1) - this.nearNodes(:, 7) < 0; %替换后代价变小的点的下标
+            this.tmp_ind = this.nearNodes(index, 9); %替换后代价变小的点的id
+            this.tree(this.tmp_ind, 7) = this.compare_table(index);
+            this.tree(this.tmp_ind, 8) = this.newNode(9);
+            [this.replot_num, ~] = size(this.tmp_ind);
+            this.rewire_num = this.rewire_num + this.replot_num;
+            %todo: replot
         end
 
         function redisplay(this)
@@ -393,6 +383,8 @@ classdef rrt < handle
             subplot(3, 1, 1)
             this.path(:, 1:3) = this.path(:, 1:3) * this.map_scale;
             this.path(:, 8:9) = this.path(:, 8:9) * this.map_scale;
+            % this.path_sample(:, 1:3) = this.path_sample(:, 1:3) * this.map_scale;
+            % this.path_sample(:, 8:9) = this.path_sample(:, 8:9) * this.map_scale;
 
             plot(1:path_num, this.path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
             % set(gca, 'Xtick', [0  1000 distan]);
@@ -401,6 +393,8 @@ classdef rrt < handle
             legend
 
             subplot(3, 1, 2)
+            % [n,~]=size(this.path_sample);
+            % plot(1:n, this.path_sample(n:-1:1, 9), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度');hold on
             plot(1:path_num, this.path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             % set(gca, 'Xtick', [0 1000 distan]);
 
@@ -435,6 +429,13 @@ classdef rrt < handle
 
         end
 
+        function output = to_normal_size(this)
+            this.path(:, 1:3) = this.path(:, 1:3) * this.map_scale;
+            this.path(:, 1) = this.path(:, 1) + this.maps.X(1);
+            this.path(:, 2) = this.path(:, 2) + this.maps.Y(1);
+            output = this.path(:, 1:3);
+        end
+
     end
 
     methods (Static)
@@ -451,7 +452,7 @@ classdef rrt < handle
 
     methods (Access = public)
 
-        function start_star(this, ifdispaly, max_time, delay_time)
+        function output = start_star(this, ifdispaly, max_time, delay_time)
             this.tree = zeros(this.max_nodes, 10);
             this.multi_state = zeros(this.max_nodes, 4);
             this.path = zeros(100, 10);
@@ -468,7 +469,7 @@ classdef rrt < handle
             while toc <= max_time
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
-                [closestNode, parentid] = this.get_closest(sample);
+                [closestNode, ~] = this.get_closest(sample);
                 this.newNode = this.robot.transfer(sample, closestNode, this.maps.Z);
 
                 if ifdispaly
@@ -498,13 +499,13 @@ classdef rrt < handle
                 else %if flag == 2
                     this.isgoal = this.isgoal + 1;
                     this.randnum = 2; %搜索点不取goal
-                    [path_len, path_num] = this.trace_back(parentid);
+                    [path_len, path_num] = this.trace_back(new_id);
                     this.prepare_informed(path_len);
                 end
 
             end
 
-            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent);
+            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = follow_ground(this, path_num);
 
@@ -513,9 +514,11 @@ classdef rrt < handle
             end
 
             plot3(new_path(1:interp_num, 1), new_path(1:interp_num, 2), new_path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
+            this.path_sample=this.path;
             this.path = new_path;
             % plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
             this.path_evaluate(interp_num);
+            output = this.to_normal_size();
         end
 
         function start_rrt(this, ifdispaly, max_time, delay_time)
