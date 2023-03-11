@@ -21,7 +21,7 @@ classdef uav < handle
         acc %加速度
 
         map_scale
-        map_step %地图相邻点的距离
+        max_delta_h
 
     end
 
@@ -56,6 +56,7 @@ classdef uav < handle
             this.mini_stable_distance = 1000 * conf.mini_stable_distance; %单位米
             this.course_change = (0:5:120) * pi / 180;
             this.speeds = conf.speeds;
+            this.max_delta_h = tan(this.pitchMax);
         end
 
         function newNode = transfer_stable(this, sample, closestNode, map)
@@ -132,18 +133,37 @@ classdef uav < handle
             consumption = 0;
         end
 
-        function flag = follow(this, from, to, target_h, k_index)
+        function target_h  = just_follow(this, target_h, delta_dist)
             % todo:平滑轨迹
+            max_delta = this.max_delta_h * delta_dist;
+            [n, ~] = size(target_h);
+            tmp = diff(target_h);
+            tmp(tmp > max_delta) = max_delta;
+            tmp(tmp <- max_delta) = -max_delta;
+
+            for i = 2:n
+                target_h(i) = target_h(i - 1) + tmp(i - 1);
+            end
+
+
+        end
+
+        function [target_h, flag] = follow(this, from, to, target_h, delta_dist)
+            % todo:平滑轨迹
+            flag = false;
+            max_delta = this.max_delta_h * delta_dist;
+            [n, ~] = size(target_h);
 
             if this.transferable(from, to)
-                flag = false;
-                delta_dist = this.map_step * sqrt(1 + k_index ^ 2);
-                tmp = diff(target_h) ./ delta_dist;
+                tmp = diff(target_h);
+                tmp(tmp > max_delta) = max_delta;
+                tmp(tmp <- max_delta) = -max_delta;
 
-                if max(abs(tmp)) < tan(this.pitchMax)
-                    flag = true;
+                for i = 2:n
+                    target_h(i) = target_h(i - 1) + tmp(i - 1);
                 end
 
+                flag = true;
             end
 
         end

@@ -1,7 +1,8 @@
 classdef rrt < handle
 
     properties (SetAccess = private)
-        tree %节点位置 % cost parentid id v
+        tree %节点位置 % cost parentid id cost_to_newNode
+        path_target_h
         time_cost %时间消耗
         energe_cost %能量消耗
         velocity %速度
@@ -32,6 +33,8 @@ classdef rrt < handle
         %temp value
         compare_table
         tmp_ind
+        tmp_flag
+        tmp_value
         replot
         replot_num
         path_plot
@@ -81,13 +84,13 @@ classdef rrt < handle
             this.compare_table = this.tree(1:this.nodenum - 1, 1:6) - this.newNode(1:6);
             this.distances = sum(this.compare_table(:, 1:3) .^ 2, 2);
             [~, index] = min(this.distances);
-            tmpdis = sqrt(this.distances(index(1)));
+            this.tmp_value = sqrt(this.distances(index(1))); %最近的距离
 
-            if tmpdis < this.threshold_close %太近
+            if this.tmp_value < this.threshold_close %太近
                 flag = 1;
             end
 
-            this.nearNodes = this.tree(find(this.distances < dis), :);
+            this.nearNodes = this.tree(this.distances < dis, :); %todo: if use find
         end
 
         function [node, index] = get_closest(this, sample)
@@ -111,6 +114,15 @@ classdef rrt < handle
             cost = norm([cost_dist, cost_angle, cost_hight]);
         end
 
+        function cost = calc_cost_v2(~, from_node, dest_node, new_target_h)
+            cost_dist = norm(from_node(1:2) - dest_node(1:2));
+            cost_hight = sum(abs(diff(new_target_h)));
+            cost_angle = norm(from_node(4:6) - dest_node(4:6));
+            %consumption = this.robot.calc_consumption();
+            cost = norm([cost_dist, cost_angle, cost_hight]);
+
+        end
+
         function flag = check_newNode(this)
             flag = 0;
 
@@ -126,18 +138,10 @@ classdef rrt < handle
 
             flag = 1;
 
-            if ~this.maps.checkPath(from, new)
+            if ~this.maps.checkPath(from, new) %todo:  旧的判断
                 this.tree(from(9), 3) = this.tree(from(9), 3) * 1.02;
                 flag = 0;
             end
-
-            % tmp=this.maps.checkPath(from, new);
-            % if tmp==2
-            %     this.tree(from(9), 3) = this.tree(from(9), 3) * 1.02;
-            %     flag = 0;
-            % elseif tmp==3
-            %     flag=0;
-            % end
 
         end
 
@@ -161,8 +165,8 @@ classdef rrt < handle
                 prev = this.tree(prev, 8);
             end
 
-            tmp = this.path(2:this.tmp_ind, 1:3) - this.path(1:this.tmp_ind - 1, 1:3);
-            path_len = sum(sqrt(sum(tmp .^ 2, 2)));
+            this.tmp_value = this.path(2:this.tmp_ind, 1:3) - this.path(1:this.tmp_ind - 1, 1:3);
+            path_len = sum(sqrt(sum(this.tmp_value .^ 2, 2)));
 
             if ~isempty(this.path_plot)
                 delete(this.path_plot);
@@ -173,36 +177,63 @@ classdef rrt < handle
 
         end
 
+        function new_parent_id = choose_parent_v2(this)
+            n = numel(this.nearNodes(:, 1));
+
+            for i = 1:n
+                [target_h, delta_dist, flag] = this.maps.checkPath_v2(this.nearNodes(i, :), this.newNode);
+
+                if flag
+                    [new_target_h, this.tmp_flag] = this.robot.follow(this.nearNodes(i, :), this.newNode, target_h(:, 3), delta_dist);
+
+                    if this.tmp_flag
+                        this.tmp_value = this.calc_cost_v2(this.nearNodes(i, :), this.newNode, new_target_h) + this.nearNodes(i, 7);
+                    else
+                        this.tmp_value = inf;
+                    end
+
+                else
+                    this.tmp_value = inf;
+                end
+
+                this.nearNodes(i, 10) = this.tmp_value;
+            end
+
+            [~, this.tmp_ind] = min(this.nearNodes(:, 10));
+            new_parent_id = this.nearNodes(this.tmp_ind, 9);
+
+        end
+
         function new_parent_id = choose_parent(this)
             %RRT star 找新的父节点
             mini_cost = Inf;
             new_parent_id = 0;
 
-            i = 1;
+            this.tmp_ind = 1;
             n = numel(this.nearNodes(:, 1));
 
-            while i <= n
-                
-                if (this.collisionCheck(this.nearNodes(i, :), this.newNode)) %无碰撞
+            while this.tmp_ind <= n
 
-                    if (this.robot.transferable(this.nearNodes(i, :), this.newNode)) %可转移
+                if (this.collisionCheck(this.nearNodes(this.tmp_ind, :), this.newNode)) %无碰撞
 
-                        tmpcost = this.calc_cost(this.nearNodes(i, :), this.newNode) + this.nearNodes(i, 7);
+                    if (this.robot.transferable(this.nearNodes(this.tmp_ind, :), this.newNode)) %可转移
 
-                        if tmpcost < mini_cost
-                            mini_cost = tmpcost;
-                            new_parent_id = this.nearNodes(i, 9);
+                        this.tmp_value = this.calc_cost(this.nearNodes(this.tmp_ind, :), this.newNode) + this.nearNodes(this.tmp_ind, 7);
+
+                        if this.tmp_value < mini_cost
+                            mini_cost = this.tmp_value;
+                            new_parent_id = this.nearNodes(this.tmp_ind, 9);
                         end
 
                     end
 
-                    i = i + 1;
+                    this.tmp_ind = this.tmp_ind + 1;
                 else %删去集合中有碰撞的附近点
-                    this.nearNodes(i, :) = [];
-                    i = i - 1;
+                    this.nearNodes(this.tmp_ind, :) = [];
+                    this.tmp_ind = this.tmp_ind - 1;
                     n = n - 1;
 
-                    if i == 0
+                    if this.tmp_ind == 0
                         break;
                     end
 
@@ -223,16 +254,39 @@ classdef rrt < handle
                 if new_parent_id ~= this.nearNodes(i, 8) %不是新节点的父节点
 
                     if this.robot.transferable(this.newNode, this.nearNodes(i, :))
-                        tmpcost = this.calc_cost(this.newNode, this.nearNodes(i, :)) + this.newNode(7);
+                        this.tmp_value = this.calc_cost(this.newNode, this.nearNodes(i, :)) + this.newNode(7);
 
-                        if tmpcost < this.nearNodes(i, 7)
+                        if this.tmp_value < this.nearNodes(i, 7)
                             % id parentid newparentid
                             this.replot_num = this.replot_num + 1;
                             this.replot (this.replot_num, :) = [this.nearNodes(i, 9) this.nearNodes(i, 8) this.newNode(9)];
-                            this.nearNodes(i, 7) = tmpcost;
+                            this.nearNodes(i, 7) = this.tmp_value;
                             this.nearNodes(i, 8) = this.newNode(9);
                         end
 
+                    end
+
+                end
+
+            end
+
+        end
+
+        function rewire_v2(this, new_parent_id)
+            %重布线
+            this.replot_num = 0;
+
+            for i = 1:numel(this.nearNodes(:, 1))
+
+                if new_parent_id ~= this.nearNodes(i, 8) %不是新节点的父节点
+                    this.tmp_value = this.nearNodes(i, 10) + this.newNode(7);
+
+                    if this.tmp_value < this.nearNodes(i, 7)
+                        % id parentid newparentid
+                        this.replot_num = this.replot_num + 1;
+                        this.replot (this.replot_num, :) = [this.nearNodes(i, 9) this.nearNodes(i, 8) this.newNode(9)];
+                        this.nearNodes(i, 7) = this.tmp_value;
+                        this.nearNodes(i, 8) = this.newNode(9);
                     end
 
                 end
@@ -255,13 +309,11 @@ classdef rrt < handle
         function prepare_informed(this, path_len)
             this.informed = true; %开始informed搜索
             dist = norm(this.start(1:3) - this.goal(1:3)) / 2;
-
             this.long_axis = path_len / 2; % 长轴 %1.05 * dist;
             this.short_axis = sqrt(this.long_axis ^ 2 - dist ^ 2); %短轴
             ang = atan2(this.goal(2) - this.start(2), this.goal(1) - this.start(1));
             this.ellipse_rotation = [cos(ang) -sin(ang); sin(ang) cos(ang)];
             this.ellipse_displace = [dist * cos(ang); dist * sin(ang)] + [this.start(1); this.start(2)];
-
         end
 
         function s = interpolation(this, path_num)
@@ -272,20 +324,52 @@ classdef rrt < handle
             this.path(s, 7) = 0;
 
             for i = s - 1:-1:1
-                this.path(i, 7) = this.calc_cost(this.path(i + 1, :), this.path(i, :)) + this.path(i + 1, 7);
+                this.path(i, 7) = this.calc_cost(this.path(i + 1, :), this.path(i, :)) + this.path(i + 1, 7); %轨迹上的cost
             end
 
             for i = 1:s
-                this.path(i, 9) = this.maps.Z(round(this.path(i, 1)), round(this.path(i, 2)));
-                this.path(i, 8) = this.path(i, 3) - this.path(i, 9);
+                this.path(i, 9) = this.maps.Z(round(this.path(i, 1)), round(this.path(i, 2))); %轨迹对应的地形高度
+                this.path(i, 8) = this.path(i, 3) - this.path(i, 9); %轨迹上的高度差
             end
 
             % this.path(:,1:3)=this.path(:,1:3)*this.map_scale;
             % this.path(:,8:9)=this.path(:,8:9)*this.map_scale;
 
-            % for i = 1:6
-            %     this.path(1:interp_num:path_num,i)=interp1(1:path_num,this.path(1:path_num,i ),1:interp_num:path_num,'spline');
+            % for this.tmp_ind = 1:6
+            %     this.path(1:interp_num:path_num,this.tmp_ind)=interp1(1:path_num,this.path(1:path_num,this.tmp_ind ),1:interp_num:path_num,'spline');
             % end
+
+        end
+
+        function [new_path, num] = follow_ground(this, path_num)
+            new_path = zeros(400, 10);
+            this.tmp_ind = 1;
+
+            for i = path_num:-1:2
+                [target_h, delta_dist] = this.maps.checkPath_v2(this.path(i, 1:3), this.path(i - 1, 1:3));
+                new_target_h = this.robot.just_follow(target_h(:, 3), delta_dist);
+                target_h(:,3)=new_target_h;
+                [this.tmp_value, ~] = size(target_h);
+                % new_path(this.tmp_ind, :) = this.path(i, :);
+                % new_path(this.tmp_ind, 9) = this.maps.find_height(this.path(i, :));
+
+                new_path(this.tmp_ind :this.tmp_ind + this.tmp_value-1, 1:3) = target_h(:, 1:3);
+                new_path(this.tmp_ind :this.tmp_ind + this.tmp_value-1, 9) = target_h(:, 4);%地形高度
+
+                this.tmp_ind = this.tmp_ind + this.tmp_value;
+            end
+
+            % new_path(this.tmp_ind, :) = this.path(1, :);
+            % new_path(this.tmp_ind, 9) = this.maps.find_height(this.path(1, :));
+
+            new_path(:, 8) = new_path(:, 3) - new_path(:, 9); %轨迹上的高度差
+
+            % for i = 1:this.tmp_ind
+            %     % new_path(i, 9) = this.maps.Z(y, round(new_path(i, 2))); %轨迹对应的地形高度
+            %     new_path(i, 8) = new_path(i, 3) - new_path(i, 9); %轨迹上的高度差
+            % end
+
+            num = this.tmp_ind-1;
 
         end
 
@@ -301,8 +385,8 @@ classdef rrt < handle
             % plot(1:path_num, this.path(path_num:-1:1, 7), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', 'cost'); legend
             % subplot(5, 1, 5)
             % plot(1:path_num, this.path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度'); legend
-            distan = norm(this.path(1, 1:2) - this.path(path_num, 1:2)) * this.map_scale;
-            distan = 400 * distan / path_num;
+            % distan = norm(this.path(1, 1:2) - this.path(path_num, 1:2)) * this.map_scale;
+            % distan = 400 * distan / path_num;
             clear gca
             subplot(3, 1, 1)
             this.path(:, 1:3) = this.path(:, 1:3) * this.map_scale;
@@ -380,11 +464,11 @@ classdef rrt < handle
 
                 if flag == 0
 
-                    new_id = this.choose_parent();
+                    new_id = this.choose_parent_v2();
 
                     if new_id > 0
                         this.insert_node(new_id);
-                        this.rewire(new_id);
+                        this.rewire_v2(new_id);
 
                         if ifdispaly
 
@@ -417,13 +501,16 @@ classdef rrt < handle
             % this.isgoal
             % this.no_parent
             % this.collision
-            interp_num = this.interpolation(path_num);
+            % interp_num = this.interpolation(path_num);
+            [new_path, interp_num] = follow_ground(this, path_num);
 
             if ~isempty(this.path_plot)
                 delete(this.path_plot);
             end
 
-            plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
+            plot3(new_path(1:interp_num, 1), new_path(1:interp_num, 2), new_path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
+            this.path = new_path;
+            % plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
             this.path_evaluate(interp_num);
         end
 
