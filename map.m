@@ -134,7 +134,7 @@ classdef map < handle
             if end_insdex(1, 1) ~= start_insdex (1, 1)
                 k_index = (end_insdex(1, 2) - start_insdex(1, 2)) / (end_insdex(1, 1) - start_insdex(1, 1));
             else
-                k_index = 999999999;
+                k_index = inf;
             end
 
             if abs(k_index) > 1
@@ -186,22 +186,23 @@ classdef map < handle
             target_h = this.height_limit + ground_h; %跟踪高度
 
             if switched
-                target_loc = [this.y_up, this.x_ind, target_h,ground_h];
+                target_loc = [this.y_up, this.x_ind, target_h, ground_h];
             else
-                target_loc = [this.x_ind, this.y_up, target_h,ground_h];
+                target_loc = [this.x_ind, this.y_up, target_h, ground_h];
 
             end
 
         end
-        function output = find_height(this,node)
+
+        function output = find_height(this, node)
             node(1:2) = round(node(1:2));
             x_up = ceil(node(1));
             x_down = floor(node(1));
-            y_up = ceil(node(2));
-            y_down = floor(node(2));
-
-            output=0.25*(this.Z(x_up,y_up)+this.Z(x_up,y_down)+this.Z(x_down,y_up)+this.Z(x_down,y_down));
+            up_y = ceil(node(2));
+            down_y = floor(node(2));
+            output = 0.25 * (this.Z(x_up, up_y) + this.Z(x_up, down_y) + this.Z(x_down, up_y) + this.Z(x_down, down_y));
         end
+
         function flag = checkPath(this, start_insdex, end_insdex)
             %检查两点连线是否与地形碰撞
             flag = true;
@@ -213,7 +214,7 @@ classdef map < handle
             if end_insdex(1, 1) ~= start_insdex (1, 1)
                 k_index = (end_insdex(1, 2) - start_insdex(1, 2)) / (end_insdex(1, 1) - start_insdex(1, 1));
             else
-                k_index = 999999999;
+                k_index = inf;
             end
 
             if abs(k_index) > 1

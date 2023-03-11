@@ -20,7 +20,6 @@ classdef rrt < handle
         multi_state
 
         nearNodes
-        distances
         newNode
         nodenum
         map_scale
@@ -39,11 +38,11 @@ classdef rrt < handle
         replot_num
         path_plot
         %output
-        search_num
-        tooclose
-        isgoal
-        no_parent
-        collision
+        search_num = 0
+        tooclose = 0
+        isgoal = 0
+        no_parent = 0
+        collision = 0
         path
     end
 
@@ -51,12 +50,12 @@ classdef rrt < handle
 
         function sample = get_sample(this)
             %采样
-            sample = [0 inf 0 0 0 0]';
 
             if rand < this.randnum
 
                 if this.informed
                     y = 0;
+                    sample = [0 inf 0 0 0 0]';
 
                     while abs(sample(2)) > y
                         sample(1:2) = [rand * 2 * this.long_axis; rand * 2 * this.short_axis] - [this.long_axis; this.short_axis];
@@ -81,16 +80,16 @@ classdef rrt < handle
         function flag = neighbors(this, dis)
             %找附近的点
             flag = 0;
-            this.compare_table = this.tree(1:this.nodenum - 1, 1:6) - this.newNode(1:6);
-            this.distances = sum(this.compare_table(:, 1:3) .^ 2, 2);
-            [~, index] = min(this.distances);
-            this.tmp_value = sqrt(this.distances(index(1))); %最近的距离
+            this.compare_table = this.tree(1:this.nodenum - 1, 1:3) - this.newNode(1:3);
+            this.compare_table = sum(this.compare_table(:, 1:3) .^ 2, 2);
+            [this.tmp_value, ~] = min(this.compare_table); %最近的距离
+            % this.tmp_value = sqrt(this.tmp_value); %最近的距离
 
             if this.tmp_value < this.threshold_close %太近
                 flag = 1;
             end
 
-            this.nearNodes = this.tree(this.distances < dis, :); %todo: if use find
+            this.nearNodes = this.tree(this.compare_table < dis, :); %todo: if use find
         end
 
         function [node, index] = get_closest(this, sample)
@@ -168,19 +167,18 @@ classdef rrt < handle
             this.tmp_value = this.path(2:this.tmp_ind, 1:3) - this.path(1:this.tmp_ind - 1, 1:3);
             path_len = sum(sqrt(sum(this.tmp_value .^ 2, 2)));
 
-            if ~isempty(this.path_plot)
-                delete(this.path_plot);
-            end
+            % if ~isempty(this.path_plot)
+            %     delete(this.path_plot);
+            % end
 
             path_num = this.tmp_ind;
-            this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
+            % this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
 
         end
 
         function new_parent_id = choose_parent_v2(this)
-            n = numel(this.nearNodes(:, 1));
 
-            for i = 1:n
+            for i = 1:numel(this.nearNodes(:, 1))
                 [target_h, delta_dist, flag] = this.maps.checkPath_v2(this.nearNodes(i, :), this.newNode);
 
                 if flag
@@ -275,6 +273,9 @@ classdef rrt < handle
         function rewire_v2(this, new_parent_id)
             %重布线
             this.replot_num = 0;
+            this.nearNodes(this.nearNodes(:, 8) == new_parent_id, :) = [];
+            this.compare_table = this.nearNodes(:, 10) + this.newNode(7);
+            
 
             for i = 1:numel(this.nearNodes(:, 1))
 
@@ -284,9 +285,10 @@ classdef rrt < handle
                     if this.tmp_value < this.nearNodes(i, 7)
                         % id parentid newparentid
                         this.replot_num = this.replot_num + 1;
-                        this.replot (this.replot_num, :) = [this.nearNodes(i, 9) this.nearNodes(i, 8) this.newNode(9)];
-                        this.nearNodes(i, 7) = this.tmp_value;
-                        this.nearNodes(i, 8) = this.newNode(9);
+                        this.replot (this.replot_num, 1:3) = [this.nearNodes(i, 9) this.nearNodes(i, 8) this.newNode(9)];
+                        this.nearNodes(i, 7:8) = [this.tmp_value this.newNode(9)];
+                        % this.nearNodes(i, 7) = this.tmp_value;
+                        % this.nearNodes(i, 8) = this.newNode(9);
                     end
 
                 end
@@ -348,13 +350,13 @@ classdef rrt < handle
             for i = path_num:-1:2
                 [target_h, delta_dist] = this.maps.checkPath_v2(this.path(i, 1:3), this.path(i - 1, 1:3));
                 new_target_h = this.robot.just_follow(target_h(:, 3), delta_dist);
-                target_h(:,3)=new_target_h;
+                target_h(:, 3) = new_target_h;
                 [this.tmp_value, ~] = size(target_h);
                 % new_path(this.tmp_ind, :) = this.path(i, :);
                 % new_path(this.tmp_ind, 9) = this.maps.find_height(this.path(i, :));
 
-                new_path(this.tmp_ind :this.tmp_ind + this.tmp_value-1, 1:3) = target_h(:, 1:3);
-                new_path(this.tmp_ind :this.tmp_ind + this.tmp_value-1, 9) = target_h(:, 4);%地形高度
+                new_path(this.tmp_ind:this.tmp_ind + this.tmp_value - 1, 1:3) = target_h(:, 1:3);
+                new_path(this.tmp_ind:this.tmp_ind + this.tmp_value - 1, 9) = target_h(:, 4); %地形高度
 
                 this.tmp_ind = this.tmp_ind + this.tmp_value;
             end
@@ -369,7 +371,7 @@ classdef rrt < handle
             %     new_path(i, 8) = new_path(i, 3) - new_path(i, 9); %轨迹上的高度差
             % end
 
-            num = this.tmp_ind-1;
+            num = this.tmp_ind - 1;
 
         end
 
@@ -411,6 +413,28 @@ classdef rrt < handle
 
         end
 
+        function display_serachline(this, closestNode, sample, delay_time)
+            tp = this.display_line(closestNode, sample, 3, 'k');
+
+            if delay_time ~= 0
+                pause(delay_time);
+            end
+
+            delete(tp);
+
+        end
+
+        function display_states(this, delay_time)
+            % this.display_arrow(this.newNode, 10); %
+            this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode, 1, 'b');
+            this.redisplay();
+
+            if delay_time ~= 0
+                pause(delay_time);
+            end
+
+        end
+
     end
 
     methods (Static)
@@ -431,39 +455,32 @@ classdef rrt < handle
             this.tree = zeros(this.max_nodes, 10);
             this.multi_state = zeros(this.max_nodes, 4);
             this.path = zeros(100, 10);
-            this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
+
+            if ifdispaly
+                this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
+            end
+
             this.newNode = [this.start 0];
             this.insert_node(-1);
-            neigh = 20 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
-
+            neighbor_dist = 20 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
 
             while toc <= max_time
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
-                this.extends(sample, closestNode);
+                this.newNode = this.robot.transfer(sample, closestNode, this.maps.Z);
 
                 if ifdispaly
-                    tp = this.display_line(closestNode, sample, 3, 'k');
-
-                    if delay_time ~= 0
-                        pause(delay_time);
-                    end
-
-                    delete(tp);
-
+                    this.display_serachline(this, closestNode, sample, delay_time);
                 end
 
-                if this.neighbors(neigh)
+                if this.neighbors(neighbor_dist)
                     this.tooclose = this.tooclose + 1;
                     continue
                 end
 
-                flag = this.check_newNode();
-
-                if flag == 0
-
+                if norm(this.newNode(1:3) - this.goal(1:3)) > this.threshold_goal
                     new_id = this.choose_parent_v2();
 
                     if new_id > 0
@@ -471,36 +488,23 @@ classdef rrt < handle
                         this.rewire_v2(new_id);
 
                         if ifdispaly
-
-                            this.display_arrow(this.newNode, 10); %
-                            this.edges(this.newNode(9)) = this.display_line(this.tree(this.newNode(8), :), this.newNode, 1, 'b');
-                            this.redisplay();
-
-                            if delay_time ~= 0
-                                pause(delay_time);
-                            end
-
+                            this.display_states(delay_time)
                         end
 
                     else
                         this.no_parent = this.no_parent + 1;
-
                     end
 
-                elseif flag == 2
+                else %if flag == 2
                     this.isgoal = this.isgoal + 1;
-                    this.randnum = 0.7; %搜索点不取goal
+                    this.randnum = 2; %搜索点不取goal
                     [path_len, path_num] = this.trace_back(parentid);
                     this.prepare_informed(path_len);
                 end
 
             end
 
-            % this.search_num
-            % this.tooclose
-            % this.isgoal
-            % this.no_parent
-            % this.collision
+            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = follow_ground(this, path_num);
 
@@ -593,7 +597,7 @@ classdef rrt < handle
             this.informed = false;
             this.replot = zeros(10, 3);
 
-            this.threshold_close = conf.threshold_close / conf.map_scale;
+            this.threshold_close = (conf.threshold_close / conf.map_scale) ^ 2;
             this.threshold_goal = conf.threshold_goal / conf.map_scale;
 
             this.robot = uav(conf);

@@ -28,7 +28,7 @@ classdef uav < handle
     methods (Access = private)
 
         function [z, pitchangle] = climb(this, temp, closestNode, map)
-            targetHeight = map.Z(round(temp(1)), round(temp(2))) + this.height_limit; %目标点的目标高度
+            targetHeight = map(round(temp(1)), round(temp(2))) + this.height_limit; %目标点的目标高度
             distanceee = norm(temp - closestNode(1:2)); %距离
             pitchangle = atan((targetHeight - closestNode(3)) / distanceee); %应该的爬升角
             pitchangle = this.limiter(pitchangle, this.pitchMax, this.pitchMin);
@@ -133,7 +133,7 @@ classdef uav < handle
             consumption = 0;
         end
 
-        function target_h  = just_follow(this, target_h, delta_dist)
+        function target_h = just_follow(this, target_h, delta_dist)
             % todo:平滑轨迹
             max_delta = this.max_delta_h * delta_dist;
             [n, ~] = size(target_h);
@@ -144,7 +144,6 @@ classdef uav < handle
             for i = 2:n
                 target_h(i) = target_h(i - 1) + tmp(i - 1);
             end
-
 
         end
 
