@@ -25,4 +25,11 @@ load(stable_distance, 'mini_stable_distance')
 conf.mini_stable_distance = mini_stable_distance;
 conf.speeds = [240 260 280 300 320 340 360 380 400 440 480 520 560 600 640];
 r = rrt(conf);
-out=r.start_star(false, 7, 0);
+out=r.start_star(false, 7, 0.03);
+
+%列名称
+col={ 'x', 'y', 'z'}; 
+%生成表格，按列生成
+result_table=table(out(:,1),out(:,2),out(:,3),'VariableNames',col);
+%保存表格
+writetable(result_table, 'output/path.csv');

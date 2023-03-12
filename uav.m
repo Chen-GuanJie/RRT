@@ -134,16 +134,23 @@ classdef uav < handle
         end
 
         function target_h = just_follow(this, target_h, delta_dist)
-            % todo:平滑轨迹
             max_delta = this.max_delta_h * delta_dist;
-            [n, ~] = size(target_h);
+            % [n, ~] = size(target_h);
             tmp = diff(target_h);
-            tmp(tmp > max_delta) = max_delta;
-            tmp(tmp <- max_delta) = -max_delta;
+            index = find(abs(tmp) > max_delta);
 
-            for i = 2:n
-                target_h(i) = target_h(i - 1) + tmp(i - 1);
+            while (~isempty(index))
+                target_h = smooth(target_h);
+                tmp = diff(target_h);
+                index = find(abs(tmp) > max_delta);
             end
+
+            % tmp(tmp > max_delta) = max_delta;
+            % tmp(tmp < -max_delta) = -max_delta;
+
+            % for i = 2:n
+            %     target_h(i) = target_h(i - 1) + tmp(i - 1);
+            % end
 
         end
 
@@ -197,7 +204,9 @@ classdef uav < handle
             movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
             newNode(1:3) = closestNode(1:3) + 4 * movingVec;
             newNode(4:6) = [0 0 0];
-            newNode(3) = map.Z(round(newNode(1)), round(newNode(2))) + 1.2; %目标点的目标高度
+            x = uav.limiter(round(newNode(1)), 372, 1);
+            y = uav.limiter(round(newNode(2)), 673, 1);
+            newNode(3) = map(x, y) + 1.2; %目标点的目标高度
 
         end
 
