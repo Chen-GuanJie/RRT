@@ -1,7 +1,7 @@
 classdef rrt < handle
 
     properties (SetAccess = private)
-        tree %节点位置 % cost parentid id cost_to_newNode
+        tree %节点位置 % cost parentid id cost_channge_to_parent cost_to_newNode
         path_target_h
         time_cost %时间消耗
         energe_cost %能量消耗
@@ -113,7 +113,58 @@ classdef rrt < handle
             cost = norm([cost_dist, cost_angle, cost_hight]);
         end
 
-        function cost = calc_cost_v2(~, from_node, dest_node, new_target_h)
+        function [id, flag] = get_ancestor(this, prev)
+            flag = false;
+            id = zeros(1, 1);
+            this.tmp_ind = 1;
+            prev = this.tree(prev, 8);
+
+            while prev > 0
+                flag = true;
+                id(this.tmp_ind, 1) = prev;
+                this.tmp_ind = this.tmp_ind + 1;
+                % this.path(this.tmp_ind, :) = this.tree(prev, :);
+                prev = this.tree(prev, 8);
+            end
+
+        end
+
+        function [cost, delta_cost] = calc_cost_v2(this, from_node, dest_node, new_target_h)
+            [ancestors, flag] = this.get_ancestor(from_node(1, 9));
+            delta_cost = 0;
+
+            if flag
+                this.tmp_value = this.tree(ancestors, 10);
+                [n, ~] = size(ancestors);
+
+                for i = n:-1:1
+
+                    if this.tmp_value(i) ~= 0
+                        this.tmp_ind = find(this.tree(:, 8) == ancestors(i, 1)); %同父节点的节点的下标
+                        this.tree(this.tmp_ind, 10) = this.tree(this.tmp_ind, 10) + this.tmp_value(i);
+                        this.tree(this.tmp_ind, 7) = this.tree(this.tmp_ind, 7) + this.tmp_value(i);
+                        this.tree(ancestors(i, 1), 10) = 0;
+                        delta_cost = delta_cost + this.tmp_value(i);
+                    end
+
+                end
+
+            end
+
+            % this.tmp_ind = from_node(1, 8);
+
+            % if this.tmp_ind > 0
+            %     this.tmp_value = this.tree(this.tmp_ind, 10); %from父节点的代价变化值
+
+            %     if this.tmp_value ~= 0
+            %         this.tmp_ind = find(this.tree(:, 8) == from_node(1, 8)); %同父节点的节点的下标
+            %         this.tree(this.tmp_ind, 10) = this.tree(this.tmp_ind, 10) + this.tmp_value;
+            %         this.tree(this.tmp_ind, 7) = this.tree(this.tmp_ind, 7) + this.tmp_value;
+            %         this.tree(from_node(1, 8), 10) = 0;
+            %     end
+
+            % end
+
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
             cost_hight = 6 * sum(abs(diff(new_target_h)));
             % cost_angle = norm(from_node(4:6) - dest_node(4:6));
@@ -146,9 +197,8 @@ classdef rrt < handle
 
         function insert_node(this, parent_id)
             %插入节点
-            this.newNode(8) = parent_id;
-            this.newNode(9) = this.nodenum;
-            this.tree(this.nodenum, 1:9) = this.newNode;
+            this.newNode(1, 8:10) = [parent_id this.nodenum 0];
+            this.tree(this.nodenum, 1:10) = this.newNode;
             this.nodenum = this.nodenum + 1;
         end
 
@@ -200,7 +250,8 @@ classdef rrt < handle
                     [new_target_h, this.tmp_flag] = this.robot.follow(this.nearNodes(i, :), this.newNode, target_h(:, 3), delta_dist);
 
                     if this.tmp_flag
-                        this.tmp_value = this.calc_cost_v2(this.nearNodes(i, :), this.newNode, new_target_h); % 新节点与附近的相邻转移代价 + this.nearNodes(i, 7);
+                        [this.tmp_value, delta_cost] = this.calc_cost_v2(this.nearNodes(i, :), this.newNode, new_target_h); % 新节点与附近的相邻转移代价 + this.nearNodes(i, 7);
+                        this.nearNodes(i, 7) = delta_cost;
                     else
                         this.tmp_value = inf;
                     end
@@ -209,10 +260,10 @@ classdef rrt < handle
                     this.tmp_value = inf;
                 end
 
-                this.nearNodes(i, 10) = this.tmp_value;
+                this.nearNodes(i, 11) = this.tmp_value;
             end
 
-            this.compare_table = this.nearNodes(:, 10) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
+            this.compare_table = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
             [this.newNode(7), this.tmp_ind] = min(this.compare_table);
             new_parent_id = this.nearNodes(this.tmp_ind, 9);
             % this.newNode(7) = mini_cost;
@@ -290,7 +341,7 @@ classdef rrt < handle
         function rewire_v2(this, new_parent_id)
             %重布线
             this.nearNodes(this.nearNodes(:, 9) == new_parent_id, :) = [];
-            this.compare_table = this.nearNodes(:, 10) + this.newNode(7); %新节点作为附近点的父节点后的代价
+            this.compare_table = this.nearNodes(:, 11) + this.newNode(7); %新节点作为附近点的父节点后的代价
             index = this.compare_table(:, 1) - this.nearNodes(:, 7) < 0; %替换后代价变小的点的下标
             this.tmp_ind = this.nearNodes(index, 9); %替换后代价变小的点的id
             [this.replot_num, ~] = size(this.tmp_ind);
@@ -299,6 +350,7 @@ classdef rrt < handle
             this.replot(1:this.replot_num, 1:2) = [this.tmp_ind this.tree(this.tmp_ind, 8)];
             this.replot(1:this.replot_num, 3) = this.newNode(9);
 
+            this.tree(this.tmp_ind, 10) = this.nearNodes(index, 10) + this.compare_table(index) - this.nearNodes(index, 7);
             this.tree(this.tmp_ind, 7) = this.compare_table(index);
             this.tree(this.tmp_ind, 8) = this.newNode(9);
 
@@ -530,17 +582,17 @@ classdef rrt < handle
             path_num = this.find_best_path(path_number);
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
-            % [new_path, interp_num] = this.follow_ground(path_num);
+            [new_path, interp_num] = this.follow_ground(path_num);
 
-            % if ~isempty(this.path_plot)
-            %     delete(this.path_plot);
-            % end
+            if ~isempty(this.path_plot)
+                delete(this.path_plot);
+            end
 
-            % this.path = new_path;
-            % plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
-            % % this.path_sample=this.path;
-            % this.path_evaluate(interp_num);
-            % output = this.maps.to_normal_size(this.path);
+            this.path = new_path;
+            plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
+            % this.path_sample=this.path;
+            this.path_evaluate(interp_num);
+            output = this.maps.to_normal_size(this.path);
         end
 
         function start_rrt(this, ifdisplay, max_time, delay_time)
