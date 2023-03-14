@@ -129,42 +129,18 @@ classdef rrt < handle
 
         end
 
-        function [cost, delta_cost] = calc_cost_v2(this, from_node, dest_node, new_target_h)
-            [ancestors, flag] = this.get_ancestor(from_node(1, 9));
-            delta_cost = 0;
+        function output = cumcost(this, prev)
+            this.tmp_ind = 1;
+            output = 0;
 
-            if flag
-                this.tmp_value = this.tree(ancestors, 10);
-                [n, ~] = size(ancestors);
-
-                for i = n:-1:1
-
-                    if this.tmp_value(i) ~= 0
-                        this.tmp_ind = find(this.tree(:, 8) == ancestors(i, 1)); %同父节点的节点的下标
-                        this.tree(this.tmp_ind, 10) = this.tree(this.tmp_ind, 10) + this.tmp_value(i);
-                        this.tree(this.tmp_ind, 7) = this.tree(this.tmp_ind, 7) + this.tmp_value(i);
-                        this.tree(ancestors(i, 1), 10) = 0;
-                        delta_cost = delta_cost + this.tmp_value(i);
-                    end
-
-                end
-
+            while prev > 0
+                output = output + this.tree(prev, 10);
+                prev = this.tree(prev, 8);
             end
 
-            % this.tmp_ind = from_node(1, 8);
+        end
 
-            % if this.tmp_ind > 0
-            %     this.tmp_value = this.tree(this.tmp_ind, 10); %from父节点的代价变化值
-
-            %     if this.tmp_value ~= 0
-            %         this.tmp_ind = find(this.tree(:, 8) == from_node(1, 8)); %同父节点的节点的下标
-            %         this.tree(this.tmp_ind, 10) = this.tree(this.tmp_ind, 10) + this.tmp_value;
-            %         this.tree(this.tmp_ind, 7) = this.tree(this.tmp_ind, 7) + this.tmp_value;
-            %         this.tree(from_node(1, 8), 10) = 0;
-            %     end
-
-            % end
-
+        function cost = calc_cost_v2(~, from_node, dest_node, new_target_h)
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
             cost_hight = 6 * sum(abs(diff(new_target_h)));
             % cost_angle = norm(from_node(4:6) - dest_node(4:6));
@@ -197,7 +173,7 @@ classdef rrt < handle
 
         function insert_node(this, parent_id)
             %插入节点
-            this.newNode(1, 8:10) = [parent_id this.nodenum 0];
+            this.newNode(1, 8:9) = [parent_id this.nodenum];
             this.tree(this.nodenum, 1:10) = this.newNode;
             this.nodenum = this.nodenum + 1;
         end
@@ -220,9 +196,9 @@ classdef rrt < handle
 
             if this.ifdisplay
 
-                % if ~isempty(this.path_plot)
-                %     delete(this.path_plot);
-                % end
+                if ~isempty(this.path_plot)
+                    delete(this.path_plot);
+                end
 
                 this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
             end
@@ -250,8 +226,8 @@ classdef rrt < handle
                     [new_target_h, this.tmp_flag] = this.robot.follow(this.nearNodes(i, :), this.newNode, target_h(:, 3), delta_dist);
 
                     if this.tmp_flag
-                        [this.tmp_value, delta_cost] = this.calc_cost_v2(this.nearNodes(i, :), this.newNode, new_target_h); % 新节点与附近的相邻转移代价 + this.nearNodes(i, 7);
-                        this.nearNodes(i, 7) = delta_cost;
+                        this.tmp_value = this.calc_cost_v2(this.nearNodes(i, :), this.newNode, new_target_h); % 新节点与附近的相邻转移代价 + this.nearNodes(i, 7);
+                        this.nearNodes(i, 7) = this.cumcost(this.nearNodes(i, 9)); %this.nearNodes(i, 7) + delta_cost;
                     else
                         this.tmp_value = inf;
                     end
@@ -264,9 +240,9 @@ classdef rrt < handle
             end
 
             this.compare_table = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
-            [this.newNode(7), this.tmp_ind] = min(this.compare_table);
+            [this.newNode(1, 7), this.tmp_ind] = min(this.compare_table);
+            this.newNode(1, 10) = this.nearNodes(this.tmp_ind, 11);
             new_parent_id = this.nearNodes(this.tmp_ind, 9);
-            % this.newNode(7) = mini_cost;
 
         end
 
@@ -342,7 +318,7 @@ classdef rrt < handle
             %重布线
             this.nearNodes(this.nearNodes(:, 9) == new_parent_id, :) = [];
             this.compare_table = this.nearNodes(:, 11) + this.newNode(7); %新节点作为附近点的父节点后的代价
-            index = this.compare_table(:, 1) - this.nearNodes(:, 7) < 0; %替换后代价变小的点的下标
+            index = (this.compare_table(:, 1) - this.nearNodes(:, 7)) < 0; %替换后代价变小的点的下标
             this.tmp_ind = this.nearNodes(index, 9); %替换后代价变小的点的id
             [this.replot_num, ~] = size(this.tmp_ind);
             this.rewire_num = this.rewire_num + this.replot_num;
@@ -350,11 +326,9 @@ classdef rrt < handle
             this.replot(1:this.replot_num, 1:2) = [this.tmp_ind this.tree(this.tmp_ind, 8)];
             this.replot(1:this.replot_num, 3) = this.newNode(9);
 
-            this.tree(this.tmp_ind, 10) = this.nearNodes(index, 10) + this.compare_table(index) - this.nearNodes(index, 7);
-            this.tree(this.tmp_ind, 7) = this.compare_table(index);
+            this.tree(this.tmp_ind, 10) = this.nearNodes(index, 11);
             this.tree(this.tmp_ind, 8) = this.newNode(9);
 
-            %todo: replot
         end
 
         function redisplay(this)
@@ -532,7 +506,7 @@ classdef rrt < handle
                 this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
             end
 
-            this.newNode = [this.start 0];
+            this.newNode = [this.start 0 0 0 0];
             this.insert_node(-1);
             neighbor_dist = 20 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
