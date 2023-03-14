@@ -18,12 +18,13 @@ classdef rrt < handle
         randnum
         edges
         multi_state
+        path_id = []
 
         nearNodes
         newNode
         nodenum
         map_scale
-
+        ifdisplay = false
         informed
         long_axis % 长轴
         short_axis %短轴
@@ -106,7 +107,7 @@ classdef rrt < handle
         function cost = calc_cost(~, from_node, dest_node)
             %计算相邻两点的代价
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
-            cost_hight = 3 * norm(from_node(3) - dest_node(3));
+            cost_hight = 6 * norm(from_node(3) - dest_node(3));
             cost_angle = norm(from_node(4:6) - dest_node(4:6));
             %consumption = this.robot.calc_consumption();
             cost = norm([cost_dist, cost_angle, cost_hight]);
@@ -114,7 +115,7 @@ classdef rrt < handle
 
         function cost = calc_cost_v2(~, from_node, dest_node, new_target_h)
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
-            cost_hight = 2 * sum(abs(diff(new_target_h)));
+            cost_hight = 6 * sum(abs(diff(new_target_h)));
             % cost_angle = norm(from_node(4:6) - dest_node(4:6));
             %consumption = this.robot.calc_consumption();
             cost = norm([cost_dist, cost_hight]);
@@ -163,16 +164,31 @@ classdef rrt < handle
                 prev = this.tree(prev, 8);
             end
 
+            path_num = this.tmp_ind;
             this.tmp_value = this.path(2:this.tmp_ind, 1:3) - this.path(1:this.tmp_ind - 1, 1:3);
             path_len = sum(sqrt(sum(this.tmp_value .^ 2, 2)));
 
-            if ~isempty(this.path_plot)
-                delete(this.path_plot);
+            if this.ifdisplay
+
+                % if ~isempty(this.path_plot)
+                %     delete(this.path_plot);
+                % end
+
+                this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
             end
 
-            path_num = this.tmp_ind;
-            this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
+        end
 
+        function path_num = find_best_path(this, path_number)
+            path_length = zeros(path_number, 1);
+            this.ifdisplay = true;
+
+            for i = 1:path_number
+                [path_length(i, 1), ~] = this.trace_back(this.path_id(i));
+            end
+
+            [~, best_path_id] = min(path_length);
+            [~, path_num] = this.trace_back(this.path_id(best_path_id));
         end
 
         function new_parent_id = choose_parent_v2(this)
@@ -454,12 +470,13 @@ classdef rrt < handle
 
     methods (Access = public)
 
-        function output = start_star(this, ifdispaly, max_time, delay_time)
+        function output = start_star(this, ifdisplay, max_time, delay_time)
             this.tree = zeros(this.max_nodes, 10);
             this.multi_state = zeros(this.max_nodes, 4);
             this.path = zeros(100, 10);
+            this.ifdisplay = ifdisplay;
 
-            if ifdispaly
+            if this.ifdisplay
                 this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
             end
 
@@ -474,7 +491,7 @@ classdef rrt < handle
                 [closestNode, ~] = this.get_closest(sample);
                 this.newNode = this.robot.transfer_directly(sample, closestNode, this.maps.Z);
 
-                if ifdispaly
+                if this.ifdisplay
                     this.display_serachline(closestNode, sample, delay_time);
                 end
 
@@ -491,7 +508,7 @@ classdef rrt < handle
                         this.insert_node(new_id);
                         this.rewire_v2(new_id);
 
-                        if ifdispaly
+                        if this.ifdisplay
                             this.display_states(delay_time)
                         end
 
@@ -500,6 +517,7 @@ classdef rrt < handle
                     end
 
                 else %if flag == 2
+                    this.path_id(end + 1) = new_id;
                     this.isgoal = this.isgoal + 1;
                     this.randnum = 2; %搜索点不取goal
                     [path_len, ~] = this.trace_back(new_id);
@@ -508,28 +526,29 @@ classdef rrt < handle
 
             end
 
-            [~, path_num] = this.trace_back(new_id);
-
+            [~, path_number] = size(this.path_id);
+            path_num = this.find_best_path(path_number);
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
-            [new_path, interp_num] = this.follow_ground(path_num);
+            % [new_path, interp_num] = this.follow_ground(path_num);
 
-            if ~isempty(this.path_plot)
-                delete(this.path_plot);
-            end
+            % if ~isempty(this.path_plot)
+            %     delete(this.path_plot);
+            % end
 
-            this.path = new_path;
-            plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
-            % this.path_sample=this.path;
-            this.path_evaluate(interp_num);
-            output = this.maps.to_normal_size(this.path);
+            % this.path = new_path;
+            % plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
+            % % this.path_sample=this.path;
+            % this.path_evaluate(interp_num);
+            % output = this.maps.to_normal_size(this.path);
         end
 
-        function start_rrt(this, ifdispaly, max_time, delay_time)
+        function start_rrt(this, ifdisplay, max_time, delay_time)
             this.tree = zeros(this.max_nodes, 6);
             this.path = zeros(100, 6);
             this.newNode = this.start;
             this.insert_node(-1);
+            this.ifdisplay = ifdisplay;
             tic
 
             while toc < max_time
@@ -537,7 +556,7 @@ classdef rrt < handle
                 [closestNode, parentid] = this.get_closest(sample);
                 this.extends(sample, closestNode);
 
-                if ifdispaly
+                if this.ifdisplay
                     tp = this.display_line(closestNode, sample, 3, 'k');
 
                     if delay_time ~= 0
@@ -558,7 +577,7 @@ classdef rrt < handle
                     break;
                 end
 
-                if ifdispaly
+                if this.ifdisplay
                     this.display_line(this.tree(this.newNode(8), :), this.newNode, 1, 'b');
 
                     if delay_time ~= 0
