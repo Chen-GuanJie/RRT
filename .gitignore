@@ -1,4 +1,6 @@
 data/
 output/
 *.asv
+*.fig
+*.mat
 test.m
