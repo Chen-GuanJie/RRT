@@ -14,7 +14,7 @@ classdef map < handle
         height_limit
         threshold_high %离地最高高度
         threshold_low %离地最低高度
-        map_scale %地图相邻点的距离
+        height_scale %地图相邻点的距离
         mini_x
         mini_y
         %temp value
@@ -39,7 +39,7 @@ classdef map < handle
         function this = map(arg)
 
             %             if isa(arg, 'str') && exist(arg, 'file')
-            load(arg, 'dem_data')
+            dem_data=coder.load(arg);
             dem_data = sortrows(dem_data);
             %             elseif isa(arg, 'double')
             %                 dem_data = arg;
@@ -48,7 +48,7 @@ classdef map < handle
             x = dem_data(:, 1);
             y = dem_data(:, 2);
             z = dem_data(:, 3);
-            this.map_scale = x(2) - x(1);
+            this.height_scale = 500; %x(2) - x(1);
             this.mini_x = min(x);
             this.mini_y = min(y);
 
@@ -95,6 +95,15 @@ classdef map < handle
 
                                 while Y(m) ~= y(k)
                                     m = m + 1;
+
+                                    if m > Yn
+                                        break;
+                                    end
+
+                                end
+
+                                if m > Yn
+                                    break;
                                 end
 
                                 Height(i, m) = z(start + k - 1);
@@ -110,7 +119,7 @@ classdef map < handle
 
             this.X = X;
             this.Y = Y;
-            this.Z = Height / (X(2) - X(1));
+            this.Z = Height / this.height_scale;
             this.ZT = this.Z';
             this.tmp_h = zeros(1, 10);
         end
@@ -130,6 +139,8 @@ classdef map < handle
             %检查两点连线是否与地形碰撞
             flag = true;
             delta_dist = norm(from(1:2) - to(1:2));
+            start_insdex = zeros(1, 2);
+            end_insdex = zeros(1, 2);
 
             start_insdex(1:2) = round(from(1:2));
             end_insdex(1:2) = round(to(1:2));
@@ -288,13 +299,9 @@ classdef map < handle
         end
 
         function best_path = to_normal_size(this, best_path)
-            best_path(:, 1) = best_path(:, 1)  + this.mini_x;
-            best_path(:, 2) = best_path(:, 2)  + this.mini_y;
-            best_path(:, 3) = best_path(:, 3) ;
-        end
-
-        function display_map(this)
-            meshz(1:this.X_num, 1:this.Y_num, this.Z'); hold on
+            best_path(:, 1) = best_path(:, 1) + this.mini_x;
+            best_path(:, 2) = best_path(:, 2) + this.mini_y;
+            best_path(:, 3) = best_path(:, 3);
         end
 
     end

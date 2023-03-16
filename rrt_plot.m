@@ -89,6 +89,9 @@ classdef rrt_plot < rrt
             plot(1:path_num, this.path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
             legend
         end
+        function display_map(this)
+            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z'); hold on
+        end
 
     end
 
@@ -97,7 +100,7 @@ classdef rrt_plot < rrt
         function this = rrt_plot(conf)
             this = this@rrt(conf);
             figure(1)
-            this.maps.display_map()
+            this.display_map()
             this.plot_point(1).point = scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
             this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
             this.plot_point(1).text = text(this.start(1), this.start(2), this.start(3), '  起点');

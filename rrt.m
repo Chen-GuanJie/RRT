@@ -19,6 +19,7 @@ classdef rrt < handle
         nearNodes
         newNode
         nodenum
+        height_scale
         map_scale
         %informed
         informed = false
@@ -73,8 +74,8 @@ classdef rrt < handle
         function flag = neighbors(this, dis)
             %找附近的点
             flag = 0;
-            this.compare_table = this.tree(1:this.nodenum - 1, 1:3) - this.newNode(1:3);
-            this.compare_table = sum(this.compare_table(:, 1:3) .^ 2, 2);
+            this.compare_table = this.tree(1:this.nodenum - 1, 1:2) - this.newNode(1:2);
+            this.compare_table = sum(this.compare_table(:, 1:2) .^ 2, 2);
             [this.tmp_value, ~] = min(this.compare_table); %最近的距离
             % this.tmp_value = sqrt(this.tmp_value); %最近的距离
 
@@ -87,8 +88,8 @@ classdef rrt < handle
 
         function [node, index] = get_closest(this, sample)
             %找最近点
-            this.compare_table = this.tree(1:this.nodenum - 1, 1:3) - sample(1:3);
-            [~, index] = min(sum(this.compare_table(:, 1:3) .^ 2, 2));
+            this.compare_table = this.tree(1:this.nodenum - 1, 1:2) - sample(1:2);
+            [~, index] = min(sum(this.compare_table(:, 1:2) .^ 2, 2));
             node = this.tree(index, :);
         end
 
@@ -337,8 +338,8 @@ classdef rrt < handle
                 this.path(i, 8) = this.path(i, 3) - this.path(i, 9); %轨迹上的高度差
             end
 
-            % this.path(:,1:3)=this.path(:,1:3)*this.map_scale;
-            % this.path(:,8:9)=this.path(:,8:9)*this.map_scale;
+            % this.path(:,1:3)=this.path(:,1:3)*this.height_scale;
+            % this.path(:,8:9)=this.path(:,8:9)*this.height_scale;
 
             % for this.tmp_ind = 1:6
             %     this.path(1:interp_num:path_num,this.tmp_ind)=interp1(1:path_num,this.path(1:path_num,this.tmp_ind ),1:interp_num:path_num,'spline');
@@ -379,9 +380,12 @@ classdef rrt < handle
         end
 
         function output = to_normal_size(this)
-            output(:, 1:3) = this.path(:, 1:3) * this.map_scale;
-            output(:, 1) = this.path(:, 1) + this.maps.X(1);
-            output(:, 2) = this.path(:, 2) + this.maps.Y(1);
+            output=zeros(1,3);
+            output(:, 1:2) = this.path(:, 1:2) * this.map_scale;
+            output(:, 3) = this.path(:, 3) * this.height_scale;
+
+            output(:, 1) = output(:, 1) + min(this.maps.X);
+            output(:, 2) = output(:, 2) + min(this.maps.Y);
             % output = this.path(:, 1:3);
         end
 
@@ -463,7 +467,9 @@ classdef rrt < handle
 
             this.path = new_path;
             % this.path_sample=this.path;
-            output = this.maps.to_normal_size(this.path);
+            % output = this.maps.to_normal_size(this.path);
+            output = this.to_normal_size();
+
         end
 
         function start_rrt(this, ifdisplay, max_time, delay_time)
@@ -478,16 +484,6 @@ classdef rrt < handle
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
                 this.extends(sample, closestNode);
-
-                if this.ifdisplay
-                    tp = this.display_line(closestNode, sample, 3, 'k');
-
-                    if delay_time ~= 0
-                        pause(delay_time);
-                    end
-
-                    delete(tp);
-                end
 
                 flag = this.check_newNode();
 
@@ -520,8 +516,8 @@ classdef rrt < handle
         end
 
         function set_start_end(this, s, g)
-            s(3) = this.maps.Z(s(1), s(2)) + s(3) / this.map_scale;
-            g(3) = this.maps.Z(g(1), g(2)) + g(3) / this.map_scale;
+            s(3) = this.maps.Z(s(1), s(2)) + s(3) / this.height_scale;
+            g(3) = this.maps.Z(g(1), g(2)) + g(3) / this.height_scale;
 
             this.start = s;
             this.goal = g;
@@ -530,20 +526,21 @@ classdef rrt < handle
 
         function set_params(this, conf)
             this.height_cost_rate = conf.height_cost_rate;
-            this.threshold_close = (conf.threshold_close / this.map_scale) ^ 2;
-            this.threshold_goal = conf.threshold_goal / this.map_scale;
+            this.threshold_close = (conf.threshold_close / this.height_scale) ^ 2;
+            this.threshold_goal = conf.threshold_goal / this.height_scale;
             this.max_nodes = conf.max_nodes;
             this.randnums = conf.randnum;
         end
 
         function this = rrt(conf)
             this.maps = map(conf.filename);
-            conf.map_scale = this.maps.X(2) - this.maps.X(1);
-            this.map_scale = conf.map_scale;
-            this.maps.set_height_limit(conf.height_limit / this.map_scale);
+            conf.map_scale = 500; %
+            this.map_scale=this.maps.X(2) - this.maps.X(1);
+            this.height_scale = conf.map_scale;
+            this.maps.set_height_limit(conf.height_limit / this.height_scale);
             Height = this.maps.Z;
-            this.start = [conf.start(1), conf.start(2), Height(conf.start(1), conf.start(2)) + conf.start(3) / this.map_scale, conf.start(4), conf.start(5), conf.start(6)];
-            this.goal = [conf.goal(1), conf.goal(2), Height(conf.goal(1), conf.goal(2)) + conf.goal(3) / this.map_scale, conf.goal(4), conf.goal(5), conf.goal(6)];
+            this.start = [conf.start(1), conf.start(2), Height(conf.start(1), conf.start(2)) + conf.start(3) / this.height_scale, conf.start(4), conf.start(5), conf.start(6)];
+            this.goal = [conf.goal(1), conf.goal(2), Height(conf.goal(1), conf.goal(2)) + conf.goal(3) / this.height_scale, conf.goal(4), conf.goal(5), conf.goal(6)];
             this.searchbBase = [1, 1, min(min(Height)), -pi, -pi, -pi];
             this.searchSize = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
             %            this.replot = zeros(50, 3);

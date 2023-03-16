@@ -202,6 +202,7 @@ classdef uav < handle
         function newNode = transfer_directly(sample, closestNode, map)
             movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), sample(3) - closestNode(3)];
             movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
+            newNode=zeros(1,6);
             newNode(1:3) = closestNode(1:3) + 4 * movingVec;
             newNode(4:6) = [0 0 0];
             x = uav.limiter(round(newNode(1)), 372, 1);

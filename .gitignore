@@ -1,6 +1,8 @@
 data/
 output/
+codegen/
 *.asv
 *.fig
 *.mat
 test.m
+rrt_func.prj

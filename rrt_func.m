@@ -1,9 +1,7 @@
-function [r, output] = config(r, ifdispaly, total_time, delay_time)
+function [r, output] = rrt_func(total_time)
 
-    if nargin < 4
-        ifdispaly = false;
+    if nargin < 1
         total_time = 7;
-        delay_time = 0.01;
     end
 
     conf.filename = 'data/dem';
@@ -28,29 +26,11 @@ function [r, output] = config(r, ifdispaly, total_time, delay_time)
 
     conf.GammaStep = 15/180 * pi; %滚转角最大步长
     conf.pitchstep = 10/180 * pi; %俯仰角最大步长
-    stable_distance = 'data/mini_stable_distance';
-    load(stable_distance, 'mini_stable_distance')
+    %stable_distance = 'data/mini_stable_distance.csv';
+    mini_stable_distance=coder.load('data/mini_stable_distance.csv' );
     conf.mini_stable_distance = mini_stable_distance;
     conf.speeds = [240 260 280 300 320 340 360 380 400 440 480 520 560 600 640];
+    r = rrt(conf);
+    output = r.start_star(total_time);
 
-    if exist('r', 'var') && isa(r, 'rrt')
-        r.set_params(conf);
-    else
-        clc; close all;
-        r = rrt_plot(conf);
-
-    end
-
-    if ifdispaly
-        output = r.start_star_plot(total_time, delay_time);
-    else
-        output = r.start_star(total_time);
-    end
-
-    % %列名称
-    % col={ 'x', 'y', 'z'};
-    % %生成表格，按列生成
-    % result_table=table(out(:,1),out(:,2),out(:,3),'VariableNames',col);
-    % %保存表格
-    % writetable(result_table, 'output/path.csv');
 end
