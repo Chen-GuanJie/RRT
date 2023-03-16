@@ -1,22 +1,22 @@
-function output = config(ifdispaly, total_time, delay_time)
-    clc; clear; close all;
+function [r, output] = config(r, ifdispaly, total_time, delay_time)
 
-    if nargin < 3
+    if nargin < 4
         ifdispaly = false;
         total_time = 7;
         delay_time = 0.01;
     end
 
     conf.filename = 'data/Output_500';
-    conf.start = [280 80 500 pi * 45/180 0 0];
-    conf.goal = [70 600 600 pi * 45/180 0 0];
+    conf.start = [83 143 500 pi * 45/180 0 0];
+    conf.goal = [295 301 500 pi * 45/180 0 0];
     conf.threshold_close = 300;
     conf.threshold_goal = 6000;
     conf.search = 1.6;
-    conf.randnum = 0.4;
+    conf.randnum = [0.6 2];
     conf.max_nodes = 3000;
+    conf.height_cost_rate = 15;
 
-    conf.height_limit = 600;
+    conf.height_limit = 500;
     conf.deltaT = 200; %s
     conf.g = 9.8;
     conf.v = 5; %m/s
@@ -32,7 +32,14 @@ function output = config(ifdispaly, total_time, delay_time)
     load(stable_distance, 'mini_stable_distance')
     conf.mini_stable_distance = mini_stable_distance;
     conf.speeds = [240 260 280 300 320 340 360 380 400 440 480 520 560 600 640];
-    r = rrt(conf);
+
+    if exist('r', 'var') && isa(r, 'rrt')
+        r.set_params(conf);
+    else
+        clc; close all;
+        r = rrt(conf);
+    end
+
     output = r.start_star(ifdispaly, total_time, delay_time);
 
     % %列名称

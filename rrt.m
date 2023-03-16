@@ -2,10 +2,6 @@ classdef rrt < handle
 
     properties (SetAccess = private)
         tree %节点位置 % cost parentid id cost_channge_to_parent cost_to_newNode
-        path_target_h
-        time_cost %时间消耗
-        energe_cost %能量消耗
-        velocity %速度
         max_nodes
         maps
         robot
@@ -16,16 +12,20 @@ classdef rrt < handle
         searchSize
         searchbBase
         randnum
+        randnums
         edges
-        multi_state
-        path_id = []
+        % multi_state
+        % path_id = []
+        height_cost_rate
+        plot_point = []
 
         nearNodes
         newNode
         nodenum
         map_scale
         ifdisplay = false
-        informed
+        %informed
+        informed = false
         long_axis % 长轴
         short_axis %短轴
         ellipse_rotation
@@ -33,7 +33,6 @@ classdef rrt < handle
         %temp value
         compare_table
         tmp_ind
-        tmp_flag
         tmp_value
         replot
         replot_num
@@ -140,9 +139,9 @@ classdef rrt < handle
 
         end
 
-        function cost = calc_cost_v2(~, from_node, dest_node, new_target_h)
+        function cost = calc_cost_v2(this, from_node, dest_node, new_target_h)
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
-            cost_hight = 6 * sum(abs(diff(new_target_h)));
+            cost_hight = this.height_cost_rate * sum(abs(diff(new_target_h)));
             % cost_angle = norm(from_node(4:6) - dest_node(4:6));
             %consumption = this.robot.calc_consumption();
             cost = norm([cost_dist, cost_hight]);
@@ -205,16 +204,17 @@ classdef rrt < handle
 
         end
 
-        function path_num = find_best_path(this, path_number)
+        function path_num = find_best_path(this, path_id)
+            [~, path_number] = size(path_id);
             path_length = zeros(path_number, 1);
             this.ifdisplay = true;
 
             for i = 1:path_number
-                [path_length(i, 1), ~] = this.trace_back(this.path_id(i));
+                [path_length(i, 1), ~] = this.trace_back(path_id(i));
             end
 
             [~, best_path_id] = min(path_length);
-            [~, path_num] = this.trace_back(this.path_id(best_path_id));
+            [~, path_num] = this.trace_back(path_id(best_path_id));
         end
 
         function new_parent_id = choose_parent_v2(this)
@@ -223,9 +223,9 @@ classdef rrt < handle
                 [target_h, delta_dist, flag] = this.maps.checkPath_v2(this.nearNodes(i, :), this.newNode);
 
                 if flag
-                    [new_target_h, this.tmp_flag] = this.robot.follow(this.nearNodes(i, :), this.newNode, target_h(:, 3), delta_dist);
+                    [new_target_h, flag2] = this.robot.follow(this.nearNodes(i, :), this.newNode, target_h(:, 3), delta_dist);
 
-                    if this.tmp_flag
+                    if flag2
                         this.tmp_value = this.calc_cost_v2(this.nearNodes(i, :), this.newNode, new_target_h); % 新节点与附近的相邻转移代价 + this.nearNodes(i, 7);
                         this.nearNodes(i, 7) = this.cumcost(this.nearNodes(i, 9)); %this.nearNodes(i, 7) + delta_cost;
                     else
@@ -323,8 +323,10 @@ classdef rrt < handle
             [this.replot_num, ~] = size(this.tmp_ind);
             this.rewire_num = this.rewire_num + this.replot_num;
 
-            this.replot(1:this.replot_num, 1:2) = [this.tmp_ind this.tree(this.tmp_ind, 8)];
-            this.replot(1:this.replot_num, 3) = this.newNode(9);
+            if this.ifdisplay
+                this.replot(1:this.replot_num, 1:2) = [this.tmp_ind this.tree(this.tmp_ind, 8)];
+                this.replot(1:this.replot_num, 3) = this.newNode(9);
+            end
 
             this.tree(this.tmp_ind, 10) = this.nearNodes(index, 11);
             this.tree(this.tmp_ind, 8) = this.newNode(9);
@@ -497,19 +499,44 @@ classdef rrt < handle
     methods (Access = public)
 
         function output = start_star(this, ifdisplay, max_time, delay_time)
+
+            if nargin < 3
+                ifdisplay = false;
+                max_time = 7;
+                delay_time = 0.01;
+            end
+
             this.tree = zeros(this.max_nodes, 10);
-            this.multi_state = zeros(this.max_nodes, 4);
-            this.path = zeros(100, 10);
+            % this.multi_state = zeros(this.max_nodes, 4);
+            this.path = zeros(500, 10);
             this.ifdisplay = ifdisplay;
+            this.nodenum = 1;
+            this.informed = false;
+            this.randnum = this.randnums(1, 1);
+            this.search_num = 0;
+            this.tooclose = 0;
+            this.isgoal = 0;
+            this.no_parent = 0;
+            this.rewire_num = 0;
+            figure(1);
 
             if this.ifdisplay
+
+                if ~isempty(this.edges)
+                    delete(this.edges);
+                end
+
                 this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
             end
 
+            path_id = zeros(5, 1);
             this.newNode = [this.start 0 0 0 0];
             this.insert_node(-1);
             neighbor_dist = 20 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
+            % output = zeros(1, 1);
+            % ind = 1;
+            % last = 0;
 
             while toc <= max_time
                 this.search_num = this.search_num + 1;
@@ -543,17 +570,23 @@ classdef rrt < handle
                     end
 
                 else %if flag == 2
-                    this.path_id(end + 1) = new_id;
                     this.isgoal = this.isgoal + 1;
-                    this.randnum = 2; %搜索点不取goal
+                    path_id(this.isgoal, 1) = new_id;
+                    this.randnum = this.randnums(1, 2); %搜索点不取goal
                     [path_len, ~] = this.trace_back(new_id);
                     this.prepare_informed(path_len);
                 end
 
+                % if toc - last > 0.5
+                %     last = toc;
+                %     output(ind) = this.search_num;
+                %     ind = ind + 1;
+                % end
+
             end
 
-            [~, path_number] = size(this.path_id);
-            path_num = this.find_best_path(path_number);
+            % [~, path_number] = size(this.path_id);
+            path_num = this.find_best_path(path_id);
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = this.follow_ground(path_num);
@@ -622,44 +655,52 @@ classdef rrt < handle
 
         end
 
+        function set_start_end(this, s, g)
+            s(3) = this.maps.Z(s(1), s(2)) + s(3) / this.map_scale;
+            g(3) = this.maps.Z(g(1), g(2)) + g(3) / this.map_scale;
+
+            this.start = s;
+            this.goal = g;
+            figure(1)
+            delete(this.plot_point(1).point);
+            delete(this.plot_point(2).point);
+            delete(this.plot_point(1).text);
+            delete(this.plot_point(2).text);
+
+            this.plot_point(1).point = scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k');
+            this.plot_point(1).text = text(this.start(1), this.start(2), this.start(3), '  起点');
+            this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', 'o', 'MarkerEdgeColor', 'k');
+            this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  终点');
+
+        end
+
+        function set_params(this, conf)
+            this.height_cost_rate = conf.height_cost_rate;
+            this.threshold_close = (conf.threshold_close / this.map_scale) ^ 2;
+            this.threshold_goal = conf.threshold_goal / this.map_scale;
+            this.max_nodes = conf.max_nodes;
+            this.randnums = conf.randnum;
+        end
+
         function this = rrt(conf)
             this.maps = map(conf.filename);
             conf.map_scale = this.maps.X(2) - this.maps.X(1);
             this.map_scale = conf.map_scale;
             this.maps.set_height_limit(conf.height_limit / this.map_scale);
-            % X = this.maps.X;
-            % Y = this.maps.Y;
             Height = this.maps.Z;
-            % this.start = [X(conf.start(1)), Y(conf.start(2)), Height(conf.start(1), conf.start(2)) + conf.start(3), conf.start(4), conf.start(5), conf.start(6)];
-            % this.goal = [X(conf.goal(1)), Y(conf.goal(2)), Height(conf.goal(1), conf.goal(2)) + conf.goal(3), conf.goal(4), conf.goal(5), conf.goal(6)];
             this.start = [conf.start(1), conf.start(2), Height(conf.start(1), conf.start(2)) + conf.start(3) / this.map_scale, conf.start(4), conf.start(5), conf.start(6)];
             this.goal = [conf.goal(1), conf.goal(2), Height(conf.goal(1), conf.goal(2)) + conf.goal(3) / this.map_scale, conf.goal(4), conf.goal(5), conf.goal(6)];
-
-            % this.threshold = conf.threshold;
-            %this.searchSize = conf.search * [(goal(1) - start(1)), (goal(2) - start(2)), goal(3) - start(3), 0, 0, 0];
-            this.randnum = conf.randnum;
-            this.nodenum = 1;
-            % this.searchbBase = [min(X), min(Y), min(min(Height)), -pi, -pi, -pi];
-            % this.searchSize = [max(X) - min(X), max(Y) - min(Y), max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
-
             this.searchbBase = [1, 1, min(min(Height)), -pi, -pi, -pi];
             this.searchSize = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
-
-            this.max_nodes = conf.max_nodes;
-            this.informed = false;
-            this.replot = zeros(10, 3);
-
-            this.threshold_close = (conf.threshold_close / conf.map_scale) ^ 2;
-            this.threshold_goal = conf.threshold_goal / conf.map_scale;
-
+            this.replot = zeros(50, 3);
             this.robot = uav(conf);
-
+            this.set_params(conf);
             figure(1)
             this.maps.display_map()
-            scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
-            scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
-            text(this.start(1), this.start(2), this.start(3), '  起点');
-            text(this.goal(1), this.goal(2), this.goal(3), '  终点');
+            this.plot_point(1).point = scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
+            this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
+            this.plot_point(1).text = text(this.start(1), this.start(2), this.start(3), '  起点');
+            this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  终点');
             xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
             title('RRT算法UAV航迹规划路径');
 
