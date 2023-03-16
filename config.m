@@ -37,10 +37,20 @@ function [r, output] = config(r, ifdispaly, total_time, delay_time)
         r.set_params(conf);
     else
         clc; close all;
-        r = rrt(conf);
+
+        if ifdispaly
+            r = rrt_plot(conf);
+        else
+            r = rrt(conf);
+        end
+
     end
 
-    output = r.start_star(ifdispaly, total_time, delay_time);
+    if ifdispaly
+        output = r.start_star_plot(total_time, delay_time);
+    else
+        output = r.start_star(total_time);
+    end
 
     % %列名称
     % col={ 'x', 'y', 'z'};
