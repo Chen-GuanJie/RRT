@@ -1,37 +1,37 @@
 classdef rrt < handle
 
     properties (SetAccess = public)
-        tree %节点位置 % cost parentid id cost_channge_to_parent cost_to_newNode
-        max_nodes
-        maps
-        robot
-        start
-        goal
-        threshold_close
-        threshold_goal
-        searchSize
-        searchbBase
-        randnum
-        randnums
+        tree = zeros(100, 10) %节点位置 % cost parentid id cost_channge_to_parent cost_to_newNode
+        max_nodes = 100
+        maps %= map([0 0])
+        robot %= uav()
+        start = zeros(1, 6)
+        goal = zeros(1, 6)
+        threshold_close = 1
+        threshold_goal = 1
+        searchSize = zeros(1, 6)
+        searchbBase = zeros(1, 6)
+        randnum = 1
+        randnums = zeros(1, 2)
         % multi_state
-        height_cost_rate
+        height_cost_rate = 6
 
-        nearNodes
-        newNode
-        nodenum
-        height_scale
-        map_scale
+        nearNodes = zeros(10, 11)
+        newNode = zeros(1, 10)
+        nodenum = 10
+        height_scale = 500
+        map_scale = 1
         %informed
         informed = false
-        long_axis % 长轴
-        short_axis %短轴
-        ellipse_rotation
-        ellipse_displace
+        long_axis = 1 % 长轴
+        short_axis = 1 %短轴
+        ellipse_rotation = zeros(2, 2)
+        ellipse_displace = zeros(2, 1)
         %temp value
-        compare_table
-        tmp_ind
-        tmp_value
-        replot_num
+        compare_table = zeros(1, 1)
+        tmp_ind = zeros(10, 1)
+        tmp_value = 1
+        replot_num = 1
         %output
         search_num = 0
         tooclose = 0
@@ -39,8 +39,8 @@ classdef rrt < handle
         no_parent = 0
         collision = 0
         rewire_num = 0
-        path
-        path_sample
+        path = zeros(100, 10)
+        path_sample = zeros(2, 2)
     end
 
     methods (Access = public)
@@ -75,15 +75,15 @@ classdef rrt < handle
             %找附近的点
             flag = 0;
             this.compare_table = this.tree(1:this.nodenum - 1, 1:2) - this.newNode(1:2);
-            this.compare_table = sum(this.compare_table(:, 1:2) .^ 2, 2);
-            [this.tmp_value, ~] = min(this.compare_table); %最近的距离
+            this.compare_table(:, 1) = sum(this.compare_table(:, 1:2) .^ 2, 2);
+            [this.tmp_value, ~] = min(this.compare_table(:, 1)); %最近的距离
             % this.tmp_value = sqrt(this.tmp_value); %最近的距离
 
             if this.tmp_value < this.threshold_close %太近
                 flag = 1;
             end
 
-            this.nearNodes = this.tree(this.compare_table < dis, :); %todo: if use find
+            this.nearNodes = [this.tree(this.compare_table < dis, :) 0]; %todo: if use find
         end
 
         function [node, index] = get_closest(this, sample)
@@ -185,7 +185,7 @@ classdef rrt < handle
             end
 
             path_num = this.tmp_ind;
-            this.tmp_value = this.path(2:this.tmp_ind, 1:3) - this.path(1:this.tmp_ind - 1, 1:3);
+            this.tmp_value(:, 1:3) = this.path(2:this.tmp_ind, 1:3) - this.path(1:this.tmp_ind - 1, 1:3);
             path_len = sum(sqrt(sum(this.tmp_value .^ 2, 2)));
 
         end
@@ -224,8 +224,8 @@ classdef rrt < handle
                 this.nearNodes(i, 11) = this.tmp_value;
             end
 
-            this.compare_table = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
-            [this.newNode(1, 7), this.tmp_ind] = min(this.compare_table);
+            this.compare_table(:, 1) = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
+            [this.newNode(1, 7), this.tmp_ind] = min(this.compare_table(:, 1));
             this.newNode(1, 10) = this.nearNodes(this.tmp_ind, 11);
             new_parent_id = this.nearNodes(this.tmp_ind, 9);
 
@@ -301,11 +301,13 @@ classdef rrt < handle
 
         function rewire_v2(this, new_parent_id)
             %重布线
-            this.nearNodes(this.nearNodes(:, 9) == new_parent_id, :) = [];
-            this.compare_table = this.nearNodes(:, 11) + this.newNode(7); %新节点作为附近点的父节点后的代价
+            %this.tmp_value(1,1)=find(this.nearNodes(:, 9) == new_parent_id);
+            %this.nearNodes(this.tmp_value(1,1), :) = [];
+            this.nearNodes(find(this.nearNodes(:, 9) == new_parent_id), 11) = inf;
+            this.compare_table(:, 1) = this.nearNodes(:, 11) + this.newNode(7); %新节点作为附近点的父节点后的代价
             index = (this.compare_table(:, 1) - this.nearNodes(:, 7)) < 0; %替换后代价变小的点的下标
-            this.tmp_ind = this.nearNodes(index, 9); %替换后代价变小的点的id
-            [this.replot_num, ~] = size(this.tmp_ind);
+            this.tmp_ind(:, 1) = this.nearNodes(index, 9); %替换后代价变小的点的id
+            [this.replot_num, ~] = size(this.tmp_ind(:, 1));
             this.rewire_num = this.rewire_num + this.replot_num;
             this.tree(this.tmp_ind, 10) = this.nearNodes(index, 11);
             this.tree(this.tmp_ind, 8) = this.newNode(9);
@@ -379,10 +381,10 @@ classdef rrt < handle
             [num, ~] = size(new_path);
         end
 
-        function output = to_normal_size(this)
-            output=zeros(1,3);
-            output(:, 1:2) = this.path(:, 1:2) * this.map_scale;
-            output(:, 3) = this.path(:, 3) * this.height_scale;
+        function output = to_normal_size(this, new_path, path_num)
+            output = zeros(path_num, 3);
+            output(:, 1:2) = new_path(:, 1:2) * this.map_scale;
+            output(:, 3) = new_path(:, 3) * this.height_scale;
 
             output(:, 1) = output(:, 1) + min(this.maps.X);
             output(:, 2) = output(:, 2) + min(this.maps.Y);
@@ -419,12 +421,14 @@ classdef rrt < handle
             % output = zeros(1, 1);
             % ind = 1;
             % last = 0;
+            new_id = zeros(1, 1);
+            path_len = zeros(1, 1);
 
             while toc <= max_time
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
                 [closestNode, ~] = this.get_closest(sample);
-                this.newNode = this.robot.transfer_directly(sample, closestNode, this.maps.Z);
+                this.newNode(1, 1:6) = this.robot.transfer_directly(sample, closestNode, this.maps.Z);
 
                 if this.neighbors(neighbor_dist)
                     this.tooclose = this.tooclose + 1;
@@ -461,14 +465,14 @@ classdef rrt < handle
 
             % [~, path_number] = size(this.path_id);
             path_num = this.find_best_path(path_id);
-            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
+            %fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = this.follow_ground(path_num);
 
-            this.path = new_path;
+            %this.path = new_path;
             % this.path_sample=this.path;
             % output = this.maps.to_normal_size(this.path);
-            output = this.to_normal_size();
+            output = this.to_normal_size(new_path, interp_num);
 
         end
 
@@ -533,9 +537,9 @@ classdef rrt < handle
         end
 
         function this = rrt(conf)
-            this.maps = map(conf.filename);
+            this.maps = map(conf.dem_data);
             conf.map_scale = 500; %
-            this.map_scale=this.maps.X(2) - this.maps.X(1);
+            this.map_scale = this.maps.X(1, 2) - this.maps.Y(1, 1);
             this.height_scale = conf.map_scale;
             this.maps.set_height_limit(conf.height_limit / this.height_scale);
             Height = this.maps.Z;

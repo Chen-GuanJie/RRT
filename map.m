@@ -1,33 +1,33 @@
 classdef map < handle
 
     properties (SetAccess = public)
-        X
-        Y
-        Z
-        X_num
-        Y_num
-        Z_num
+        X = zeros(1, 1)
+        Y = zeros(1, 1)
+        Z = zeros(1, 1)
+        X_num = 0
+        Y_num = 0
+        Z_num = 0
     end
 
     properties (SetAccess = private)
-        ZT %地图转置
-        height_limit
-        threshold_high %离地最高高度
-        threshold_low %离地最低高度
-        height_scale %地图相邻点的距离
-        mini_x
-        mini_y
+        ZT = zeros(1, 1) %地图转置
+        height_limit = 1
+        threshold_high = 1 %离地最高高度
+        threshold_low = 1 %离地最低高度
+        height_scale = 500 %地图相邻点的距离
+        mini_x = 0
+        mini_y = 0
         %temp value
-        tmp_ind
-        h_up
-        h_down
-        tmp_h
-        y_up
-        y_down
-        x_ind
+        tmp_ind = 0
+        h_up = zeros(1, 1)
+        h_down = zeros(1, 1)
+        tmp_h = zeros(1, 1)
+        y_up = zeros(1, 1)
+        y_down = zeros(1, 1)
+        x_ind = zeros(1, 1)
 
-        debug
-        debug2
+        % debug
+        % debug2
     end
 
     methods (Access = public)
@@ -36,10 +36,10 @@ classdef map < handle
             this.height_limit = height_limit;
         end
 
-        function this = map(arg)
+        function this = map(dem_data)
 
             %             if isa(arg, 'str') && exist(arg, 'file')
-            dem_data=coder.load(arg);
+            % dem_data = conf.dem_data; %coder.load(arg);
             dem_data = sortrows(dem_data);
             %             elseif isa(arg, 'double')
             %                 dem_data = arg;
@@ -82,34 +82,34 @@ classdef map < handle
 
                     if (stop - start + 1) == Yn
                         Height(i, :) = z(start:stop);
-                    else
-                        a = find(Y == y(start));
-                        b = find(Y == y(stop));
+                    else %todo:
+                        % a = find(Y == y(start));
+                        % b = find(Y == y(stop));
 
-                        if (b - a) == stop - start
-                            Height(i, a:b) = z((start:stop));
-                        else
-                            m = 1;
+                        % if (b - a) == stop - start
+                        %     Height(i, a:b) = z((start:stop));
+                        % else
+                        m = 1;
 
-                            for k = 1:stop - start + 1
+                        for k = 1:stop - start + 1
 
-                                while Y(m) ~= y(k)
-                                    m = m + 1;
-
-                                    if m > Yn
-                                        break;
-                                    end
-
-                                end
+                            while Y(m) ~= y(k)
+                                m = m + 1;
 
                                 if m > Yn
                                     break;
                                 end
 
-                                Height(i, m) = z(start + k - 1);
                             end
 
+                            if m > Yn
+                                break;
+                            end
+
+                            Height(i, m) = z(start + k - 1);
                         end
+
+                        % end
 
                     end
 

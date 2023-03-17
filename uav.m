@@ -1,27 +1,27 @@
 classdef uav < handle
 
     properties (SetAccess = private)
-        height_limit %贴地高度限制
-        pitchMax %俯仰角最大
-        pitchMin %俯仰角最小
-        pitchstep %俯仰角最大步长
+        height_limit = 1.2 %贴地高度限制
+        pitchMax = 0 %俯仰角最大
+        pitchMin = 0 %俯仰角最小
+        pitchstep = 0 %俯仰角最大步长
 
         %动力学相关的参数
-        GammaMax %滚转角最大
-        GammaMin %滚转角最小
-        GammaStep %滚转角最大步长
+        GammaMax = 0 %滚转角最大
+        GammaMin = 0 %滚转角最小
+        GammaStep = 0 %滚转角最大步长
         v %恒速度
-        deltaT %每步长飞行时间
-        g %重力加速度
+        deltaT = 0 %每步长飞行时间
+        g = 9.8 %重力加速度
 
         %最短稳定距离相关的参数
-        mini_stable_distance %最短稳定距离
-        course_change %航向角变化
-        speeds %速度们
-        acc %加速度
+        mini_stable_distance = zeros(15, 15) %最短稳定距离
+        course_change = 0 %航向角变化
+        speeds = zeros(2, 2) %速度们
+        acc = 0 %加速度
 
-        map_scale
-        max_delta_h
+        map_scale = 0
+        max_delta_h = 1
 
     end
 
@@ -136,14 +136,14 @@ classdef uav < handle
         function target_h = just_follow(this, target_h, delta_dist)
             max_delta = this.max_delta_h * delta_dist;
             % [n, ~] = size(target_h);
-            tmp = diff(target_h);
-            index = find(abs(tmp) > max_delta);
-
-            while (~isempty(index))
-                target_h = smooth(target_h);
-                tmp = diff(target_h);
-                index = find(abs(tmp) > max_delta);
-            end
+            %             tmp = diff(target_h);
+            %             index = find(abs(tmp) > max_delta);
+            %
+            %             while (~isempty(index))
+            %                 target_h = smooth(target_h);
+            %                 tmp = diff(target_h);
+            %                 index = find(abs(tmp) > max_delta);
+            %             end
 
             % tmp(tmp > max_delta) = max_delta;
             % tmp(tmp < -max_delta) = -max_delta;
@@ -202,7 +202,7 @@ classdef uav < handle
         function newNode = transfer_directly(sample, closestNode, map)
             movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), sample(3) - closestNode(3)];
             movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
-            newNode=zeros(1,6);
+            newNode = zeros(1, 6);
             newNode(1:3) = closestNode(1:3) + 4 * movingVec;
             newNode(4:6) = [0 0 0];
             x = uav.limiter(round(newNode(1)), 372, 1);
