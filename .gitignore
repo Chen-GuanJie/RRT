@@ -5,4 +5,3 @@ codegen/
 *.fig
 *.mat
 test.m
-rrt_func.prj
