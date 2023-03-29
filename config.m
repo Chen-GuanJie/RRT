@@ -6,7 +6,9 @@ function [r, output] = config(r, ifdispaly, total_time, delay_time)
         delay_time = 0.01;
     end
 
-    conf.filename = 'data/dem';
+    % conf.filename = 'data/dem';
+    dem_data = coder.load('data/dem.csv');
+    conf.dem_data = dem_data;
     conf.start = [324 99 500 pi * 45/180 0 0];
     conf.goal = [58 376 500 pi * 45/180 0 0];
     conf.threshold_close = 300;
@@ -28,8 +30,10 @@ function [r, output] = config(r, ifdispaly, total_time, delay_time)
 
     conf.GammaStep = 15/180 * pi; %滚转角最大步长
     conf.pitchstep = 10/180 * pi; %俯仰角最大步长
-    stable_distance = 'data/mini_stable_distance';
-    load(stable_distance, 'mini_stable_distance')
+    % stable_distance = 'data/mini_stable_distance';
+    % load(stable_distance, 'mini_stable_distance')
+    mini_stable_distance = coder.load('data/mini_stable_distance.csv');
+    conf.mini_stable_distance = mini_stable_distance;
     conf.mini_stable_distance = mini_stable_distance;
     conf.speeds = [240 260 280 300 320 340 360 380 400 440 480 520 560 600 640];
 

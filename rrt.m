@@ -16,7 +16,7 @@ classdef rrt < handle
         % multi_state
         height_cost_rate = 6
 
-        nearNodes = zeros(10, 11)
+        nearNodes %= zeros(50, 11)
         newNode = zeros(1, 10)
         nodenum = 10
         height_scale = 500
@@ -83,7 +83,8 @@ classdef rrt < handle
                 flag = 1;
             end
 
-            this.nearNodes = [this.tree(this.compare_table < dis, :) 0]; %todo: if use find
+            this.nearNodes = this.tree(this.compare_table < dis, :); %todo: if use find
+            this.nearNodes(:,11)=0;
         end
 
         function [node, index] = get_closest(this, sample)
@@ -224,7 +225,7 @@ classdef rrt < handle
                 this.nearNodes(i, 11) = this.tmp_value;
             end
 
-            this.compare_table(:, 1) = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
+            this.compare_table = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
             [this.newNode(1, 7), this.tmp_ind] = min(this.compare_table(:, 1));
             this.newNode(1, 10) = this.nearNodes(this.tmp_ind, 11);
             new_parent_id = this.nearNodes(this.tmp_ind, 9);
@@ -306,7 +307,7 @@ classdef rrt < handle
             this.nearNodes(find(this.nearNodes(:, 9) == new_parent_id), 11) = inf;
             this.compare_table(:, 1) = this.nearNodes(:, 11) + this.newNode(7); %新节点作为附近点的父节点后的代价
             index = (this.compare_table(:, 1) - this.nearNodes(:, 7)) < 0; %替换后代价变小的点的下标
-            this.tmp_ind(:, 1) = this.nearNodes(index, 9); %替换后代价变小的点的id
+            this.tmp_ind = this.nearNodes(index, 9); %替换后代价变小的点的id
             [this.replot_num, ~] = size(this.tmp_ind(:, 1));
             this.rewire_num = this.rewire_num + this.replot_num;
             this.tree(this.tmp_ind, 10) = this.nearNodes(index, 11);
@@ -421,9 +422,6 @@ classdef rrt < handle
             % output = zeros(1, 1);
             % ind = 1;
             % last = 0;
-            new_id = zeros(1, 1);
-            path_len = zeros(1, 1);
-
             while toc <= max_time
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();

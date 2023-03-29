@@ -83,33 +83,33 @@ classdef map < handle
                     if (stop - start + 1) == Yn
                         Height(i, :) = z(start:stop);
                     else %todo:
-                        % a = find(Y == y(start));
-                        % b = find(Y == y(stop));
+                        a = find(Y == y(start));
+                        b = find(Y == y(stop));
 
-                        % if (b - a) == stop - start
-                        %     Height(i, a:b) = z((start:stop));
-                        % else
-                        m = 1;
+                        if (b - a) == stop - start
+                            Height(i, a:b) = z((start:stop));
+                        else
+                            m = 1;
 
-                        for k = 1:stop - start + 1
+                            for k = 1:stop - start + 1
 
-                            while Y(m) ~= y(k)
-                                m = m + 1;
+                                while Y(m) ~= y(k)
+                                    m = m + 1;
+
+                                    if m > Yn
+                                        break;
+                                    end
+
+                                end
 
                                 if m > Yn
                                     break;
                                 end
 
+                                Height(i, m) = z(start + k - 1);
                             end
 
-                            if m > Yn
-                                break;
-                            end
-
-                            Height(i, m) = z(start + k - 1);
                         end
-
-                        % end
 
                     end
 
