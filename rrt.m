@@ -74,7 +74,8 @@ classdef rrt < handle
         function flag = neighbors(this, dis)
             %找附近的点
             flag = 0;
-            this.compare_table = this.tree(1:this.nodenum - 1, 1:2) - this.newNode(1:2);
+            this.compare_table = zeros(this.nodenum - 1, 2);
+            this.compare_table(:, 1:2) = this.tree(1:this.nodenum - 1, 1:2) - this.newNode(1:2);
             this.compare_table(:, 1) = sum(this.compare_table(:, 1:2) .^ 2, 2);
             [this.tmp_value, ~] = min(this.compare_table(:, 1)); %最近的距离
             % this.tmp_value = sqrt(this.tmp_value); %最近的距离
@@ -83,8 +84,10 @@ classdef rrt < handle
                 flag = 1;
             end
 
-            this.nearNodes = this.tree(this.compare_table < dis, :); %todo: if use find
-            this.nearNodes(:,11)=0;
+            this.compare_table = find(this.compare_table(:,1) < dis);
+            this.nearNodes = zeros(length(this.compare_table), 11);
+            this.nearNodes(:, 1:10) = this.tree(this.compare_table, :);
+            this.nearNodes(:, 11) = 0;
         end
 
         function [node, index] = get_closest(this, sample)
@@ -186,6 +189,7 @@ classdef rrt < handle
             end
 
             path_num = this.tmp_ind;
+            this.tmp_value = zeros(this.tmp_ind - 1, 1);
             this.tmp_value(:, 1:3) = this.path(2:this.tmp_ind, 1:3) - this.path(1:this.tmp_ind - 1, 1:3);
             path_len = sum(sqrt(sum(this.tmp_value .^ 2, 2)));
 
@@ -225,6 +229,7 @@ classdef rrt < handle
                 this.nearNodes(i, 11) = this.tmp_value;
             end
 
+            this.compare_table = zeros(length(this.nearNodes(:, 1)), 1);
             this.compare_table = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
             [this.newNode(1, 7), this.tmp_ind] = min(this.compare_table(:, 1));
             this.newNode(1, 10) = this.nearNodes(this.tmp_ind, 11);
@@ -305,6 +310,7 @@ classdef rrt < handle
             %this.tmp_value(1,1)=find(this.nearNodes(:, 9) == new_parent_id);
             %this.nearNodes(this.tmp_value(1,1), :) = [];
             this.nearNodes(find(this.nearNodes(:, 9) == new_parent_id), 11) = inf;
+            this.compare_table = zeros(length(this.nearNodes(:, 1)), 1);
             this.compare_table(:, 1) = this.nearNodes(:, 11) + this.newNode(7); %新节点作为附近点的父节点后的代价
             index = (this.compare_table(:, 1) - this.nearNodes(:, 7)) < 0; %替换后代价变小的点的下标
             this.tmp_ind = this.nearNodes(index, 9); %替换后代价变小的点的id
@@ -447,6 +453,7 @@ classdef rrt < handle
 
                 else %if flag == 2
                     this.isgoal = this.isgoal + 1;
+                    new_id
                     path_id(this.isgoal, 1) = new_id;
                     this.randnum = this.randnums(1, 2); %搜索点不取goal
                     [path_len, ~] = this.trace_back(new_id);

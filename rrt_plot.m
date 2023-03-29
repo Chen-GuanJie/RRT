@@ -50,18 +50,17 @@ classdef rrt_plot < rrt
             this.replot(1:this.replot_num, 1) = this.tmp_ind;
             this.replot(1:this.replot_num, 2) = this.newNode(9);
         end
-
+%{
         function [path_len, path_num] = trace_back(this, id)
             [path_len, path_num] = trace_back@rrt(this, id);
 
-            if ~isempty(this.path_plot)
-                delete(this.path_plot);
-            end
-
-            this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
+                        if ~isempty(this.path_plot)
+                            delete(this.path_plot);
+                        end
+                        this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
 
         end
-
+%}
         function redisplay(this)
 
             for i = 1:this.replot_num
@@ -89,6 +88,7 @@ classdef rrt_plot < rrt
             plot(1:path_num, this.path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
             legend
         end
+
         function display_map(this)
             meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z'); hold on
         end
@@ -191,6 +191,13 @@ classdef rrt_plot < rrt
                     path_id(this.isgoal, 1) = new_id;
                     this.randnum = this.randnums(1, 2); %搜索点不取goal
                     [path_len, ~] = this.trace_back(new_id);
+
+                    if ~isempty(this.path_plot)
+                        delete(this.path_plot);
+                    end
+
+                    this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
+
                     this.prepare_informed(path_len);
                 end
 
