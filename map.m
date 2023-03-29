@@ -39,8 +39,8 @@ classdef map < handle
         function this = map(arg)
 
             %             if isa(arg, 'str') && exist(arg, 'file')
-            dem_data=coder.load(arg);
-            dem_data = sortrows(dem_data);
+            dem_data = coder.load(arg);
+            dem_data = sortrows(dem_data.dem_data);
             %             elseif isa(arg, 'double')
             %                 dem_data = arg;
             %             end

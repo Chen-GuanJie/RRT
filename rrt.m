@@ -380,7 +380,7 @@ classdef rrt < handle
         end
 
         function output = to_normal_size(this)
-            output=zeros(1,3);
+            output = zeros(length(this.path(:, 1)), 3);
             output(:, 1:2) = this.path(:, 1:2) * this.map_scale;
             output(:, 3) = this.path(:, 3) * this.height_scale;
 
@@ -535,7 +535,7 @@ classdef rrt < handle
         function this = rrt(conf)
             this.maps = map(conf.filename);
             conf.map_scale = 500; %
-            this.map_scale=this.maps.X(2) - this.maps.X(1);
+            this.map_scale = this.maps.X(2) - this.maps.X(1);
             this.height_scale = conf.map_scale;
             this.maps.set_height_limit(conf.height_limit / this.height_scale);
             Height = this.maps.Z;

@@ -6,7 +6,7 @@ function [r, output] = config(r, ifdispaly, total_time, delay_time)
         delay_time = 0.01;
     end
 
-    conf.filename = 'data/dem';
+    conf.filename = 'data/Output_500.mat';
     conf.start = [324 99 500 pi * 45/180 0 0];
     conf.goal = [58 376 500 pi * 45/180 0 0];
     conf.threshold_close = 300;
