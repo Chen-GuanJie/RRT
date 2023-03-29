@@ -46,10 +46,11 @@ classdef rrt_plot < rrt
         end
 
         function rewire_v2(this, new_parent_id)
-            rewire_v2@rrt(this, new_parent_id);
-            this.replot(1:this.replot_num, 1) = this.tmp_ind;
+            ind = rewire_v2@rrt(this, new_parent_id);
+            this.replot(1:this.replot_num, 1) = ind;
             this.replot(1:this.replot_num, 2) = this.newNode(9);
         end
+
 %{
         function [path_len, path_num] = trace_back(this, id)
             [path_len, path_num] = trace_back@rrt(this, id);
@@ -97,8 +98,7 @@ classdef rrt_plot < rrt
 
     methods (Access = public)
 
-        function this = rrt_plot(conf)
-            this = this@rrt(conf);
+        function show_map(this)
             figure(1)
             this.display_map()
             this.plot_point(1).point = scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
@@ -108,6 +108,10 @@ classdef rrt_plot < rrt
             xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
             title('RRT算法UAV航迹规划路径');
 
+        end
+
+        function this = rrt_plot(conf)
+            this = this@rrt(conf);
         end
 
         function output = start_star(this, max_time)
@@ -159,6 +163,7 @@ classdef rrt_plot < rrt
             this.newNode = [this.start 0 0 0 0];
             this.insert_node(-1);
             neighbor_dist = 20 ^ 2;
+            this.show_map();
             tic
 
             while toc <= max_time
@@ -190,13 +195,13 @@ classdef rrt_plot < rrt
                     this.isgoal = this.isgoal + 1;
                     path_id(this.isgoal, 1) = new_id;
                     this.randnum = this.randnums(1, 2); %搜索点不取goal
-                    [path_len, ~] = this.trace_back(new_id);
+                    [path_len, path_num] = this.trace_back(new_id);
 
                     if ~isempty(this.path_plot)
                         delete(this.path_plot);
                     end
 
-                    this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
+                    this.path_plot = plot3(this.path(1:path_num, 1), this.path(1:path_num, 2), this.path(1:path_num, 3), 'LineWidth', 2, 'color', 'g');
 
                     this.prepare_informed(path_len);
                 end

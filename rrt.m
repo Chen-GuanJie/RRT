@@ -304,7 +304,7 @@ classdef rrt < handle
 
         end
 
-        function rewire_v2(this, new_parent_id)
+        function ind=rewire_v2(this, new_parent_id)
             %重布线
             %tmp_value(1,1)=find(this.nearNodes(:, 9) == new_parent_id);
             %this.nearNodes(tmp_value(1,1), :) = [];
