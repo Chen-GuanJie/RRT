@@ -6,14 +6,14 @@ function [r, output] = config(r, ifdispaly, total_time, delay_time)
         delay_time = 0.01;
     end
 
-    % conf.filename = 'data/dem';
-    map_name='data/Output_500.mat';
-    [~,~,type_name]=fileparts(map_name);
-    if strcmp(type_name,'.csv')==1
-    dem_data = coder.load(map_name);
-    elseif strcmp(type_name,'.mat')==1
-            dem_data = coder.load(map_name);
-            dem_data=dem_data.dem_data;
+    map_name = 'data/Output_500.mat';
+    [~, ~, type_name] = fileparts(map_name);
+
+    if strcmp(type_name, '.csv') == 1
+        dem_data = coder.load(map_name);
+    elseif strcmp(type_name, '.mat') == 1
+        dem_data = coder.load(map_name);
+        dem_data = dem_data.dem_data;
     end
 
     conf.dem_data = dem_data;

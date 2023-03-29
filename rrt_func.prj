@@ -1,5 +1,5 @@
 <deployment-project plugin="plugin.coder" plugin-version="R2021a">
-  <configuration build-checksum="140355732" file="D:\E\shareWorkSpace\毕设\RRT\rrt_func.prj" location="D:\E\shareWorkSpace\毕设\RRT" name="rrt_func" target="target.unifiedcoder" target-name="MATLAB Coder">
+  <configuration build-checksum="1265507998" file="D:\E\shareWorkSpace\毕设\RRT\rrt_func.prj" location="D:\E\shareWorkSpace\毕设\RRT" name="rrt_func" target="target.unifiedcoder" target-name="MATLAB Coder">
     <profile key="profile.mex">
       <param.BuiltInstrumentedMex />
       <param.RanInstrumentedMex>false</param.RanInstrumentedMex>
@@ -205,7 +205,7 @@
       <param.CodeFormattingTool>option.CodeFormattingTool.Auto</param.CodeFormattingTool>
       <param.ClangFormatFile>option.ClangFormatFile.Generate</param.ClangFormatFile>
       <param.DataTypeReplacement>option.DataTypeReplacement.CBuiltIn</param.DataTypeReplacement>
-      <param.EnableCustomReplacementTypes>false</param.EnableCustomReplacementTypes>
+      <param.EnableCustomReplacementTypes>true</param.EnableCustomReplacementTypes>
       <param.ReplacementTypes.double />
       <param.ReplacementTypes.single />
       <param.ReplacementTypes.uint8 />
@@ -262,11 +262,11 @@
       <param.CustomSource />
       <param.CustomLibrary />
       <param.PostCodeGenCommand />
-      <param.TargetLangStandard>Auto</param.TargetLangStandard>
+      <param.TargetLangStandard>C++11 (ISO)</param.TargetLangStandard>
       <param.CodeReplacementLibrary>None</param.CodeReplacementLibrary>
       <param.DeprecatedCRLFlag>false</param.DeprecatedCRLFlag>
       <param.SameHardware>true</param.SameHardware>
-      <param.Toolchain>Automatically locate an installed toolchain</param.Toolchain>
+      <param.Toolchain>Microsoft Visual C++ 2019 v16.0 | nmake (64-bit Windows)</param.Toolchain>
       <param.BuildConfiguration>Faster Runs</param.BuildConfiguration>
       <param.CustomToolchainOptions />
       <var.ToolchainSettingsVisible>true</var.ToolchainSettingsVisible>
@@ -406,7 +406,6 @@
         <param.CodeFormattingTool />
         <param.ClangFormatFile />
         <param.DataTypeReplacement />
-        <param.EnableCustomReplacementTypes />
         <param.ReplacementTypes.double />
         <param.ReplacementTypes.single />
         <param.ReplacementTypes.uint8 />
@@ -461,11 +460,9 @@
         <param.CustomSource />
         <param.CustomLibrary />
         <param.PostCodeGenCommand />
-        <param.TargetLangStandard />
         <param.CodeReplacementLibrary />
         <param.DeprecatedCRLFlag />
         <param.SameHardware />
-        <param.Toolchain />
         <param.BuildConfiguration />
         <param.CustomToolchainOptions />
         <var.ToolchainSettingsVisible />
@@ -909,7 +906,7 @@
       </unset>
     </profile>
     <param.objective>option.objective.c</param.objective>
-    <param.WorkflowStep>generateCode</param.WorkflowStep>
+    <param.WorkflowStep>workflowSummary</param.WorkflowStep>
     <param.TestSnippets />
     <param.ExternalFcnMajority>column</param.ExternalFcnMajority>
     <param.UseGlobals>option.UseGlobals.No</param.UseGlobals>
@@ -937,11 +934,11 @@
     <param.unifiedParamStorage />
     <var.gc.lastOutputRoot>codegen\lib\rrt_func</var.gc.lastOutputRoot>
     <var.gc.lastOutputType>C_CODE</var.gc.lastOutputType>
-    <var.gc.preBuildChecksum>3363028854</var.gc.preBuildChecksum>
+    <var.gc.preBuildChecksum>1265507998</var.gc.preBuildChecksum>
     <var.cfi.lastOutputRoot />
     <var.cfi.preBuildChecksum />
     <var.outdatedOnRestore>false</var.outdatedOnRestore>
-    <var.lastUserSourceChecksum>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;checksum&gt;&lt;includedFiles&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\map.m&lt;/file&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\rrt.m&lt;/file&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\rrt_func.m&lt;/file&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\uav.m&lt;/file&gt;&lt;/includedFiles&gt;&lt;value&gt;2010382814&lt;/value&gt;&lt;/checksum&gt;</var.lastUserSourceChecksum>
+    <var.lastUserSourceChecksum>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;checksum&gt;&lt;includedFiles&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\map.m&lt;/file&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\rrt.m&lt;/file&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\rrt_func.m&lt;/file&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\uav.m&lt;/file&gt;&lt;/includedFiles&gt;&lt;value&gt;3807284918&lt;/value&gt;&lt;/checksum&gt;</var.lastUserSourceChecksum>
     <var.sourceSetState>&lt;?xml version="1.0" encoding="UTF-8" standalone="yes"?&gt;&lt;sourceModel&gt;&lt;primarySourceFiles&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\map.m&lt;/file&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\rrt.m&lt;/file&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\rrt_func.m&lt;/file&gt;&lt;file&gt;D:\E\shareWorkSpace\毕设\RRT\uav.m&lt;/file&gt;&lt;/primarySourceFiles&gt;&lt;fixedPointSourceFiles/&gt;&lt;fixedPointSourceRegistered&gt;false&lt;/fixedPointSourceRegistered&gt;&lt;fixedPointSourceSelected&gt;false&lt;/fixedPointSourceSelected&gt;&lt;/sourceModel&gt;</var.sourceSetState>
     <param.forceMexBuild>false</param.forceMexBuild>
     <param.NoDefaultJIT>false</param.NoDefaultJIT>
