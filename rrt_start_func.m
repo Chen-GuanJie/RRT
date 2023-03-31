@@ -14,7 +14,6 @@ delay_time 画图间隔
 
     if exist('config.m', 'file')
         run([pwd '/config.m']);
-        % CONF = conf;
     else
         disp('ERROR: There is no configuration file!')
         return

@@ -146,15 +146,6 @@ classdef rrt < handle
 
         end
 
-        function flag = check_newNode(this)
-            flag = 0;
-
-            if norm(this.newNode(1:3) - this.goal(1:3)) < this.threshold_goal
-                flag = 2;
-            end
-
-        end
-
         function flag = collisionCheck(this, from, new)
 
             % retval=this.maps.checkPath(from, new);
@@ -188,7 +179,7 @@ classdef rrt < handle
             end
 
             path_num = ind;
-            tmp_value = zeros(ind - 1, 1);
+            tmp_value = zeros(ind - 1, 1:3);
             tmp_value(:, 1:3) = this.path(2:ind, 1:3) - this.path(1:ind - 1, 1:3);
             path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 

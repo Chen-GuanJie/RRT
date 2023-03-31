@@ -7,6 +7,7 @@ classdef map < handle
         X_num = 0
         Y_num = 0
         Z_num = 0
+        max_ind = zeros(1, 3)
     end
 
     properties (SetAccess = private)
@@ -67,6 +68,7 @@ classdef map < handle
             x_num(1) = x_index(1);
             x_num(2:Xn) = diff(x_index);
             Height = zeros(Xn, Yn);
+            this.max_ind(1, 1:3) = [Xn, Yn, inf];
 
             for i = 1:1:Xn
 
