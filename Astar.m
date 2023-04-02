@@ -102,7 +102,7 @@ classdef Astar < handle
             this.open_num = this.open_num - 1;
         end
 
-        function operate_neighbors(this) %todo: neighbors null
+        function operate_neighbors(this)
             %处理相邻节点
             this.neighbors = this.grid_displace + this.node(1, 1:this.dimension);
             this.neighbors(:, this.dimension + 1) = this.mapping(this.neighbors);
