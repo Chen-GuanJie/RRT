@@ -9,7 +9,7 @@ function [a, output] = Astar_func(a, ifdispaly)
         return
     end
 
-    if exist('a', 'var') && isa(a, 'rrt')
+    if exist('a', 'var') && isa(a, 'Astar')
         a.set_params(conf);
     else
         a = Astar(conf);

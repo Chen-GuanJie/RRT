@@ -3,7 +3,7 @@ classdef Astar < handle
     properties (SetAccess = private)
         open = zeros(1, 6) %1:dimension  map  F  G id parent evaluate
         open_num = 2
-        node_num = 1
+        node_num = 2
         closed = zeros(1, 6) %1:dimension  map  F  G id  parent evaluate closed_neighbor_num
         close_closed = zeros(1, 6)
         all_node = zeros(1, 6) %
@@ -102,7 +102,7 @@ classdef Astar < handle
             this.open_num = this.open_num - 1;
         end
 
-        function operate_neighbors(this)%todo: neighbors null
+        function operate_neighbors(this) %todo: neighbors null
             %处理相邻节点
             this.neighbors = this.grid_displace + this.node(1, 1:this.dimension);
             this.neighbors(:, this.dimension + 1) = this.mapping(this.neighbors);
@@ -128,8 +128,8 @@ classdef Astar < handle
             this.closed(ind_c, this.dimension + 7) = this.closed(ind_c, this.dimension + 7) + 1; %相邻的closed加1
             this.node(1, this.dimension + 7) = length(ind_c);
 
-            if max(this.closed(this.dimension + 7)) == this.max_neighbor_num %周围全是close
-                ind = find(this.closed(this.dimension + 7) == this.max_neighbor_num);
+            if max(this.closed(:, this.dimension + 7)) == this.max_neighbor_num %周围全是close
+                ind = find(this.closed(:, this.dimension + 7) == this.max_neighbor_num);
                 this.close_closed(end + 1:end + length(ind), :) = this.closed(ind, :);
                 this.closed(ind, :) = [];
             end
@@ -150,12 +150,12 @@ classdef Astar < handle
             si = this.neighbors(ni, this.dimension + 2) < this.open(ind, this.dimension + 2);
             this.open(ind(si), this.dimension + 2) = this.neighbors(ni(si), this.dimension + 2);
             this.open(ind(si), this.dimension + 5) = this.node(1, this.dimension + 4);
-            this.neighbors(ni(si), :) = [];
+            this.neighbors(ni, :) = [];
             %加入新节点
             num = length(this.neighbors(:, 1));
             this.neighbors(:, this.dimension + 4) = (this.node_num:this.node_num + num - 1)'; %id
             this.neighbors(:, this.dimension + 5) = this.node(1, this.dimension + 4); %parent
-            this.open(this.open_num:(this.open_num + num - 1), 1:this.dimension + 5) = this.neighbors(:, 1:this.dimension + 5); %添加到open
+            this.open(this.open_num:(this.open_num + num - 1), 1:this.dimension + 6) = this.neighbors(:, 1:this.dimension + 6); %添加到open
             this.all_node(this.node_num:(this.node_num + num - 1), :) = this.neighbors(:, 1:this.dimension + 6);
             this.open_num = this.open_num + num;
             this.node_num = this.node_num + num;
@@ -202,6 +202,8 @@ classdef Astar < handle
             this.rate = conf.rate;
             this.start = conf.start(1, 1:this.dimension);
             this.goal = conf.goal(1, 1:this.dimension);
+            this.start(1, this.dimension + 6) = this.maps.Z(this.start(1, 1), this.start(1, 2));
+            this.goal(1, this.dimension + 6) = this.maps.Z(this.goal(1, 1), this.goal(1, 2));
 
             if this.dimension == 2
                 this.calc_G = @this.calc_G_1;
@@ -218,10 +220,13 @@ classdef Astar < handle
         function output = start_Astar(this)
             flag = true;
             this.open = zeros(1, this.dimension + 6);
-            this.close_closed = zeros(1, this.dimension + 6);
+            this.close_closed = zeros(1, this.dimension + 7);
             this.closed = zeros(1, this.dimension + 7);
             this.all_node = zeros(1, this.dimension + 6);
-            this.open(1, :) = [this.start 0 0 0 1 -1 0];
+            this.start(1, this.dimension + 4:this.dimension + 5) = [1 -1];
+            this.open(1, :) = this.start; %0 0 0 1 -1 0；
+            this.all_node(1, :) = this.start;
+            tic
 
             while flag
                 this.find_mini();
@@ -230,6 +235,7 @@ classdef Astar < handle
                 flag = this.add_neighbor2open();
             end
 
+            toc
             output = this.show_path();
         end
 
