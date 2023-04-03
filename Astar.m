@@ -214,6 +214,8 @@ classdef Astar < handle
             this.goal = conf.goal(1, 1:this.dimension);
             this.start(1, this.dimension + 6) = this.maps.Z(this.start(1, 1), this.start(1, 2));
             this.goal(1, this.dimension + 6) = this.maps.Z(this.goal(1, 1), this.goal(1, 2));
+            this.open_num = 2;
+            this.node_num = 2;
 
             if this.dimension == 2
                 this.calc_G = @this.calc_G_1;
@@ -234,7 +236,7 @@ classdef Astar < handle
             this.closed = zeros(1, this.dimension + 7);
             this.all_node = zeros(1, this.dimension + 6);
             this.start(1, this.dimension + 4:this.dimension + 5) = [1 -1];
-            this.open(1, :) = this.start; %0 0 0 1 -1 0；
+            this.open(1, :) = this.start; %0 0 0 1 -1 0;
             this.all_node(1, :) = this.start;
             figure(1);
             meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z'); hold on
@@ -255,7 +257,8 @@ classdef Astar < handle
             toc
             output = this.show_path();
             plot3(output(:, 1), output(:, 2), output(:, this.dimension + 6), 'LineWidth', 2, 'color', 'g');
-
+            scatter3(this.open(:, 1), this.open(:, 2), this.open(:, this.dimension + 6), 'color', 'r');
+            scatter3(this.closed(:, 1), this.closed(:, 2), this.closed(:, this.dimension + 6), 'color', 'b');
         end
 
     end
