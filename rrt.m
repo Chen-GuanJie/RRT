@@ -179,8 +179,8 @@ classdef rrt < handle
             end
 
             path_num = ind;
-            tmp_value = zeros(ind - 1, 1:3);
-            tmp_value(:, 1:3) = this.path(2:ind, 1:3) - this.path(1:ind - 1, 1:3);
+            %tmp_value = zeros(ind - 1, 1:3);
+            tmp_value = this.path(2:ind, 1:3) - this.path(1:ind - 1, 1:3);
             path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
         end
@@ -295,7 +295,7 @@ classdef rrt < handle
 
         end
 
-        function ind=rewire_v2(this, new_parent_id)
+        function ind = rewire_v2(this, new_parent_id)
             %重布线
             %tmp_value(1,1)=find(this.nearNodes(:, 9) == new_parent_id);
             %this.nearNodes(tmp_value(1,1), :) = [];
@@ -463,11 +463,11 @@ classdef rrt < handle
             %fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = this.follow_ground(path_num);
-
+            output = new_path;
             %this.path = new_path;
             % this.path_sample=this.path;
             % output = this.maps.to_normal_size(this.path);
-            output = this.to_normal_size(new_path, interp_num);
+            % output = this.to_normal_size(new_path, interp_num);
 
         end
 

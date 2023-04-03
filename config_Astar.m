@@ -12,5 +12,5 @@ conf.dem_data = dem_data;
 conf.start = [324 99 500]; %起始点
 conf.goal = [58 376 500]; %终点
 conf.height_limit = 500;
-conf.rate = 1;
+conf.rate = 10;
 conf.dimension=2;

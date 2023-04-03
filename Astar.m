@@ -102,13 +102,13 @@ classdef Astar < handle
             this.open_num = this.open_num - 1;
         end
 
-        function operate_neighbors(this)
+        function flag = operate_neighbors(this)
             %处理相邻节点
             this.neighbors = this.grid_displace + this.node(1, 1:this.dimension);
             this.neighbors(:, this.dimension + 1) = this.mapping(this.neighbors);
             %超出边界的删去
             for i = 1:this.dimension
-                ind = this.neighbors(:, i) < 0 | this.neighbors(:, i) > this.maps.max_ind(i);
+                ind = this.neighbors(:, i) <= 0 | this.neighbors(:, i) >= this.maps.max_ind(i);
 
                 if max(abs(ind)) ~= 0
                     this.neighbors(ind, :) = [];
@@ -119,11 +119,21 @@ classdef Astar < handle
             %closed的点删去
             [~, ind_n, ind_c] = intersect(this.neighbors(:, this.dimension + 1), this.closed(:, this.dimension + 1));
             this.neighbors(ind_n, :) = [];
+            num = length(this.neighbors(:, 1));
 
-            for i = 1:length(this.neighbors(:, 1))
-                this.neighbors(i, this.dimension + 6) = this.maps.Z(this.neighbors(i, 1), this.neighbors(i, 2));
+            if num > 0
+                flag = true;
+
+                for i = 1:num
+                    this.neighbors(i, this.dimension + 6) = this.maps.Z(this.neighbors(i, 1), this.neighbors(i, 2));
+                end
+
+            else
+                flag = false;
             end
 
+            % scatter3(this.neighbors(:, 1), this.neighbors(:, 2), this.neighbors(:, this.dimension + 6), 1, 'filled', 'o');
+            % pause(0.001);
             %更新closed的邻居数
             this.closed(ind_c, this.dimension + 7) = this.closed(ind_c, this.dimension + 7) + 1; %相邻的closed加1
             this.node(1, this.dimension + 7) = length(ind_c);
@@ -226,17 +236,26 @@ classdef Astar < handle
             this.start(1, this.dimension + 4:this.dimension + 5) = [1 -1];
             this.open(1, :) = this.start; %0 0 0 1 -1 0；
             this.all_node(1, :) = this.start;
+            figure(1);
+            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z'); hold on
             tic
 
             while flag
                 this.find_mini();
-                this.operate_neighbors();
-                this.calc_F();
-                flag = this.add_neighbor2open();
+
+                if this.operate_neighbors()
+                    this.calc_F();
+                    flag = this.add_neighbor2open();
+                else
+                    flag = true;
+                end
+
             end
 
             toc
             output = this.show_path();
+            plot3(output(:, 1), output(:, 2), output(:, this.dimension + 6), 'LineWidth', 2, 'color', 'g');
+
         end
 
     end

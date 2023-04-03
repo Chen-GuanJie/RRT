@@ -116,8 +116,9 @@ classdef rrt_plot < rrt
 
         function output = start_star(this, max_time)
             [output, interp_num] = start_star@rrt(this, max_time);
+            this.show_map();
             figure(1);
-            plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
+            plot3(output(1:interp_num, 1), output(1:interp_num, 2), output(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
             this.path_evaluate(interp_num);
         end
 

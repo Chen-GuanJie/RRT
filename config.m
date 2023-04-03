@@ -1,4 +1,4 @@
-map_name = 'data/Output_500.csv'; %地图文件名
+map_name = 'data/Output_500.mat'; %地图文件名
 [~, ~, type_name] = fileparts(map_name);
 
 if strcmp(type_name, '.csv') == 1
