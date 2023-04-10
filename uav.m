@@ -197,11 +197,7 @@ classdef uav < handle
 
         end
 
-    end
-
-    methods (Static)
-
-        function newNode = transfer_directly(sample, closestNode, map)
+        function newNode = transfer_directly(this, sample, closestNode)
             movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), sample(3) - closestNode(3)];
             movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
             newNode = zeros(1, 6);
@@ -209,9 +205,13 @@ classdef uav < handle
             newNode(4:6) = [0 0 0];
             x = uav.limiter(round(newNode(1)), 372, 1);
             y = uav.limiter(round(newNode(2)), 673, 1);
-            newNode(3) = map(x, y) + 1.2; %目标点的目标高度
+            newNode(3) = this.maps.Z(x, y) + 1.2; %目标点的目标高度
 
         end
+
+    end
+
+    methods (Static)
 
         function index = find_closest(x, list)
             a = abs(list - x);

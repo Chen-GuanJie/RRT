@@ -329,11 +329,14 @@ classdef map < handle
         function obj = get_instance(dem_data)
             persistent ins;
 
-            if isempty(ins) || ~isvalid(ins)
+            if nargin >= 1 && (isempty(ins) || ~isvalid(ins))
+
                 ins = map(dem_data);
+
             end
 
             obj = ins;
+
         end
 
     end
