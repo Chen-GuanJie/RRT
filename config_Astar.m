@@ -9,8 +9,8 @@ elseif strcmp(type_name, '.mat') == 1
 end
 
 conf.dem_data = dem_data;
-conf.start = [324 99 500]; %起始点
-conf.goal = [58 376 500]; %终点
+conf.goal = [48 355 500]; %起始点
+conf.start = [226 328 500]; %终点
 conf.height_limit = 500;
-conf.rate = 10;
+conf.rate = 5;
 conf.dimension=2;

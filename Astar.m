@@ -50,6 +50,7 @@ classdef Astar < handle
 
         function output = calc_H_1(this, from, to)
             tmp = to(1, 1:this.dimension) - from(:, 1:this.dimension);
+            tmp(:, this.dimension + 1) = this.rate*5 * abs(to(:, this.dimension + 6) - from(1, this.dimension + 6));
             tmp = sum(tmp .^ 2, 2);
             output = sqrt(tmp);
 
@@ -58,7 +59,7 @@ classdef Astar < handle
         %
         function output = calc_G_2(this, from, to)
             tmp = to(:, 1:this.dimension) - from(1, 1:this.dimension);
-            tmp(:, this.dimension) = this.rate * tmp(:, this.dimension);
+            tmp(:, this.dimension) = this.rate * abs(tmp(:, this.dimension));
             tmp = sum(tmp .^ 2, 2);
             output = sqrt(tmp);
         end
@@ -198,7 +199,7 @@ classdef Astar < handle
     methods (Access = public)
 
         function this = Astar(conf)
-            this.maps = map(conf.dem_data);
+            this.maps = map.get_instance(conf.dem_data);
             % this.robot = uav(conf);
             this.set_params(conf);
         end
@@ -223,7 +224,7 @@ classdef Astar < handle
 
             elseif this.dimension == 3
                 this.calc_G = @this.calc_G_2;
-                this.calc_H = @this.calc_H_1;
+                this.calc_H = @this.calc_H_2;
 
             end
 

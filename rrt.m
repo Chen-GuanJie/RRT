@@ -99,7 +99,7 @@ classdef rrt < handle
 
         function extends(this, sample, closestNode)
             %延申
-            this.newNode = this.robot.transfer(sample, closestNode, this.maps);
+            this.newNode = this.robot.transfer(sample, closestNode);
         end
 
         function cost = calc_cost(~, from_node, dest_node)
@@ -422,7 +422,7 @@ classdef rrt < handle
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
                 [closestNode, ~] = this.get_closest(sample);
-                this.newNode(1, 1:6) = this.robot.transfer_directly(sample, closestNode, this.maps.Z);
+                this.newNode(1, 1:6) = this.robot.transfer_directly(sample, closestNode);
 
                 if this.neighbors(neighbor_dist)
                     this.tooclose = this.tooclose + 1;
@@ -532,7 +532,7 @@ classdef rrt < handle
         end
 
         function this = rrt(conf)
-            this.maps = map(conf.dem_data);
+            this.maps = map.get_instance(conf.dem_data);
             conf.map_scale = 500; %
             this.map_scale = this.maps.X(1, 2) - this.maps.Y(1, 1);
             this.height_scale = conf.map_scale;

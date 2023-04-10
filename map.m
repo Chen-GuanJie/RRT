@@ -31,11 +31,7 @@ classdef map < handle
         % debug2
     end
 
-    methods (Access = public)
-
-        function set_height_limit(this, height_limit)
-            this.height_limit = height_limit;
-        end
+    methods (Access = private)
 
         function this = map(dem_data)
 
@@ -124,6 +120,14 @@ classdef map < handle
             this.Z = Height / this.height_scale;
             this.ZT = this.Z';
             this.tmp_h = zeros(1, 10);
+        end
+
+    end
+
+    methods (Access = public)
+
+        function set_height_limit(this, height_limit)
+            this.height_limit = height_limit;
         end
 
         function index = find_closest(this, x, axis)
@@ -320,6 +324,16 @@ classdef map < handle
             [num, ~] = size(x_unique);
             % num = a(1, 1);
             g = sortrows(x_unique)';
+        end
+
+        function obj = get_instance(dem_data)
+            persistent ins;
+
+            if isempty(ins) || ~isvalid(ins)
+                ins = map(dem_data);
+            end
+
+            obj = ins;
         end
 
     end
