@@ -35,13 +35,7 @@ classdef map < handle
 
         function this = map(dem_data)
 
-            %             if isa(arg, 'str') && exist(arg, 'file')
-            % dem_data = conf.dem_data; %coder.load(arg);
             dem_data = sortrows(dem_data);
-            %             elseif isa(arg, 'double')
-            %                 dem_data = arg;
-            %             end
-
             x = dem_data(:, 1);
             y = dem_data(:, 2);
             z = dem_data(:, 3);
@@ -66,51 +60,61 @@ classdef map < handle
             Height = zeros(Xn, Yn);
             this.max_ind(1, 1:3) = [Xn, Yn, inf];
 
-            for i = 1:1:Xn
+            if this.Z_num ~= x_size
 
-                for j = 1:x_num(i)
+                for i = 1:1:Xn
 
-                    if i == 1
-                        start = 1;
-                    else
-                        start = x_index(i - 1) + 1;
-                    end
+                    for j = 1:x_num(i)
 
-                    stop = x_index(i);
-
-                    if (stop - start + 1) == Yn
-                        Height(i, :) = z(start:stop);
-                    else %todo:
-                        a = find(Y == y(start));
-                        b = find(Y == y(stop));
-
-                        if (b - a) == stop - start
-                            Height(i, a:b) = z((start:stop));
+                        if i == 1
+                            start = 1;
                         else
-                            m = 1;
+                            start = x_index(i - 1) + 1;
+                        end
 
-                            for k = 1:stop - start + 1
+                        stop = x_index(i);
 
-                                while Y(m) ~= y(k)
-                                    m = m + 1;
+                        if (stop - start + 1) == Yn
+                            Height(i, :) = z(start:stop);
+                        else %todo:
+                            a = find(Y == y(start));
+                            b = find(Y == y(stop));
+
+                            if (b - a) == stop - start
+                                Height(i, a:b) = z((start:stop));
+                            else
+                                m = 1;
+
+                                for k = 1:stop - start + 1
+
+                                    while Y(m) ~= y(k)
+                                        m = m + 1;
+
+                                        if m > Yn
+                                            break;
+                                        end
+
+                                    end
 
                                     if m > Yn
                                         break;
                                     end
 
+                                    Height(i, m) = z(start + k - 1);
                                 end
 
-                                if m > Yn
-                                    break;
-                                end
-
-                                Height(i, m) = z(start + k - 1);
                             end
 
                         end
 
                     end
 
+                end
+
+            else
+
+                for i = 1:1:Xn
+                    Height(i, :) = z((i - 1) * Yn + 1:i * Yn);
                 end
 
             end

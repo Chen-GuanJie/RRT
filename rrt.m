@@ -15,6 +15,7 @@ classdef rrt < handle
         randnums = zeros(1, 2)
         % multi_state
         height_cost_rate = 6
+        neighbor_dist
 
         nearNodes %= zeros(50, 11)
         newNode = zeros(1, 10)
@@ -71,7 +72,7 @@ classdef rrt < handle
 
         end
 
-        function flag = neighbors(this, dis)
+        function flag = neighbors(this)
             %找附近的点
             flag = 0;
             compare_table = zeros(this.nodenum - 1, 2);
@@ -84,7 +85,7 @@ classdef rrt < handle
                 flag = 1;
             end
 
-            compare_table = find(compare_table(:, 1) < dis);
+            compare_table = find(compare_table(:, 1) < this.neighbor_dist);
             this.nearNodes = zeros(length(compare_table), 11);
             this.nearNodes(:, 1:10) = this.tree(compare_table, :);
             this.nearNodes(:, 11) = 0;
@@ -370,7 +371,7 @@ classdef rrt < handle
             new_path(:, 8) = new_path(:, 3) - new_path(:, 9); %轨迹上的高度差
             new_path = new_path(new_path(:, 3) ~= 0, :);
             % for i = 1:ind
-            %     % new_path(i, 9) = this.maps.Z(y, round(new_path(i, 2))); %轨迹对应的地形高度
+            %     new_path(i, 9) = this.maps.Z(y, round(new_path(i, 2))); %轨迹对应的地形高度
             %     new_path(i, 8) = new_path(i, 3) - new_path(i, 9); %轨迹上的高度差
             % end
 
@@ -413,7 +414,7 @@ classdef rrt < handle
             path_id = zeros(5, 1);
             this.newNode = [this.start 0 0 0 0];
             this.insert_node(-1);
-            neighbor_dist = 20 ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
+            %(2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
             % output = zeros(1, 1);
             % ind = 1;
@@ -424,7 +425,7 @@ classdef rrt < handle
                 [closestNode, ~] = this.get_closest(sample);
                 this.newNode(1, 1:6) = this.robot.transfer_directly(sample, closestNode);
 
-                if this.neighbors(neighbor_dist)
+                if this.neighbors()
                     this.tooclose = this.tooclose + 1;
                     continue
                 end
@@ -460,11 +461,11 @@ classdef rrt < handle
 
             % [~, path_number] = size(this.path_id);
             path_num = this.find_best_path(path_id);
-            %fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
+            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = this.follow_ground(path_num);
             output = new_path;
-            %this.path = new_path;
+            this.path = new_path;
             % this.path_sample=this.path;
             % output = this.maps.to_normal_size(this.path);
             % output = this.to_normal_size(new_path, interp_num);
@@ -517,32 +518,29 @@ classdef rrt < handle
         function set_start_end(this, s, g)
             s(3) = this.maps.Z(s(1), s(2)) + s(3) / this.height_scale;
             g(3) = this.maps.Z(g(1), g(2)) + g(3) / this.height_scale;
-
             this.start = s;
             this.goal = g;
-
         end
 
         function set_params(this, conf)
+            this.start = [conf.start(1), conf.start(2), this.maps.Z(conf.start(1), conf.start(2)) + conf.start(3) / this.height_scale, conf.start(4), conf.start(5), conf.start(6)];
+            this.goal = [conf.goal(1), conf.goal(2), this.maps.Z(conf.goal(1), conf.goal(2)) + conf.goal(3) / this.height_scale, conf.goal(4), conf.goal(5), conf.goal(6)];
             this.height_cost_rate = conf.height_cost_rate;
             this.threshold_close = (conf.threshold_close / this.height_scale) ^ 2;
             this.threshold_goal = conf.threshold_goal / this.height_scale;
             this.max_nodes = conf.max_nodes;
             this.randnums = conf.randnum;
+            this.neighbor_dist = (2 * conf.direct_step) ^ 2;
+            this.robot.set_params(conf)
         end
 
         function this = rrt(conf)
             this.maps = map.get_instance(conf.dem_data);
-            conf.map_scale = 500; %
-            this.map_scale = this.maps.X(1, 2) - this.maps.Y(1, 1);
+            this.map_scale = conf.map_scale; %this.maps.X(1, 2) - this.maps.X(1, 1);
             this.height_scale = conf.map_scale;
             this.maps.set_height_limit(conf.height_limit / this.height_scale);
-            Height = this.maps.Z;
-            this.start = [conf.start(1), conf.start(2), Height(conf.start(1), conf.start(2)) + conf.start(3) / this.height_scale, conf.start(4), conf.start(5), conf.start(6)];
-            this.goal = [conf.goal(1), conf.goal(2), Height(conf.goal(1), conf.goal(2)) + conf.goal(3) / this.height_scale, conf.goal(4), conf.goal(5), conf.goal(6)];
-            this.searchbBase = [1, 1, min(min(Height)), -pi, -pi, -pi];
-            this.searchSize = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(Height)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
-            %            this.replot = zeros(50, 3);
+            this.searchbBase = [1, 1, min(min(this.maps.Z)), -pi, -pi, -pi];
+            this.searchSize = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(this.maps.Z)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
             this.robot = uav(conf);
             this.set_params(conf);
 

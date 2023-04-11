@@ -6,6 +6,7 @@ classdef uav < handle
         pitchMax = 0 %俯仰角最大
         pitchMin = 0 %俯仰角最小
         pitchstep = 0 %俯仰角最大步长
+        direct_step = 1
 
         %动力学相关的参数
         GammaMax = 0 %滚转角最大
@@ -43,7 +44,11 @@ classdef uav < handle
 
         function this = uav(conf)
             this.maps = map.get_instance(conf.dem_data);
+        end
+
+        function set_params(this, conf)
             this.map_scale = conf.map_scale;
+            this.direct_step = conf.direct_step;
             this.height_limit = conf.height_limit / this.map_scale;
             this.deltaT = conf.deltaT;
             this.g = conf.g;
@@ -59,6 +64,7 @@ classdef uav < handle
             this.course_change = (0:5:120) * pi / 180;
             this.speeds = conf.speeds;
             this.max_delta_h = tan(this.pitchMax);
+
         end
 
         function newNode = transfer_stable(this, sample, closestNode)
@@ -201,11 +207,11 @@ classdef uav < handle
             movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), sample(3) - closestNode(3)];
             movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
             newNode = zeros(1, 6);
-            newNode(1:3) = closestNode(1:3) + 4 * movingVec;
+            newNode(1:3) = closestNode(1:3) + this.direct_step * movingVec;
             newNode(4:6) = [0 0 0];
-            x = uav.limiter(round(newNode(1)), 372, 1);
-            y = uav.limiter(round(newNode(2)), 673, 1);
-            newNode(3) = this.maps.Z(x, y) + 1.2; %目标点的目标高度
+            x = uav.limiter(round(newNode(1)), this.maps.X_num, 1);
+            y = uav.limiter(round(newNode(2)), this.maps.Y_num, 1);
+            newNode(3) = this.maps.Z(x, y) + this.height_limit; %目标点的目标高度
 
         end
 
@@ -218,7 +224,7 @@ classdef uav < handle
             [~, index] = min(a);
         end
 
-        function y = limiter(x, xmax, xmin)
+        function x = limiter(x, xmax, xmin)
 
             if x > xmax
                 x = xmax;
@@ -226,7 +232,6 @@ classdef uav < handle
                 x = xmin;
             end
 
-            y = x;
         end
 
         function x = limit2pi(x)

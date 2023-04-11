@@ -251,8 +251,8 @@ classdef Astar < handle
             this.start(1, this.ind_id:this.ind_parent) = [1 -1];
             this.open(1, :) = this.start; %0 0 0 1 -1 0;
             this.all_node(1, :) = this.start;
-            figure(1);
-            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z'); hold on
+            % figure(1);
+            % meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z'); hold on
             tic
             tmp = zeros(1, 1);
             inde = 1;
@@ -279,12 +279,12 @@ classdef Astar < handle
 
             toc
             output = this.show_path();
-            plot3(output(:, 1), output(:, 2), output(:, this.ind_evaluate), 'LineWidth', 2, 'color', 'g');
-            scatter3(this.open(:, 1), this.open(:, 2), this.open(:, this.ind_evaluate), 1, 'filled', 'color', 'r');
-            scatter3(this.closed(:, 1), this.closed(:, 2), this.closed(:, this.ind_evaluate), 1, 'filled', 'color', 'b');
-            figure(2)
-            plot(tmp);
-            plot(diff(tmp))
+            % plot3(output(:, 1), output(:, 2), output(:, this.ind_evaluate), 'LineWidth', 2, 'color', 'g');
+            % scatter3(this.open(:, 1), this.open(:, 2), this.open(:, this.ind_evaluate), 1, 'filled', 'color', 'r');
+            % scatter3(this.closed(:, 1), this.closed(:, 2), this.closed(:, this.ind_evaluate), 1, 'filled', 'color', 'b');
+            % figure(2)
+            % plot(tmp);
+            % plot(diff(tmp))
 
         end
 

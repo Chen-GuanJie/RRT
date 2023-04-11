@@ -21,7 +21,9 @@ conf.threshold_goal = 6000;
 conf.search = 1.6;
 conf.randnum = [0.6 2];
 conf.max_nodes = 3000;
-conf.height_cost_rate = 15;
+conf.height_cost_rate = 12;
+conf.map_scale = 500;
+conf.direct_step = 8;
 
 conf.height_limit = 500;
 conf.deltaT = 200; %s

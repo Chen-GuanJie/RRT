@@ -114,8 +114,9 @@ classdef rrt_plot < rrt
             this = this@rrt(conf);
         end
 
-        function output = start_star(this, max_time)
-            [output, interp_num] = start_star@rrt(this, max_time);
+
+        function output = start_star_1_plot(this, max_time)
+            [output, interp_num] = this.start_star(this, max_time);
             this.show_map();
             figure(1);
             plot3(output(1:interp_num, 1), output(1:interp_num, 2), output(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
@@ -163,7 +164,6 @@ classdef rrt_plot < rrt
             path_id = zeros(5, 1);
             this.newNode = [this.start 0 0 0 0];
             this.insert_node(-1);
-            neighbor_dist = 20 ^ 2;
             this.show_map();
             tic
 
@@ -171,10 +171,10 @@ classdef rrt_plot < rrt
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
                 [closestNode, ~] = this.get_closest(sample);
-                this.newNode = this.robot.transfer_directly(sample, closestNode, this.maps.Z);
+                this.newNode = this.robot.transfer_directly(sample, closestNode);
                 this.display_serachline(closestNode, sample, delay_time);
 
-                if this.neighbors(neighbor_dist)
+                if this.neighbors()
                     this.tooclose = this.tooclose + 1;
                     continue
                 end
