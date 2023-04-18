@@ -76,7 +76,7 @@ classdef rrt < handle
             %找附近的点
             flag = 0;
             compare_table = zeros(this.nodenum - 1, 2);
-            compare_table(:, 1:2) = this.tree(1:this.nodenum - 1, 1:2) - this.newNode(1:2);
+            compare_table(:, 1:2) = this.tree(1:this.nodenum - 1, 1:2) - this.newNode(1, 1:2);
             compare_table(:, 1) = sum(compare_table(:, 1:2) .^ 2, 2);
             [tmp_value, ~] = min(compare_table(:, 1)); %最近的距离
             % tmp_value = sqrt(tmp_value); %最近的距离
@@ -96,11 +96,6 @@ classdef rrt < handle
             compare_table = this.tree(1:this.nodenum - 1, 1:2) - sample(1:2);
             [~, index] = min(sum(compare_table(:, 1:2) .^ 2, 2));
             node = this.tree(index, :);
-        end
-
-        function extends(this, sample, closestNode)
-            %延申
-            this.newNode = this.robot.transfer(sample, closestNode);
         end
 
         function cost = calc_cost(~, from_node, dest_node)
@@ -186,7 +181,18 @@ classdef rrt < handle
 
         end
 
-        function path_num = find_best_path(this, path_id)
+        function min_path_cost = find_min_cost(this, path_id)
+            path_number = length(path_id);
+            path_cost = zeros(path_number, 1);
+
+            for i = 1:path_number
+                path_cost(i, 1) = this.cumcost(path_id(i));
+            end
+
+            [min_path_cost, ~] = min(path_cost);
+        end
+
+        function [min_path_len, path_num] = find_best_path(this, path_id)
             [~, path_number] = size(path_id);
             path_length = zeros(path_number, 1);
 
@@ -194,7 +200,7 @@ classdef rrt < handle
                 [path_length(i, 1), ~] = this.trace_back(path_id(i));
             end
 
-            [~, best_path_id] = min(path_length);
+            [min_path_len, best_path_id] = min(path_length);
             [~, path_num] = this.trace_back(path_id(best_path_id));
         end
 
@@ -415,9 +421,10 @@ classdef rrt < handle
             this.insert_node(-1);
             %(2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
-            % output = zeros(1, 1);
-            % ind = 1;
-            % last = 0;
+            output = zeros(1, 1);
+            ind = 1;
+            last = 0;
+
             while toc <= max_time
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
@@ -450,20 +457,22 @@ classdef rrt < handle
                     this.prepare_informed(path_len);
                 end
 
-                % if toc - last > 0.5
-                %     last = toc;
-                %     output(ind) = this.search_num;
-                %     ind = ind + 1;
-                % end
+                if toc - last > 0.5
+                    last = toc;
+                    len = this.find_min_cost(path_id);
+                    output(ind) = len;
+                    ind = ind + 1;
+                end
 
             end
 
             % [~, path_number] = size(this.path_id);
-            path_num = this.find_best_path(path_id);
+            [~, path_num] = this.find_best_path(path_id);
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = this.follow_ground(path_num);
-            output = new_path;
+            % output = new_path;
+            output(1)=[];
             this.path = new_path;
             % this.path_sample=this.path;
             % output = this.maps.to_normal_size(this.path);
@@ -482,7 +491,7 @@ classdef rrt < handle
             while toc < max_time
                 sample = this.get_sample();
                 [closestNode, parentid] = this.get_closest(sample);
-                this.extends(sample, closestNode);
+                this.newNode = this.robot.transfer(sample, closestNode);
 
                 flag = this.check_newNode();
 
@@ -539,7 +548,7 @@ classdef rrt < handle
             this.height_scale = conf.map_scale;
             this.maps.set_height_limit(conf.height_limit / this.height_scale);
             this.searchbBase = [1, 1, min(min(this.maps.Z)), -pi, -pi, -pi];
-            this.searchSize = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(this.maps.Z)) - min(min(Height)), 2 * pi, 2 * pi, 2 * pi];
+            this.searchSize = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(this.maps.Z)) - min(min(this.maps.Z)), 2 * pi, 2 * pi, 2 * pi];
             this.robot = uav(conf);
             this.set_params(conf);
 

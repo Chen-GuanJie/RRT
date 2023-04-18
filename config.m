@@ -14,14 +14,14 @@ end
 
 conf.dem_data = dem_data;
 %todo: 将经纬度转换为下标
-conf.start = [324 99 500 pi * 45/180 0 0]; %起始点
-conf.goal = [58 376 500 pi * 45/180 0 0]; %终点
+conf.start = [154 98 500 pi * 45/180 0 0]; %起始点
+conf.goal = [272 511 500 pi * 45/180 0 0]; %终点
 conf.threshold_close = 300;
 conf.threshold_goal = 6000;
 conf.search = 1.6;
 conf.randnum = [0.6 2];
 conf.max_nodes = 3000;
-conf.height_cost_rate = 12;
+conf.height_cost_rate = 6;
 conf.map_scale = 500;
 conf.direct_step = 8;
 

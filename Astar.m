@@ -211,6 +211,14 @@ classdef Astar < handle
             this.set_params(conf);
         end
 
+        function set_start_end(this, s, g)
+            this.start = s(1, 1:this.dimension);
+            this.goal = g(1, 1:this.dimension);
+            this.start(1, this.ind_evaluate) = this.maps.Z(this.start(1, 1), this.start(1, 2));
+            this.goal(1, this.ind_evaluate) = this.maps.Z(this.goal(1, 1), this.goal(1, 2));
+
+        end
+
         function set_params(this, conf)
             this.dimension = conf.dimension;
             this.ind_mapping = this.dimension + 1;

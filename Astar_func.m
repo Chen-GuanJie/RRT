@@ -1,5 +1,5 @@
 function [a, output] = Astar_func(a, ifdispaly)
-    clc; close all;
+    %clc; close all;
     addpath(genpath(pwd));
 
     if exist('config_Astar.m', 'file')
