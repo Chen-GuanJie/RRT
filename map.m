@@ -1,50 +1,41 @@
 classdef map < handle
 
     properties (SetAccess = public)
-        X
-        Y
-        Z
-        X_num
-        Y_num
-        Z_num
+        X = zeros(1, 1)
+        Y = zeros(1, 1)
+        Z = zeros(1, 1)
+        X_num = 0
+        Y_num = 0
+        Z_num = 0
+        max_ind = zeros(1, 3)
     end
 
     properties (SetAccess = private)
-        ZT %地图转置
-        height_limit
-        threshold_high %离地最高高度
-        threshold_low %离地最低高度
-        height_scale %地图相邻点的距离
-        mini_x
-        mini_y
+        ZT = zeros(1, 1) %地图转置
+        height_limit = 1
+        threshold_high = 1 %离地最高高度
+        threshold_low = 1 %离地最低高度
+        height_scale = 500 %地图相邻点的距离
+        mini_x = 0
+        mini_y = 0
         %temp value
-        tmp_ind
-        h_up
-        h_down
-        tmp_h
-        y_up
-        y_down
-        x_ind
+        tmp_ind = 0
+        h_up = zeros(1, 1)
+        h_down = zeros(1, 1)
+        tmp_h = zeros(1, 1)
+        y_up = zeros(1, 1)
+        y_down = zeros(1, 1)
+        x_ind = zeros(1, 1)
 
-        debug
-        debug2
+        % debug
+        % debug2
     end
 
-    methods (Access = public)
+    methods (Access = private)
 
-        function set_height_limit(this, height_limit)
-            this.height_limit = height_limit;
-        end
+        function this = map(dem_data)
 
-        function this = map(arg)
-
-            %             if isa(arg, 'str') && exist(arg, 'file')
-            dem_data = coder.load(arg);
-            dem_data = sortrows(dem_data.dem_data);
-            %             elseif isa(arg, 'double')
-            %                 dem_data = arg;
-            %             end
-
+            dem_data = sortrows(dem_data);
             x = dem_data(:, 1);
             y = dem_data(:, 2);
             z = dem_data(:, 3);
@@ -67,52 +58,63 @@ classdef map < handle
             x_num(1) = x_index(1);
             x_num(2:Xn) = diff(x_index);
             Height = zeros(Xn, Yn);
+            this.max_ind(1, 1:3) = [Xn, Yn, inf];
 
-            for i = 1:1:Xn
+            if this.Z_num ~= x_size
 
-                for j = 1:x_num(i)
+                for i = 1:1:Xn
 
-                    if i == 1
-                        start = 1;
-                    else
-                        start = x_index(i - 1) + 1;
-                    end
+                    for j = 1:x_num(i)
 
-                    stop = x_index(i);
-
-                    if (stop - start + 1) == Yn
-                        Height(i, :) = z(start:stop);
-                    else
-                        a = find(Y == y(start));
-                        b = find(Y == y(stop));
-
-                        if (b - a) == stop - start
-                            Height(i, a:b) = z((start:stop));
+                        if i == 1
+                            start = 1;
                         else
-                            m = 1;
+                            start = x_index(i - 1) + 1;
+                        end
 
-                            for k = 1:stop - start + 1
+                        stop = x_index(i);
 
-                                while Y(m) ~= y(k)
-                                    m = m + 1;
+                        if (stop - start + 1) == Yn
+                            Height(i, :) = z(start:stop);
+                        else %todo:
+                            a = find(Y == y(start));
+                            b = find(Y == y(stop));
+
+                            if (b - a) == stop - start
+                                Height(i, a:b) = z((start:stop));
+                            else
+                                m = 1;
+
+                                for k = 1:stop - start + 1
+
+                                    while Y(m) ~= y(k)
+                                        m = m + 1;
+
+                                        if m > Yn
+                                            break;
+                                        end
+
+                                    end
 
                                     if m > Yn
                                         break;
                                     end
 
+                                    Height(i, m) = z(start + k - 1);
                                 end
 
-                                if m > Yn
-                                    break;
-                                end
-
-                                Height(i, m) = z(start + k - 1);
                             end
 
                         end
 
                     end
 
+                end
+
+            else
+
+                for i = 1:1:Xn
+                    Height(i, :) = z((i - 1) * Yn + 1:i * Yn);
                 end
 
             end
@@ -122,6 +124,14 @@ classdef map < handle
             this.Z = Height / this.height_scale;
             this.ZT = this.Z';
             this.tmp_h = zeros(1, 10);
+        end
+
+    end
+
+    methods (Access = public)
+
+        function set_height_limit(this, height_limit)
+            this.height_limit = height_limit;
         end
 
         function index = find_closest(this, x, axis)
@@ -318,6 +328,19 @@ classdef map < handle
             [num, ~] = size(x_unique);
             % num = a(1, 1);
             g = sortrows(x_unique)';
+        end
+
+        function obj = get_instance(dem_data)
+            persistent ins;
+
+            if nargin >= 1 && (isempty(ins) || ~isvalid(ins))
+
+                ins = map(dem_data);
+
+            end
+
+            obj = ins;
+
         end
 
     end

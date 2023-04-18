@@ -13,7 +13,7 @@ function rt = saves(Dir, patt, types)
         if strcmp(patt, c{1})
             nofile = 0;
             id = strsplit(c{2}, '.');
-            ids = [ids str2num(id{1})];
+            ids = [ids str2double(id{1})];
         end
 
     end

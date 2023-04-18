@@ -46,22 +46,22 @@ classdef rrt_plot < rrt
         end
 
         function rewire_v2(this, new_parent_id)
-            rewire_v2@rrt(this, new_parent_id);
-            this.replot(1:this.replot_num, 1) = this.tmp_ind;
+            ind = rewire_v2@rrt(this, new_parent_id);
+            this.replot(1:this.replot_num, 1) = ind;
             this.replot(1:this.replot_num, 2) = this.newNode(9);
         end
 
+%{
         function [path_len, path_num] = trace_back(this, id)
             [path_len, path_num] = trace_back@rrt(this, id);
 
-            if ~isempty(this.path_plot)
-                delete(this.path_plot);
-            end
-
-            this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
+                        if ~isempty(this.path_plot)
+                            delete(this.path_plot);
+                        end
+                        this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
 
         end
-
+%}
         function redisplay(this)
 
             for i = 1:this.replot_num
@@ -89,6 +89,7 @@ classdef rrt_plot < rrt
             plot(1:path_num, this.path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
             legend
         end
+
         function display_map(this)
             meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z'); hold on
         end
@@ -97,8 +98,7 @@ classdef rrt_plot < rrt
 
     methods (Access = public)
 
-        function this = rrt_plot(conf)
-            this = this@rrt(conf);
+        function show_map(this)
             figure(1)
             this.display_map()
             this.plot_point(1).point = scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
@@ -110,10 +110,16 @@ classdef rrt_plot < rrt
 
         end
 
-        function output = start_star(this, max_time)
-            [output, interp_num] = start_star@rrt(this, max_time);
+        function this = rrt_plot(conf)
+            this = this@rrt(conf);
+        end
+
+
+        function output = start_star_1_plot(this, max_time)
+            [output, interp_num] = this.start_star(this, max_time);
+            this.show_map();
             figure(1);
-            plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
+            plot3(output(1:interp_num, 1), output(1:interp_num, 2), output(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
             this.path_evaluate(interp_num);
         end
 
@@ -158,17 +164,17 @@ classdef rrt_plot < rrt
             path_id = zeros(5, 1);
             this.newNode = [this.start 0 0 0 0];
             this.insert_node(-1);
-            neighbor_dist = 20 ^ 2;
+            this.show_map();
             tic
 
             while toc <= max_time
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
                 [closestNode, ~] = this.get_closest(sample);
-                this.newNode = this.robot.transfer_directly(sample, closestNode, this.maps.Z);
+                this.newNode = this.robot.transfer_directly(sample, closestNode);
                 this.display_serachline(closestNode, sample, delay_time);
 
-                if this.neighbors(neighbor_dist)
+                if this.neighbors()
                     this.tooclose = this.tooclose + 1;
                     continue
                 end
@@ -190,7 +196,14 @@ classdef rrt_plot < rrt
                     this.isgoal = this.isgoal + 1;
                     path_id(this.isgoal, 1) = new_id;
                     this.randnum = this.randnums(1, 2); %搜索点不取goal
-                    [path_len, ~] = this.trace_back(new_id);
+                    [path_len, path_num] = this.trace_back(new_id);
+
+                    if ~isempty(this.path_plot)
+                        delete(this.path_plot);
+                    end
+
+                    this.path_plot = plot3(this.path(1:path_num, 1), this.path(1:path_num, 2), this.path(1:path_num, 3), 'LineWidth', 2, 'color', 'g');
+
                     this.prepare_informed(path_len);
                 end
 
