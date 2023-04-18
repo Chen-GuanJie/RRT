@@ -2,7 +2,7 @@ if ~exist('dem_data', 'var')
 
     map_name = 'data/Output_500.mat'; %地图文件名
     [~, ~, type_name] = fileparts(map_name);
-
+    
     if strcmp(type_name, '.csv') == 1
         dem_data = coder.load(map_name);
     elseif strcmp(type_name, '.mat') == 1

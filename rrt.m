@@ -383,7 +383,6 @@ classdef rrt < handle
             output = zeros(path_num, 3);
             output(:, 1:2) = new_path(:, 1:2) * this.map_scale;
             output(:, 3) = new_path(:, 3) * this.height_scale;
-
             output(:, 1) = output(:, 1) + min(this.maps.X);
             output(:, 2) = output(:, 2) + min(this.maps.Y);
             % output = this.path(:, 1:3);
