@@ -28,13 +28,12 @@ delay_time 画图间隔
     end
 
     if ifdispaly
-output = r.start_star_plot(total_time, delay_time);
 
-%         if delay_time <= 0
-%             output = r.start_star_1_plot(total_time);
-%         else
-%             output = r.start_star_plot(total_time, delay_time);
-%         end
+        if delay_time < 0
+            output = r.start_star_1_plot(total_time);
+        else
+            output = r.start_star_plot(total_time, delay_time);
+        end
 
     else
         [output, ~] = r.start_star(total_time);

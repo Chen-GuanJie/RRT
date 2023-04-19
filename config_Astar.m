@@ -17,3 +17,4 @@ conf.goal = [83 378 500]; %终点
 conf.height_limit = 500;
 conf.rate = 60;
 conf.dimension = 2;
+conf.height_limit=500;

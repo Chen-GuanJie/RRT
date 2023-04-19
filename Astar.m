@@ -28,6 +28,7 @@ classdef Astar < handle
         calc_G
         calc_H
         rate
+        height_limit = 500
     end
 
     methods (Static)
@@ -199,6 +200,9 @@ classdef Astar < handle
                 prev = this.all_node(prev, this.ind_parent);
             end
 
+            output = output(:, [1 2 8]);
+            output(ind, 3) = output(ind, 3) + this.height_limit / (this.maps.X(2) - this.maps.X(1));
+            output = flipud(output);
         end
 
     end
@@ -220,6 +224,7 @@ classdef Astar < handle
         end
 
         function set_params(this, conf)
+            this.height_limit = conf.height_limit;
             this.dimension = conf.dimension;
             this.ind_mapping = this.dimension + 1;
             this.ind_F = this.dimension + 2;
@@ -269,12 +274,12 @@ classdef Astar < handle
             while flag
                 this.find_mini();
 
-                if toc - lastime > 0.3
-                    lastime = toc;
-                    tmp(inde, 1) = length(this.all_node(:, 1));
-                    inde = inde + 1;
-
-                end
+                %                 if toc - lastime > 0.3
+                %                     lastime = toc;
+                %                     tmp(inde, 1) = length(this.all_node(:, 1));
+                %                     inde = inde + 1;
+                %
+                %                 end
 
                 if this.operate_neighbors()
                     this.calc_F();

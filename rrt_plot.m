@@ -114,9 +114,8 @@ classdef rrt_plot < rrt
             this = this@rrt(conf);
         end
 
-
         function output = start_star_1_plot(this, max_time)
-            [output, interp_num] = this.start_star(this, max_time);
+            [output, interp_num] = this.start_star(max_time);
             this.show_map();
             figure(1);
             plot3(output(1:interp_num, 1), output(1:interp_num, 2), output(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
@@ -203,14 +202,13 @@ classdef rrt_plot < rrt
                     end
 
                     this.path_plot = plot3(this.path(1:path_num, 1), this.path(1:path_num, 2), this.path(1:path_num, 3), 'LineWidth', 2, 'color', 'g');
-
                     this.prepare_informed(path_len);
                 end
 
             end
 
             % [~, path_number] = size(this.path_id);
-            path_num = this.find_best_path(path_id);
+            [~, path_num] = this.find_best_path(path_id);
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = this.follow_ground(path_num);

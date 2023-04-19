@@ -123,12 +123,17 @@ classdef rrt < handle
 
         end
 
-        function output = cumcost(this, prev)
-            output = 0;
+        function output = cumcost(this, prev_list)
+            output = zeros(1, length(prev_list));
 
-            while prev > 0
-                output = output + this.tree(prev, 10);
-                prev = this.tree(prev, 8);
+            for i = 1:length(prev_list)
+                prev = prev_list(i);
+
+                while prev > 0
+                    output(i) = output(i) + this.tree(prev, 10);
+                    prev = this.tree(prev, 8);
+                end
+
             end
 
         end
@@ -193,7 +198,7 @@ classdef rrt < handle
         end
 
         function [min_path_len, path_num] = find_best_path(this, path_id)
-            [~, path_number] = size(path_id);
+            path_number = length(path_id);
             path_length = zeros(path_number, 1);
 
             for i = 1:path_number
@@ -225,6 +230,26 @@ classdef rrt < handle
 
                 this.nearNodes(i, 11) = tmp_value;
             end
+
+            % compare_table = zeros(length(this.nearNodes(:, 1)), 1);
+            compare_table = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
+            [this.newNode(1, 7), ind] = min(compare_table(:, 1));
+            this.newNode(1, 10) = this.nearNodes(ind, 11);
+            new_parent_id = this.nearNodes(ind, 9);
+
+        end
+
+        function output = calc_cost_v3(this)
+            cost_dist = sqrt(sum((this.nearNodes(:, 1:2) - this.newNode(1, 1:2)) .^ 2, 2));
+            cost_h = this.height_cost_rate * (this.nearNodes(:, 3) - this.newNode(1, 3));
+            output = sqrt(cost_dist .^ 2 + cost_h .^ 2);
+        end
+
+        function new_parent_id = choose_parent_v3(this)
+
+            tmp_value = this.calc_cost_v3(); % 新节点与附近的相邻转移代价 + this.nearNodes(i, 7);
+            this.nearNodes(:, 7) = this.cumcost(this.nearNodes(:, 9));
+            this.nearNodes(:, 11) = tmp_value;
 
             % compare_table = zeros(length(this.nearNodes(:, 1)), 1);
             compare_table = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
@@ -471,8 +496,8 @@ classdef rrt < handle
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = this.follow_ground(path_num);
-            % output = new_path;
-            output(1)=[];
+            output = new_path(:, 1:3);
+            output(1) = [];
             this.path = new_path;
             % this.path_sample=this.path;
             % output = this.maps.to_normal_size(this.path);
