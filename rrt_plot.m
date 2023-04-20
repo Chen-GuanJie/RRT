@@ -118,7 +118,7 @@ classdef rrt_plot < rrt
             [output, interp_num] = this.start_star(max_time);
             this.show_map();
             figure(1);
-            plot3(output(1:interp_num, 1), output(1:interp_num, 2), output(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
+            plot3(output(:, 1), output(:, 2), output(:, 3), 'LineWidth', 2, 'color', 'g');
             this.path_evaluate(interp_num);
         end
 
@@ -167,6 +167,11 @@ classdef rrt_plot < rrt
             tic
 
             while toc <= max_time
+
+                if this.nodenum > this.max_nodes
+                    this.delete_unuesd_node();
+                end
+
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
                 [closestNode, ~] = this.get_closest(sample);

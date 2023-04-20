@@ -41,7 +41,7 @@ classdef rrt < handle
         collision = 0
         rewire_num = 0
         path = zeros(100, 10)
-        path_sample = zeros(2, 2)
+        path_id
     end
 
     methods (Access = public)
@@ -186,27 +186,27 @@ classdef rrt < handle
 
         end
 
-        function min_path_cost = find_min_cost(this, path_id)
-            path_number = length(path_id);
+        function min_path_cost = find_min_cost(this)
+            path_number = length(this.path_id);
             path_cost = zeros(path_number, 1);
 
             for i = 1:path_number
-                path_cost(i, 1) = this.cumcost(path_id(i));
+                path_cost(i, 1) = this.cumcost(this.path_id(i));
             end
 
             [min_path_cost, ~] = min(path_cost);
         end
 
-        function [min_path_len, path_num] = find_best_path(this, path_id)
-            path_number = length(path_id);
+        function [min_path_len, path_num] = find_best_path(this)
+            path_number = length(this.path_id);
             path_length = zeros(path_number, 1);
 
             for i = 1:path_number
-                [path_length(i, 1), ~] = this.trace_back(path_id(i));
+                [path_length(i, 1), ~] = this.trace_back(this.path_id(i));
             end
 
             [min_path_len, best_path_id] = min(path_length);
-            [~, path_num] = this.trace_back(path_id(best_path_id));
+            [~, path_num] = this.trace_back(this.path_id(best_path_id));
         end
 
         function new_parent_id = choose_parent_v2(this)
@@ -419,6 +419,26 @@ classdef rrt < handle
             % output = this.path(:, 1:3);
         end
 
+        function delete_unuesd_node(this)
+            parent_ind = unique(this.tree(:, 8));
+            parent_ind(parent_ind < 0) = [];
+            parent_ind = [parent_ind; this.path_id];
+            parent_ind = unique(parent_ind);
+            this.tree = this.tree(parent_ind, :);
+            id_map = containers.Map(this.tree(:, 9), 1:size(this.tree, 1));
+            this.tree(:, 9) = 1:size(this.tree, 1);
+            this.nodenum = size(this.tree, 1);
+
+            for i = 1:length(this.path_id)
+                this.path_id(i) = id_map(this.path_id(i));
+            end
+
+            for i = 2:this.nodenum
+                this.tree(i, 8) = id_map(this.tree(i, 8));
+            end
+
+        end
+
     end
 
     methods (Access = public)
@@ -441,7 +461,7 @@ classdef rrt < handle
             this.no_parent = 0;
             this.rewire_num = 0;
 
-            path_id = zeros(5, 1);
+            this.path_id = [];
             this.newNode = [this.start 0 0 0 0];
             this.insert_node(-1);
             %(2 * this.robot.v * this.robot.deltaT) ^ 2;
@@ -475,33 +495,30 @@ classdef rrt < handle
 
                 else %if flag == 2
                     this.isgoal = this.isgoal + 1;
-                    % new_id
-                    path_id(this.isgoal, 1) = new_id;
+                    this.path_id(this.isgoal, 1) = new_id;
                     this.randnum = this.randnums(1, 2); %搜索点不取goal
                     [path_len, ~] = this.trace_back(new_id);
                     this.prepare_informed(path_len);
                 end
 
-                if toc - last > 0.5
-                    last = toc;
-                    len = this.find_min_cost(path_id);
-                    output(ind) = len;
-                    ind = ind + 1;
+                % if toc - last > 0.5
+                %     last = toc;
+                %     len = this.find_min_cost();
+                %     output(ind) = len;
+                %     ind = ind + 1;
+                % end
+                if this.nodenum > this.max_nodes
+                    this.delete_unuesd_node();
                 end
 
             end
 
-            % [~, path_number] = size(this.path_id);
-            [~, path_num] = this.find_best_path(path_id);
+            [~, path_num] = this.find_best_path();
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = this.follow_ground(path_num);
             output = new_path(:, 1:3);
-            output(1) = [];
             this.path = new_path;
-            % this.path_sample=this.path;
-            % output = this.maps.to_normal_size(this.path);
-            % output = this.to_normal_size(new_path, interp_num);
 
         end
 
