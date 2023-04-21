@@ -48,26 +48,28 @@ classdef rrt < handle
 
         function sample = get_sample(this)
             %采样
-            if rand < this.randnum
 
-                if this.informed
-                    y = 0;
-                    sample = [0 inf 0 0 0 0]';
+            if this.informed
+                y = 0;
+                sample = [0 inf 0 0 0 0]';
 
-                    while abs(sample(2)) > y
-                        sample(1:2) = [rand * 2 * this.long_axis; rand * 2 * this.short_axis] - [this.long_axis; this.short_axis];
-                        y = this.short_axis * sqrt(1 - (sample(1) / this.long_axis) ^ 2);
-                    end
-
-                    sample(3) = rand * this.searchSize(3) + this.searchbBase(3);
-                    sample(1:2) = this.ellipse_rotation * sample(1:2) + this.ellipse_displace;
-                    sample = sample';
-                else
-                    sample = rand(1, 6) .* this.searchSize + this.searchbBase;
+                while abs(sample(2)) > y
+                    sample(1:2) = [rand * 2 * this.long_axis; rand * 2 * this.short_axis] - [this.long_axis; this.short_axis];
+                    y = this.short_axis * sqrt(1 - (sample(1) / this.long_axis) ^ 2);
                 end
 
+                sample(3) = rand * this.searchSize(3) + this.searchbBase(3);
+                sample(1:2) = this.ellipse_rotation * sample(1:2) + this.ellipse_displace;
+                sample = sample';
             else
-                sample = this.goal;
+
+                if rand < this.randnum
+
+                    sample = rand(1, 6) .* this.searchSize + this.searchbBase;
+                else
+                    sample = this.goal;
+                end
+
             end
 
         end
@@ -198,13 +200,7 @@ classdef rrt < handle
         end
 
         function [min_path_len, path_num] = find_best_path(this)
-            path_number = length(this.path_id);
-            path_length = zeros(path_number, 1);
-
-            for i = 1:path_number
-                [path_length(i, 1), ~] = this.trace_back(this.path_id(i));
-            end
-
+            path_length = this.cumcost(this.path_id);
             [min_path_len, best_path_id] = min(path_length);
             [~, path_num] = this.trace_back(this.path_id(best_path_id));
         end
@@ -419,21 +415,21 @@ classdef rrt < handle
             % output = this.path(:, 1:3);
         end
 
-        function delete_unuesd_node(this)
+        function parent_ind = delete_unuesd_node(this)
             parent_ind = unique(this.tree(:, 8));
             parent_ind(parent_ind < 0) = [];
             parent_ind = [parent_ind; this.path_id];
             parent_ind = unique(parent_ind);
             this.tree = this.tree(parent_ind, :);
-            id_map = containers.Map(this.tree(:, 9), 1:size(this.tree, 1));
-            this.tree(:, 9) = 1:size(this.tree, 1);
-            this.nodenum = size(this.tree, 1);
+            this.nodenum = size(this.tree, 1) + 1;
+            id_map = containers.Map(this.tree(:, 9), 1:(this.nodenum - 1));
+            this.tree(:, 9) = 1:(this.nodenum - 1);
 
             for i = 1:length(this.path_id)
                 this.path_id(i) = id_map(this.path_id(i));
             end
 
-            for i = 2:this.nodenum
+            for i = 2:this.nodenum - 1
                 this.tree(i, 8) = id_map(this.tree(i, 8));
             end
 
@@ -469,6 +465,7 @@ classdef rrt < handle
             output = zeros(1, 1);
             ind = 1;
             last = 0;
+            mini_path_len = inf;
 
             while toc <= max_time
                 this.search_num = this.search_num + 1;
@@ -498,7 +495,12 @@ classdef rrt < handle
                     this.path_id(this.isgoal, 1) = new_id;
                     this.randnum = this.randnums(1, 2); %搜索点不取goal
                     [path_len, ~] = this.trace_back(new_id);
-                    this.prepare_informed(path_len);
+
+                    if mini_path_len > path_len
+                        mini_path_len = path_len;
+                        this.prepare_informed(path_len);
+                    end
+
                 end
 
                 % if toc - last > 0.5

@@ -164,13 +164,11 @@ classdef rrt_plot < rrt
             this.newNode = [this.start 0 0 0 0];
             this.insert_node(-1);
             this.show_map();
+            mini_path_len = inf;
+
             tic
 
             while toc <= max_time
-
-                if this.nodenum > this.max_nodes
-                    this.delete_unuesd_node();
-                end
 
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
@@ -207,13 +205,22 @@ classdef rrt_plot < rrt
                     end
 
                     this.path_plot = plot3(this.path(1:path_num, 1), this.path(1:path_num, 2), this.path(1:path_num, 3), 'LineWidth', 2, 'color', 'g');
-                    this.prepare_informed(path_len);
+                    
+                    if mini_path_len > path_len
+                        mini_path_len = path_len;
+                        this.prepare_informed(path_len);
+                    end
+
+
+                end
+                if this.nodenum > this.max_nodes
+                    this.delete_unuesd_node();
                 end
 
             end
 
             % [~, path_number] = size(this.path_id);
-            [~, path_num] = this.find_best_path(path_id);
+            [~, path_num] = this.find_best_path();
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             % interp_num = this.interpolation(path_num);
             [new_path, interp_num] = this.follow_ground(path_num);
