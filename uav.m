@@ -168,7 +168,7 @@ classdef uav < handle
             max_delta = this.max_delta_h * delta_dist;
             [n, ~] = size(target_h);
 
-            %if this.transferable(from, to)
+            if this.transferable(from, to)
                 tmp = diff(target_h);
                 tmp(tmp > max_delta) = max_delta;
                 tmp(tmp <- max_delta) = -max_delta;
@@ -178,7 +178,7 @@ classdef uav < handle
                 end
 
                 flag = true;
-            %end
+            end
 
         end
 
