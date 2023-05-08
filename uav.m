@@ -29,13 +29,13 @@ classdef uav < handle
 
     methods (Access = private)
 
-        function [z, pitchangle] = climb(this, temp, closestNode)
+        function [z, pitchangle] = climb(this, temp, closest_node)
             targetHeight = this.maps.Z(round(temp(1)), round(temp(2))) + this.height_limit; %目标点的目标高度
-            distanceee = norm(temp - closestNode(1:2)); %距离
-            pitchangle = atan((targetHeight - closestNode(3)) / distanceee); %应该的爬升角
+            distanceee = norm(temp - closest_node(1:2)); %距离
+            pitchangle = atan((targetHeight - closest_node(3)) / distanceee); %应该的爬升角
             pitchangle = this.limiter(pitchangle, this.pitchMax, this.pitchMin);
-            pitchangle = this.limiter(pitchangle, closestNode(6) + this.pitchstep, closestNode(6) - this.pitchstep);
-            z = pitchangle * distanceee + closestNode(3);
+            pitchangle = this.limiter(pitchangle, closest_node(6) + this.pitchstep, closest_node(6) - this.pitchstep);
+            z = pitchangle * distanceee + closest_node(3);
         end
 
     end
@@ -67,13 +67,13 @@ classdef uav < handle
 
         end
 
-        function newNode = transfer_stable(this, sample, closestNode)
+        function newNode = transfer_stable(this, sample, closest_node)
             %根据稳定距离转移
             %计算航向角变化
-            phi1 = atan2(sample(2) - closestNode(2), sample(1) - closestNode(1));
-            phi = closestNode(4);
+            phi1 = atan2(sample(2) - closest_node(2), sample(1) - closest_node(1));
+            phi = closest_node(4);
             deltaPhi = this.limit2pi(phi1 - phi);
-            distance = norm(sample(1:2) - closestNode(1:2));
+            distance = norm(sample(1:2) - closest_node(1:2));
             d = distance * sin(this.course_change - deltaPhi) ./ sin(this.course_change); %正弦
             speed_index = this.find_closest(520, this.speeds);
             sd = this.mini_stable_distance(:, speed_index)';
@@ -95,8 +95,8 @@ classdef uav < handle
             %两次转移，每次均移动最短稳定距离
             rotation1 = [cos(phi) -sin(phi); sin(phi) cos(phi); ];
             rotation2 = [cos(newPhi) -sin(newPhi); sin(newPhi) cos(newPhi); ];
-            temp = closestNode(1:2) + (rotation1 * [mini_distance; 0])' + (rotation2 * [mini_distance; 0])';
-            [z, pitchangle] = this.climb(temp, closestNode);
+            temp = closest_node(1:2) + (rotation1 * [mini_distance; 0])' + (rotation2 * [mini_distance; 0])';
+            [z, pitchangle] = this.climb(temp, closest_node);
             newNode = [temp(1), temp(2), z, newPhi, 0, pitchangle];
 
         end
@@ -110,13 +110,13 @@ classdef uav < handle
             deltaPhi = 2 * this.limit2pi(phi1 - phi);
         end
 
-        function newNode = transfer(this, sample, closestNode)
+        function newNode = transfer(this, sample, closest_node)
             %根据动力学约束的状态转移
-            phi1 = atan2(sample(2) - closestNode(2), sample(1) - closestNode(1));
-            phi = closestNode(4);
+            phi1 = atan2(sample(2) - closest_node(2), sample(1) - closest_node(1));
+            phi = closest_node(4);
             deltaPhi = this.limit2pi(phi1 - phi); %航向角变化
             newGamma = atan(deltaPhi * this.v / this.g / this.deltaT); %新的滚转角
-            newGamma = this.limiter(newGamma, closestNode(5) + this.GammaStep, closestNode(5) - this.GammaStep);
+            newGamma = this.limiter(newGamma, closest_node(5) + this.GammaStep, closest_node(5) - this.GammaStep);
             newGamma = this.limiter(newGamma, this.GammaMax, this.GammaMin);
             rotation = [cos(phi) -sin(phi); sin(phi) cos(phi); ];
 
@@ -130,8 +130,8 @@ classdef uav < handle
                 a = [this.v * this.deltaT; 0] ./ this.map_scale;
             end
 
-            temp = (rotation * a)' + [closestNode(1), closestNode(2)];
-            [z, pitchangle] = this.climb(temp, closestNode);
+            temp = (rotation * a)' + closest_node(1:2);
+            [z, pitchangle] = this.climb(temp, closest_node);
             newNode = [temp(1), temp(2), z, newPhi, newGamma, pitchangle];
 
         end
@@ -168,17 +168,17 @@ classdef uav < handle
             max_delta = this.max_delta_h * delta_dist;
             [n, ~] = size(target_h);
 
-            if this.transferable(from, to)
-            tmp = diff(target_h);
-            tmp(tmp > max_delta) = max_delta;
-            tmp(tmp <- max_delta) = -max_delta;
+            %if this.transferable(from, to)
+                tmp = diff(target_h);
+                tmp(tmp > max_delta) = max_delta;
+                tmp(tmp <- max_delta) = -max_delta;
 
-            for i = 2:n
-                target_h(i) = target_h(i - 1) + tmp(i - 1);
-            end
+                for i = 2:n
+                    target_h(i) = target_h(i - 1) + tmp(i - 1);
+                end
 
-            flag = true;
-            end
+                flag = true;
+            %end
 
         end
 
@@ -203,12 +203,11 @@ classdef uav < handle
 
         end
 
-        function newNode = transfer_directly(this, sample, closestNode)
-            movingVec = [sample(1) - closestNode(1), sample(2) - closestNode(2), sample(3) - closestNode(3)];
+        function newNode = transfer_directly(this, sample, closest_node)
+            movingVec = [sample(1) - closest_node(1), sample(2) - closest_node(2), sample(3) - closest_node(3)];
             movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
-            newNode = zeros(1, 6);
-            newNode(1:3) = closestNode(1:3) + this.direct_step * movingVec;
-            newNode(4:6) = [0 0 0];
+            newNode = zeros(1, 3);
+            newNode(1:3) = closest_node(1:3) + this.direct_step * movingVec;
             x = uav.limiter(round(newNode(1)), this.maps.X_num, 1);
             y = uav.limiter(round(newNode(2)), this.maps.Y_num, 1);
             newNode(3) = this.maps.Z(x, y) + this.height_limit; %目标点的目标高度

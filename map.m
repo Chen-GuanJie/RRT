@@ -26,9 +26,6 @@ classdef map < handle
         y_up = zeros(1, 1)
         y_down = zeros(1, 1)
         x_ind = zeros(1, 1)
-
-        % debug
-        % debug2
     end
 
     methods (Access = private)
@@ -154,11 +151,6 @@ classdef map < handle
 
             start_insdex(1:2) = round(from(1:2));
             end_insdex(1:2) = round(to(1:2));
-            % start_insdex(3) = from(3);
-            % end_insdex(3) = to(3);
-
-            % start_insdex = [this.find_closest(start(1), 0), this.find_closest(start(2), 1)];
-            % end_insdex = [this.find_closest(endp(1), 0), this.find_closest(endp(2), 1)];
 
             if end_insdex(1, 1) ~= start_insdex (1, 1)
                 k_index = (end_insdex(1, 2) - start_insdex(1, 2)) / (end_insdex(1, 1) - start_insdex(1, 1));

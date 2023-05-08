@@ -1,25 +1,27 @@
 classdef rrt < handle
 
     properties (SetAccess = public)
-        tree = zeros(100, 10) %节点位置 % cost parentid id cost_channge_to_parent cost_to_newNode
+        tree = zeros(1, 3)
+        cost_to_parent = zeros(1, 1)
+        parent = zeros(1, 1)
         max_nodes = 100
-        maps %= map([0 0])
-        robot %= uav()
+        maps
+        robot
         start = zeros(1, 6)
         goal = zeros(1, 6)
         threshold_close = 1
         threshold_goal = 1
-        searchSize = zeros(1, 6)
-        searchbBase = zeros(1, 6)
-        randnum = 1
-        randnums = zeros(1, 2)
+        search_size = zeros(1, 6)
+        search_base = zeros(1, 6)
+        rand_num = 1
+        rand_nums = zeros(1, 2)
         % multi_state
         height_cost_rate = 6
         neighbor_dist
 
-        nearNodes %= zeros(50, 11)
-        newNode = zeros(1, 10)
-        nodenum = 10
+        near_nodes = struct
+        new_node = struct
+        node_num = 10
         height_scale = 500
         map_scale = 1
         %informed
@@ -40,8 +42,8 @@ classdef rrt < handle
         no_parent = 0
         collision = 0
         rewire_num = 0
-        path = zeros(100, 10)
-        path_id
+        path = zeros(100, 3)
+        path_id = []
     end
 
     methods (Access = public)
@@ -58,14 +60,14 @@ classdef rrt < handle
                     y = this.short_axis * sqrt(1 - (sample(1) / this.long_axis) ^ 2);
                 end
 
-                sample(3) = rand * this.searchSize(3) + this.searchbBase(3);
+                sample(3) = rand * this.search_size(3) + this.search_base(3);
                 sample(1:2) = this.ellipse_rotation * sample(1:2) + this.ellipse_displace;
                 sample = sample';
             else
 
-                if rand < this.randnum
+                if rand < this.rand_num
 
-                    sample = rand(1, 6) .* this.searchSize + this.searchbBase;
+                    sample = rand(1, 6) .* this.search_size + this.search_base;
                 else
                     sample = this.goal;
                 end
@@ -77,25 +79,27 @@ classdef rrt < handle
         function flag = neighbors(this)
             %找附近的点
             flag = 0;
-            compare_table = zeros(this.nodenum - 1, 2);
-            compare_table(:, 1:2) = this.tree(1:this.nodenum - 1, 1:2) - this.newNode(1, 1:2);
+            compare_table = zeros(this.node_num - 1, 2);
+            compare_table(:, 1:2) = this.tree(1:this.node_num - 1, 1:2) - this.new_node.position(1, 1:2);
             compare_table(:, 1) = sum(compare_table(:, 1:2) .^ 2, 2);
             [tmp_value, ~] = min(compare_table(:, 1)); %最近的距离
-            % tmp_value = sqrt(tmp_value); %最近的距离
 
             if tmp_value < this.threshold_close %太近
                 flag = 1;
             end
 
-            compare_table = find(compare_table(:, 1) < this.neighbor_dist);
-            this.nearNodes = zeros(length(compare_table), 11);
-            this.nearNodes(:, 1:10) = this.tree(compare_table, :);
-            this.nearNodes(:, 11) = 0;
+            this.near_nodes = struct;
+            this.near_nodes.id = find(compare_table(:, 1) < this.neighbor_dist);
+            this.near_nodes.position = this.tree(this.near_nodes.id, :);
+            this.near_nodes.parent = this.parent(this.near_nodes.id, :);
+            this.near_nodes.num = length(this.near_nodes.id);
+            this.near_nodes.cost = zeros(this.near_nodes.num, 1);
+            this.near_nodes.cost_to_newNode = zeros(this.near_nodes.num, 1);
         end
 
         function [node, index] = get_closest(this, sample)
             %找最近点
-            compare_table = this.tree(1:this.nodenum - 1, 1:2) - sample(1:2);
+            compare_table = this.tree(1:this.node_num - 1, 1:2) - sample(1:2);
             [~, index] = min(sum(compare_table(:, 1:2) .^ 2, 2));
             node = this.tree(index, :);
         end
@@ -113,14 +117,13 @@ classdef rrt < handle
             flag = false;
             id = zeros(1, 1);
             ind = 1;
-            prev = this.tree(prev, 8);
+            prev = this.parent(prev, 1);
 
             while prev > 0
                 flag = true;
                 id(ind, 1) = prev;
                 ind = ind + 1;
-                % this.path(ind, :) = this.tree(prev, :);
-                prev = this.tree(prev, 8);
+                prev = this.parent(prev, 1);
             end
 
         end
@@ -132,8 +135,8 @@ classdef rrt < handle
                 prev = prev_list(i);
 
                 while prev > 0
-                    output(i) = output(i) + this.tree(prev, 10);
-                    prev = this.tree(prev, 8);
+                    output(i) = output(i) + this.cost_to_parent(prev, 1);
+                    prev = this.parent(prev, 1);
                 end
 
             end
@@ -143,42 +146,29 @@ classdef rrt < handle
         function cost = calc_cost_v2(this, from_node, dest_node, new_target_h)
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
             cost_hight = this.height_cost_rate * sum(abs(diff(new_target_h)));
-            % cost_angle = norm(from_node(4:6) - dest_node(4:6));
-            %consumption = this.robot.calc_consumption();
             cost = norm([cost_dist, cost_hight]);
 
         end
 
-        function flag = collisionCheck(this, from, new)
-
-            % retval=this.maps.checkPath(from, new);
-
-            flag = 1;
-
-            if ~this.maps.checkPath(from, new) %todo:  旧的判断
-                this.tree(from(9), 3) = this.tree(from(9), 3) * 1.02;
-                flag = 0;
-            end
-
-        end
-
-        function insert_node(this, parent_id)
+        function insert_node(this)
             %插入节点
-            this.newNode(1, 8:9) = [parent_id this.nodenum];
-            this.tree(this.nodenum, 1:10) = this.newNode;
-            this.nodenum = this.nodenum + 1;
+            this.tree(this.node_num, :) = this.new_node.position;
+            this.parent(this.node_num, 1) = this.new_node.id_parent;
+            this.cost_to_parent(this.node_num, 1) = this.new_node.cost_to_parent;
+            this.new_node.id = this.node_num;
+            this.node_num = this.node_num + 1;
         end
 
         function [path_len, path_num] = trace_back(this, id)
             %回溯轨迹
             ind = 1;
-            this.path(ind, :) = [this.goal 0 0 0 0];
+            this.path(ind, :) = this.goal(1:3);
             prev = id;
 
             while prev > 0
                 ind = ind + 1;
-                this.path(ind, :) = this.tree(prev, :);
-                prev = this.tree(prev, 8);
+                this.path(ind, 1:3) = this.tree(prev, 1:3);
+                prev = this.parent(prev, 1);
             end
 
             path_num = ind;
@@ -205,17 +195,17 @@ classdef rrt < handle
             [~, path_num] = this.trace_back(this.path_id(best_path_id));
         end
 
-        function new_parent_id = choose_parent_v2(this)
+        function choose_parent_v2(this)
 
-            for i = 1:numel(this.nearNodes(:, 1))
-                [target_h, delta_dist, flag] = this.maps.checkPath_v2(this.nearNodes(i, :), this.newNode);
+            for i = 1:this.near_nodes.num
+                [target_h, delta_dist, flag] = this.maps.checkPath_v2(this.near_nodes.position(i, :), this.new_node.position(1, :));
 
                 if flag
-                    [new_target_h, flag2] = this.robot.follow(this.nearNodes(i, :), this.newNode, target_h(:, 3), delta_dist);
+                    [new_target_h, flag2] = this.robot.follow(this.near_nodes.position(i, :), this.new_node.position(1, :), target_h(:, 3), delta_dist);
 
                     if flag2
-                        tmp_value = this.calc_cost_v2(this.nearNodes(i, :), this.newNode, new_target_h); % 新节点与附近的相邻转移代价 + this.nearNodes(i, 7);
-                        this.nearNodes(i, 7) = this.cumcost(this.nearNodes(i, 9)); %this.nearNodes(i, 7) + delta_cost;
+                        tmp_value = this.calc_cost_v2(this.near_nodes.position(i, :), this.new_node.position(1, :), new_target_h); % 新节点与附近的相邻转移代价 + this.near_nodes(i, 7);
+                        this.near_nodes.cost(i, 1) = this.cumcost(this.near_nodes.id(i, 1));
                     else
                         tmp_value = inf;
                     end
@@ -224,118 +214,48 @@ classdef rrt < handle
                     tmp_value = inf;
                 end
 
-                this.nearNodes(i, 11) = tmp_value;
+                this.near_nodes.cost_to_newNode(i, 1) = tmp_value;
             end
 
-            % compare_table = zeros(length(this.nearNodes(:, 1)), 1);
-            compare_table = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
-            [this.newNode(1, 7), ind] = min(compare_table(:, 1));
-            this.newNode(1, 10) = this.nearNodes(ind, 11);
-            new_parent_id = this.nearNodes(ind, 9);
+            % compare_table = zeros(this.near_nodes.num, 1);
+            compare_table = this.near_nodes.cost_to_newNode(:, 1) + this.near_nodes.cost(:, 1); %以附近点作新节点父亲后的代价
+            [this.new_node.cost, ind] = min(compare_table(:, 1));
+            this.new_node.cost_to_parent = this.near_nodes.cost_to_newNode(ind, 1);
+            this.new_node.id_parent = this.near_nodes.id(ind, 1);
 
         end
 
         function output = calc_cost_v3(this)
-            cost_dist = sqrt(sum((this.nearNodes(:, 1:2) - this.newNode(1, 1:2)) .^ 2, 2));
-            cost_h = this.height_cost_rate * (this.nearNodes(:, 3) - this.newNode(1, 3));
+            cost_dist = sqrt(sum((this.near_nodes.position(:, 1:2) - this.new_node(1, 1:2)) .^ 2, 2));
+            cost_h = this.height_cost_rate * (this.near_nodes.position(:, 3) - this.new_node(1, 3));
             output = sqrt(cost_dist .^ 2 + cost_h .^ 2);
         end
 
-        function new_parent_id = choose_parent_v3(this)
+        function choose_parent_v3(this)
 
-            tmp_value = this.calc_cost_v3(); % 新节点与附近的相邻转移代价 + this.nearNodes(i, 7);
-            this.nearNodes(:, 7) = this.cumcost(this.nearNodes(:, 9));
-            this.nearNodes(:, 11) = tmp_value;
+            tmp_value = this.calc_cost_v3(); % 新节点与附近的相邻转移代价 + this.near_nodes(i, 7);
+            this.near_nodes.cost(:, 1) = this.cumcost(this.near_nodes.id(:, 1));
+            this.near_nodes.cost_to_newNode(:, 1) = tmp_value;
 
-            % compare_table = zeros(length(this.nearNodes(:, 1)), 1);
-            compare_table = this.nearNodes(:, 11) + this.nearNodes(:, 7); %以附近点作新节点父亲后的代价
-            [this.newNode(1, 7), ind] = min(compare_table(:, 1));
-            this.newNode(1, 10) = this.nearNodes(ind, 11);
-            new_parent_id = this.nearNodes(ind, 9);
-
-        end
-
-        function new_parent_id = choose_parent(this)
-            %RRT star 找新的父节点
-            mini_cost = Inf;
-            new_parent_id = 0;
-
-            ind = 1;
-            n = numel(this.nearNodes(:, 1));
-
-            while ind <= n
-
-                if (this.collisionCheck(this.nearNodes(ind, :), this.newNode)) %无碰撞
-
-                    if (this.robot.transferable(this.nearNodes(ind, :), this.newNode)) %可转移
-
-                        tmp_value = this.calc_cost(this.nearNodes(ind, :), this.newNode) + this.nearNodes(ind, 7);
-
-                        if tmp_value < mini_cost
-                            mini_cost = tmp_value;
-                            new_parent_id = this.nearNodes(ind, 9);
-                        end
-
-                    end
-
-                    ind = ind + 1;
-                else %删去集合中有碰撞的附近点
-                    this.nearNodes(ind, :) = [];
-                    ind = ind - 1;
-                    n = n - 1;
-
-                    if ind == 0
-                        break;
-                    end
-
-                end
-
-            end
-
-            this.newNode(7) = mini_cost;
+            % compare_table = zeros(this.near_nodes.num, 1);
+            compare_table = this.near_nodes.cost_to_newNode(:, 1) + this.near_nodes.cost(:, 1); %以附近点作新节点父亲后的代价
+            [this.new_node.cost, ind] = min(compare_table(:, 1));
+            this.new_node.cost_to_parent = this.near_nodes.cost_to_newNode(ind, 1);
+            this.new_node.id_parent = this.near_nodes.id(ind, 1);
 
         end
 
-        function rewire(this, new_parent_id)
+        function ind = rewire_v2(this)
             %重布线
-            this.replot_num = 0;
-
-            for i = 1:numel(this.nearNodes(:, 1))
-
-                if new_parent_id ~= this.nearNodes(i, 8) %不是新节点的父节点
-
-                    if this.robot.transferable(this.newNode, this.nearNodes(i, :))
-                        tmp_value = this.calc_cost(this.newNode, this.nearNodes(i, :)) + this.newNode(7);
-
-                        if tmp_value < this.nearNodes(i, 7)
-                            % id parentid newparentid
-                            this.replot_num = this.replot_num + 1;
-                            this.replot (this.replot_num, :) = [this.nearNodes(i, 9) this.nearNodes(i, 8) this.newNode(9)];
-                            this.nearNodes(i, 7) = tmp_value;
-                            this.nearNodes(i, 8) = this.newNode(9);
-                        end
-
-                    end
-
-                end
-
-            end
-
-        end
-
-        function ind = rewire_v2(this, new_parent_id)
-            %重布线
-            %tmp_value(1,1)=find(this.nearNodes(:, 9) == new_parent_id);
-            %this.nearNodes(tmp_value(1,1), :) = [];
-            this.nearNodes(find(this.nearNodes(:, 9) == new_parent_id), 11) = inf;
-            compare_table = zeros(length(this.nearNodes(:, 1)), 1);
-            compare_table(:, 1) = this.nearNodes(:, 11) + this.newNode(7); %新节点作为附近点的父节点后的代价
-            index = (compare_table(:, 1) - this.nearNodes(:, 7)) < 0; %替换后代价变小的点的下标
-            ind = this.nearNodes(index, 9); %替换后代价变小的点的id
+            this.near_nodes.cost_to_newNode(find(this.near_nodes.id(:, 1) == this.new_node.id_parent), 1) = inf;
+            compare_table = zeros(this.near_nodes.num, 1);
+            compare_table(:, 1) = this.near_nodes.cost_to_newNode(:, 1) + this.new_node.cost; %新节点作为附近点的父节点后的代价
+            index = (compare_table(:, 1) - this.near_nodes.cost(:, 1)) < 0; %替换后代价变小的点的下标
+            ind = this.near_nodes.id(index, 1); %替换后代价变小的点的id
             [this.replot_num, ~] = size(ind(:, 1));
             this.rewire_num = this.rewire_num + this.replot_num;
-            this.tree(ind, 10) = this.nearNodes(index, 11);
-            this.tree(ind, 8) = this.newNode(9);
+            this.cost_to_parent(ind, 1) = this.near_nodes.cost_to_newNode(index, 1);
+            this.parent(ind, 1) = this.new_node.id;
 
         end
 
@@ -415,22 +335,21 @@ classdef rrt < handle
             % output = this.path(:, 1:3);
         end
 
-        function parent_ind = delete_unuesd_node(this)
-            parent_ind = unique(this.tree(:, 8));
-            parent_ind(parent_ind < 0) = [];
-            parent_ind = [parent_ind; this.path_id];
-            parent_ind = unique(parent_ind);
-            this.tree = this.tree(parent_ind, :);
-            this.nodenum = size(this.tree, 1) + 1;
-            id_map = containers.Map(this.tree(:, 9), 1:(this.nodenum - 1));
-            this.tree(:, 9) = 1:(this.nodenum - 1);
+        function ind_parent = delete_unuesd_node(this)
+            ind_parent = unique(this.parent(:, 1));
+            ind_parent(ind_parent < 0) = [];
+            ind_parent = [ind_parent; this.path_id];
+            ind_parent = sortrows(unique(ind_parent));
+            this.tree = this.tree(ind_parent, :);
+            this.node_num = size(this.tree, 1) + 1;
+            id_map = containers.Map(ind_parent, 1:(this.node_num - 1));
 
             for i = 1:length(this.path_id)
                 this.path_id(i) = id_map(this.path_id(i));
             end
 
-            for i = 2:this.nodenum - 1
-                this.tree(i, 8) = id_map(this.tree(i, 8));
+            for i = 2:this.node_num - 1
+                this.parent(i, 1) = id_map(this.parent(i, 1));
             end
 
         end
@@ -445,12 +364,12 @@ classdef rrt < handle
                 max_time = 7;
             end
 
-            this.tree = zeros(this.max_nodes, 10);
-            % this.multi_state = zeros(this.max_nodes, 4);
-            this.path = zeros(500, 10);
-            this.nodenum = 1;
+            this.tree = zeros(this.max_nodes, 3);
+            this.parent = zeros(this.max_nodes, 1);
+            this.path = zeros(500, 3);
+            this.node_num = 1;
             this.informed = false;
-            this.randnum = this.randnums(1, 1);
+            this.rand_num = this.rand_nums(1, 1);
             this.search_num = 0;
             this.tooclose = 0;
             this.isgoal = 0;
@@ -458,8 +377,10 @@ classdef rrt < handle
             this.rewire_num = 0;
 
             this.path_id = [];
-            this.newNode = [this.start 0 0 0 0];
-            this.insert_node(-1);
+            this.new_node.position = this.start(1, 1:3);
+            this.new_node.id_parent = -1;
+            this.new_node.cost_to_parent = 0;
+            this.insert_node();
             %(2 * this.robot.v * this.robot.deltaT) ^ 2;
             tic
             output = zeros(1, 1);
@@ -470,31 +391,31 @@ classdef rrt < handle
             while toc <= max_time
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
-                [closestNode, ~] = this.get_closest(sample);
-                this.newNode(1, 1:6) = this.robot.transfer_directly(sample, closestNode);
+                [closest_node, ~] = this.get_closest(sample);
+                this.new_node.position(1, :) = this.robot.transfer_directly(sample, closest_node);
 
                 if this.neighbors()
                     this.tooclose = this.tooclose + 1;
                     continue
                 end
 
-                new_id = this.choose_parent_v2();
+                this.choose_parent_v2();
 
-                if norm(this.newNode(1:3) - this.goal(1:3)) > this.threshold_goal
+                if norm(this.new_node.position(1:3) - this.goal(1:3)) > this.threshold_goal
 
-                    if new_id > 0
-                        this.insert_node(new_id);
-                        this.rewire_v2(new_id);
+                    if this.new_node.id_parent > 0
+                        this.insert_node();
+                        this.rewire_v2();
 
                     else
                         this.no_parent = this.no_parent + 1;
                     end
 
-                else %if flag == 2
+                else
                     this.isgoal = this.isgoal + 1;
-                    this.path_id(this.isgoal, 1) = new_id;
-                    this.randnum = this.randnums(1, 2); %搜索点不取goal
-                    [path_len, ~] = this.trace_back(new_id);
+                    this.path_id(this.isgoal, 1) = this.new_node.id_parent;
+                    this.rand_num = this.rand_nums(1, 2); %搜索点不取goal
+                    [path_len, ~] = this.trace_back(this.new_node.id_parent);
 
                     if mini_path_len > path_len
                         mini_path_len = path_len;
@@ -509,9 +430,9 @@ classdef rrt < handle
                 %     output(ind) = len;
                 %     ind = ind + 1;
                 % end
-                if this.nodenum > this.max_nodes
-                    this.delete_unuesd_node();
-                end
+                % if this.node_num > this.max_nodes
+                %     this.delete_unuesd_node();
+                % end
 
             end
 
@@ -521,49 +442,6 @@ classdef rrt < handle
             [new_path, interp_num] = this.follow_ground(path_num);
             output = new_path(:, 1:3);
             this.path = new_path;
-
-        end
-
-        function start_rrt(this, ifdisplay, max_time, delay_time)
-            this.tree = zeros(this.max_nodes, 6);
-            this.path = zeros(100, 6);
-            this.newNode = this.start;
-            this.insert_node(-1);
-            this.ifdisplay = ifdisplay;
-            tic
-
-            while toc < max_time
-                sample = this.get_sample();
-                [closestNode, parentid] = this.get_closest(sample);
-                this.newNode = this.robot.transfer(sample, closestNode);
-
-                flag = this.check_newNode();
-
-                if flag == 0
-                    this.insert_node(parentid);
-
-                elseif flag == 2
-
-                    this.trace_back(parentid);
-                    break;
-                end
-
-                if this.ifdisplay
-                    this.display_line(this.tree(this.newNode(8), :), this.newNode, 1, 'b');
-
-                    if delay_time ~= 0
-                        pause(delay_time);
-                    end
-
-                end
-
-            end
-
-            toc
-            % t1 = saves('output', 'path', 0);
-            % t2 = saves('output', 'RRTree', 1);
-            % saveas(1, t1);
-            % save(t2, 'RRTree');
 
         end
 
@@ -581,7 +459,7 @@ classdef rrt < handle
             this.threshold_close = (conf.threshold_close / this.height_scale) ^ 2;
             this.threshold_goal = conf.threshold_goal / this.height_scale;
             this.max_nodes = conf.max_nodes;
-            this.randnums = conf.randnum;
+            this.rand_nums = conf.rand_num;
             this.neighbor_dist = (2 * conf.direct_step) ^ 2;
             this.robot.set_params(conf)
         end
@@ -591,8 +469,8 @@ classdef rrt < handle
             this.map_scale = conf.map_scale; %this.maps.X(1, 2) - this.maps.X(1, 1);
             this.height_scale = conf.map_scale;
             this.maps.set_height_limit(conf.height_limit / this.height_scale);
-            this.searchbBase = [1, 1, min(min(this.maps.Z)), -pi, -pi, -pi];
-            this.searchSize = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(this.maps.Z)) - min(min(this.maps.Z)), 2 * pi, 2 * pi, 2 * pi];
+            this.search_base = [1, 1, min(min(this.maps.Z)), -pi, -pi, -pi];
+            this.search_size = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(this.maps.Z)) - min(min(this.maps.Z)), 2 * pi, 2 * pi, 2 * pi];
             this.robot = uav(conf);
             this.set_params(conf);
 
