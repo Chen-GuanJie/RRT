@@ -142,7 +142,7 @@ classdef map < handle
             [~, index] = min(a);
         end
 
-        function [target_loc, delta_dist, flag] = checkPath_v2(this, from, to)
+        function [target_loc, delta_dist, flag, cost] = checkPath_v2(this, from, to)
             %检查两点连线是否与地形碰撞
             flag = true;
             delta_dist = norm(from(1:2) - to(1:2));
@@ -181,6 +181,7 @@ classdef map < handle
                 flag = false;
                 target_loc = 0;
                 delta_dist = 0;
+                cost = 0;
                 return
             end
 
@@ -200,11 +201,23 @@ classdef map < handle
             this.y_down(this.y_down < 1) = 1;
             this.y_down(this.y_down > y_max) = y_max;
 
+            x_mid = 0.5 * (this.x_ind(1) + this.x_ind(num));
+            y_mid = 0.5 * (this.y_up(1) + this.y_up(num));
+            y_ind_2 = round(this.x_ind - x_mid + y_mid);
+            x_ind_2 = round(this.y_up - y_mid + x_mid);
+            h_2 = zeros(num, 1);
+            x_ind_2(x_ind_2 > x_max) = x_max;
+            x_ind_2(x_ind_2 < 1) = 1;
+            y_ind_2(y_ind_2 < 1) = 1;
+            y_ind_2(y_ind_2 > y_max) = y_max;
+
             for i = 1:1:num
                 this.h_up(i, 1) = new_Height(this.x_ind(i), this.y_up(i));
                 this.h_down(i, 1) = new_Height(this.x_ind(i), this.y_down(i));
+                h_2(i, 1) = new_Height(x_ind_2(i), y_ind_2(i));
             end
 
+            cost = 6 * sum(abs(diff(h_2)));
             ground_h = 0.5 .* (this.h_up + this.h_down); %地形高度
             delta_dist = delta_dist / num;
             target_h = this.height_limit + ground_h; %跟踪高度

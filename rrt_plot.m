@@ -36,7 +36,7 @@ classdef rrt_plot < rrt
 
         function display_states(this, delay_time)
             % this.display_arrow(this.newNode.position, 10); %
-            this.edges(this.newNode.id) = this.display_line(this.tree(this.newNode.id_parent, :), this.newNode.position, 1, 'b');
+            this.edges(this.new_node.id) = this.display_line(this.tree(this.new_node.id_parent, :), this.new_node.position, 1, 'b');
             this.redisplay();
 
             if delay_time ~= 0
@@ -51,17 +51,6 @@ classdef rrt_plot < rrt
             this.replot(1:this.replot_num, 2) = this.new_node.id;
         end
 
-%{
-        function [path_len, path_num] = trace_back(this, id)
-            [path_len, path_num] = trace_back@rrt(this, id);
-
-                        if ~isempty(this.path_plot)
-                            delete(this.path_plot);
-                        end
-                        this.path_plot = plot3(this.path(1:this.tmp_ind, 1), this.path(1:this.tmp_ind, 2), this.path(1:this.tmp_ind, 3), 'LineWidth', 2, 'color', 'g');
-
-        end
-%}
         function redisplay(this)
 
             for i = 1:this.replot_num
@@ -115,11 +104,11 @@ classdef rrt_plot < rrt
         end
 
         function output = start_star_1_plot(this, max_time)
-            [output, interp_num] = this.start_star(max_time);
+            output = this.start_star(max_time);
             this.show_map();
             figure(1);
             plot3(output(:, 1), output(:, 2), output(:, 3), 'LineWidth', 2, 'color', 'g');
-            this.path_evaluate(interp_num);
+            %            this.path_evaluate(interp_num);
         end
 
         function set_start_end(this, s, g)
@@ -143,11 +132,10 @@ classdef rrt_plot < rrt
                 delay_time = 0.01;
             end
 
-            this.tree = zeros(this.max_nodes, 10);
-            this.path = zeros(500, 10);
-            this.nodenum = 1;
+            this.tree = zeros(this.max_nodes, 3);
+            this.node_num = 1;
             this.informed = false;
-            this.randnum = this.randnums(1, 1);
+            this.rand_num = this.rand_nums(1, 1);
             this.search_num = 0;
             this.tooclose = 0;
             this.isgoal = 0;
@@ -171,7 +159,6 @@ classdef rrt_plot < rrt
             tic
 
             while toc <= max_time
-
                 this.search_num = this.search_num + 1;
                 sample = this.get_sample();
                 [closest_node, ~] = this.get_closest(sample);
@@ -185,7 +172,7 @@ classdef rrt_plot < rrt
 
                 this.choose_parent_v2();
 
-                if norm(this.newNode(1:3) - this.goal(1:3)) > this.threshold_goal
+                if norm(this.new_node.position(1:3) - this.goal(1:3)) > this.threshold_goal
 
                     if this.new_node.id_parent > 0
                         this.insert_node();
@@ -198,26 +185,31 @@ classdef rrt_plot < rrt
 
                 else %if flag == 2
                     this.isgoal = this.isgoal + 1;
+                    this.insert_node();
                     path_id(this.isgoal, 1) = this.new_node.id_parent;
-                    this.randnum = this.randnums(1, 2); %搜索点不取goal
-                    [path_len, path_num] = this.trace_back(this.new_node.id_parent);
+                    this.rand_num = this.rand_nums(1, 2); %搜索点不取goal
+                    % [path_len, path_num] = this.trace_back(this.new_node.id_parent);
+                    path = this.trace_back(this.new_node.id);
+                    path = [this.start(1:3); path; this.goal(1:3)];
+                    tmp_value = path(2:end, 1:3) - path(1:end - 1, 1:3);
+                    path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
                     if ~isempty(this.path_plot)
                         delete(this.path_plot);
                     end
 
-                    this.path_plot = plot3(this.path(1:path_num, 1), this.path(1:path_num, 2), this.path(1:path_num, 3), 'LineWidth', 2, 'color', 'g');
-                    
+                    this.path_plot = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'g');
+
                     if mini_path_len > path_len
                         mini_path_len = path_len;
                         this.prepare_informed(path_len);
                     end
 
+                end
 
-                end
-                if this.nodenum > this.max_nodes
-                    this.delete_unuesd_node();
-                end
+                % if this.nodenum > this.max_nodes
+                %     this.delete_unuesd_node();
+                % end
 
             end
 

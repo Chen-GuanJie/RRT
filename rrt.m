@@ -42,7 +42,6 @@ classdef rrt < handle
         no_parent = 0
         collision = 0
         rewire_num = 0
-        path = zeros(100, 3)
         path_id = []
     end
 
@@ -53,7 +52,7 @@ classdef rrt < handle
 
             if this.informed
                 y = 0;
-                sample = [0 inf 0 0 0 0]';
+                sample = [0 inf 0]';
 
                 while abs(sample(2)) > y
                     sample(1:2) = [rand * 2 * this.long_axis; rand * 2 * this.short_axis] - [this.long_axis; this.short_axis];
@@ -67,9 +66,9 @@ classdef rrt < handle
 
                 if rand < this.rand_num
 
-                    sample = rand(1, 6) .* this.search_size + this.search_base;
+                    sample = rand(1, 3) .* this.search_size(1, 1:3) + this.search_base(1, 1:3);
                 else
-                    sample = this.goal;
+                    sample = this.goal(1, 1:3);
                 end
 
             end
@@ -113,15 +112,14 @@ classdef rrt < handle
             cost = norm([cost_dist, cost_angle, cost_hight]);
         end
 
-        function [id, flag] = get_ancestor(this, prev)
-            flag = false;
-            id = zeros(1, 1);
-            ind = 1;
+        function ids = get_ancestor(this, prev)
+            ids = zeros(1, 1);
+            ids(1, 1) = prev;
+            ind = 2;
             prev = this.parent(prev, 1);
 
             while prev > 0
-                flag = true;
-                id(ind, 1) = prev;
+                ids(ind, 1) = prev;
                 ind = ind + 1;
                 prev = this.parent(prev, 1);
             end
@@ -129,16 +127,11 @@ classdef rrt < handle
         end
 
         function output = cumcost(this, prev_list)
-            output = zeros(1, length(prev_list));
+            output = zeros(length(prev_list), 1);
 
             for i = 1:length(prev_list)
-                prev = prev_list(i);
-
-                while prev > 0
-                    output(i) = output(i) + this.cost_to_parent(prev, 1);
-                    prev = this.parent(prev, 1);
-                end
-
+                ids = this.get_ancestor(prev_list(i));
+                output(i) = sum(this.cost_to_parent(ids, 1));
             end
 
         end
@@ -159,46 +152,31 @@ classdef rrt < handle
             this.node_num = this.node_num + 1;
         end
 
-        function [path_len, path_num] = trace_back(this, id)
+        function path = trace_back(this, id)
             %回溯轨迹
-            ind = 1;
-            this.path(ind, :) = this.goal(1:3);
-            prev = id;
-
-            while prev > 0
-                ind = ind + 1;
-                this.path(ind, 1:3) = this.tree(prev, 1:3);
-                prev = this.parent(prev, 1);
-            end
-
-            path_num = ind;
-            %tmp_value = zeros(ind - 1, 1:3);
-            tmp_value = this.path(2:ind, 1:3) - this.path(1:ind - 1, 1:3);
-            path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
-
+            ids = this.get_ancestor(id);
+            path = this.tree(ids, 1:3);
         end
 
-        function min_path_cost = find_min_cost(this)
-            path_number = length(this.path_id);
-            path_cost = zeros(path_number, 1);
-
-            for i = 1:path_number
-                path_cost(i, 1) = this.cumcost(this.path_id(i));
-            end
-
-            [min_path_cost, ~] = min(path_cost);
-        end
-
-        function [min_path_len, path_num] = find_best_path(this)
-            path_length = this.cumcost(this.path_id);
-            [min_path_len, best_path_id] = min(path_length);
-            [~, path_num] = this.trace_back(this.path_id(best_path_id));
+        function [min_path_cost, path] = find_best_path(this)
+            path_costs = this.cumcost(this.path_id);
+            [min_path_cost, best_path_id] = min(path_costs);
+            path = this.trace_back(this.path_id(best_path_id));
         end
 
         function choose_parent_v2(this)
+            % this.near_nodes.cost(:, 1) = this.cumcost(this.near_nodes.id(:, 1));
 
             for i = 1:this.near_nodes.num
-                [target_h, delta_dist, flag] = this.maps.checkPath_v2(this.near_nodes.position(i, :), this.new_node.position(1, :));
+                [target_h, delta_dist, flag, c] = this.maps.checkPath_v2(this.near_nodes.position(i, :), this.new_node.position(1, :));
+
+                % if f
+                %     [new_target_h, ~] = this.robot.follow(this.near_nodes.position(i, :), this.new_node.position(1, :), target_h(:, 3), delta_dist);
+                %     tmp_value = this.calc_cost_v2(this.near_nodes.position(i, :), this.new_node.position(1, :), new_target_h); % 新节点与附近的相邻转移代价 + this.near_nodes(i, 7);
+                %     tmp_value = norm([tmp_value, c]);
+                % else
+                %     tmp_value = inf;
+                % end
 
                 if flag
                     [new_target_h, flag2] = this.robot.follow(this.near_nodes.position(i, :), this.new_node.position(1, :), target_h(:, 3), delta_dist);
@@ -206,6 +184,7 @@ classdef rrt < handle
                     if flag2
                         tmp_value = this.calc_cost_v2(this.near_nodes.position(i, :), this.new_node.position(1, :), new_target_h); % 新节点与附近的相邻转移代价 + this.near_nodes(i, 7);
                         this.near_nodes.cost(i, 1) = this.cumcost(this.near_nodes.id(i, 1));
+                        % tmp_value = norm([tmp_value, c]);
                     else
                         tmp_value = inf;
                     end
@@ -226,8 +205,8 @@ classdef rrt < handle
         end
 
         function output = calc_cost_v3(this)
-            cost_dist = sqrt(sum((this.near_nodes.position(:, 1:2) - this.new_node(1, 1:2)) .^ 2, 2));
-            cost_h = this.height_cost_rate * (this.near_nodes.position(:, 3) - this.new_node(1, 3));
+            cost_dist = sqrt(sum((this.near_nodes.position(:, 1:2) - this.new_node.position(1, 1:2)) .^ 2, 2));
+            cost_h = this.height_cost_rate * (this.near_nodes.position(:, 3) - this.new_node.position(1, 3));
             output = sqrt(cost_dist .^ 2 + cost_h .^ 2);
         end
 
@@ -358,7 +337,7 @@ classdef rrt < handle
 
     methods (Access = public)
 
-        function [output, interp_num] = start_star(this, max_time)
+        function output = start_star(this, max_time)
 
             if nargin < 1
                 max_time = 7;
@@ -366,7 +345,6 @@ classdef rrt < handle
 
             this.tree = zeros(this.max_nodes, 3);
             this.parent = zeros(this.max_nodes, 1);
-            this.path = zeros(500, 3);
             this.node_num = 1;
             this.informed = false;
             this.rand_num = this.rand_nums(1, 1);
@@ -413,9 +391,13 @@ classdef rrt < handle
 
                 else
                     this.isgoal = this.isgoal + 1;
-                    this.path_id(this.isgoal, 1) = this.new_node.id_parent;
+                    this.insert_node();
+                    this.path_id(this.isgoal, 1) = this.new_node.id;
                     this.rand_num = this.rand_nums(1, 2); %搜索点不取goal
-                    [path_len, ~] = this.trace_back(this.new_node.id_parent);
+                    path = this.trace_back(this.new_node.id);
+                    path = [this.start(1:3); path; this.goal(1:3)];
+                    tmp_value = path(2:end, 1:3) - path(1:end - 1, 1:3);
+                    path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
                     if mini_path_len > path_len
                         mini_path_len = path_len;
@@ -436,12 +418,13 @@ classdef rrt < handle
 
             end
 
-            [~, path_num] = this.find_best_path();
+            [c, path] = this.find_best_path();
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
+            fprintf('\n路径代价为%f', c);
             % interp_num = this.interpolation(path_num);
-            [new_path, interp_num] = this.follow_ground(path_num);
-            output = new_path(:, 1:3);
-            this.path = new_path;
+            % [new_path, interp_num] = this.follow_ground(path_num);
+            % output = new_path(:, 1:3);
+            output = path;
 
         end
 
