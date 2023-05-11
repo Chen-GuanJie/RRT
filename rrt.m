@@ -184,7 +184,7 @@ classdef rrt < handle
                     if flag2
                         tmp_value = this.calc_cost_v2(this.near_nodes.position(i, :), this.new_node.position(1, :), new_target_h); % 新节点与附近的相邻转移代价 + this.near_nodes(i, 7);
                         this.near_nodes.cost(i, 1) = this.cumcost(this.near_nodes.id(i, 1));
-                        % tmp_value = norm([tmp_value, c]);
+                        tmp_value = norm([tmp_value, c]);
                     else
                         tmp_value = inf;
                     end
@@ -273,12 +273,13 @@ classdef rrt < handle
 
         end
 
-        function [new_path, num] = follow_ground(this, path_num)
+        function new_path = follow_ground(this, path)
             new_path = zeros(400, 10);
             ind = 1;
+            path_num = length(path(:, 1));
 
             for i = path_num:-1:2
-                [target_h, delta_dist] = this.maps.checkPath_v2(this.path(i, 1:3), this.path(i - 1, 1:3));
+                [target_h, delta_dist, ~, ~] = this.maps.checkPath_v2(path(i, 1:3), path(i - 1, 1:3));
                 new_target_h = this.robot.just_follow(target_h(:, 3), delta_dist);
                 target_h(:, 3) = new_target_h;
                 [tmp_value, ~] = size(target_h);
@@ -302,10 +303,9 @@ classdef rrt < handle
             % end
 
             % num = ind - 1;
-            [num, ~] = size(new_path);
         end
 
-        function output = to_normal_size(this, new_path, path_num)
+        function output = to_normal_size(this, new_path)
             output = zeros(path_num, 3);
             output(:, 1:2) = new_path(:, 1:2) * this.map_scale;
             output(:, 3) = new_path(:, 3) * this.height_scale;
@@ -395,7 +395,7 @@ classdef rrt < handle
                     this.path_id(this.isgoal, 1) = this.new_node.id;
                     this.rand_num = this.rand_nums(1, 2); %搜索点不取goal
                     path = this.trace_back(this.new_node.id);
-                    path = [this.start(1:3); path; this.goal(1:3)];
+                    path = [this.goal(1:3); path; this.start(1:3)];
                     tmp_value = path(2:end, 1:3) - path(1:end - 1, 1:3);
                     path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
@@ -422,10 +422,9 @@ classdef rrt < handle
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             fprintf('\n路径代价为%f', c);
             % interp_num = this.interpolation(path_num);
-            % [new_path, interp_num] = this.follow_ground(path_num);
+            %output = this.follow_ground(path);
+            output =path;
             % output = new_path(:, 1:3);
-            output = path;
-
         end
 
         function set_start_end(this, s, g)
@@ -445,6 +444,13 @@ classdef rrt < handle
             this.rand_nums = conf.rand_num;
             this.neighbor_dist = (2 * conf.direct_step) ^ 2;
             this.robot.set_params(conf)
+        end
+
+        function save(this)
+            col = {'tree', 'parent', 'cost'};
+            result_table = table(this.tree, this.parent, this.cost_to_parent, 'VariableNames', col);
+            writetable(result_table, 'test.csv');
+
         end
 
         function this = rrt(conf)

@@ -169,15 +169,15 @@ classdef uav < handle
             [n, ~] = size(target_h);
 
             if this.transferable(from, to)
-                tmp = diff(target_h);
-                tmp(tmp > max_delta) = max_delta;
-                tmp(tmp <- max_delta) = -max_delta;
+            tmp = diff(target_h);
+            tmp(tmp > max_delta) = max_delta;
+            tmp(tmp <- max_delta) = -max_delta;
 
-                for i = 2:n
-                    target_h(i) = target_h(i - 1) + tmp(i - 1);
-                end
+            for i = 2:n
+                target_h(i) = target_h(i - 1) + tmp(i - 1);
+            end
 
-                flag = true;
+            flag = true;
             end
 
         end

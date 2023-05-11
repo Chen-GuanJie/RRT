@@ -24,22 +24,20 @@ classdef rrt_plot < rrt
     methods (Access = public)
 
         function display_serachline(this, closest_node, sample, delay_time)
-            tp = this.display_line(closest_node, sample, 3, 'k');
 
             if delay_time ~= 0
+                tp = this.display_line(closest_node, sample, 3, 'k');
                 pause(delay_time);
+                delete(tp);
             end
-
-            delete(tp);
 
         end
 
         function display_states(this, delay_time)
             % this.display_arrow(this.newNode.position, 10); %
-            this.edges(this.new_node.id) = this.display_line(this.tree(this.new_node.id_parent, :), this.new_node.position, 1, 'b');
-            this.redisplay();
-
             if delay_time ~= 0
+                this.edges(this.new_node.id) = this.display_line(this.tree(this.new_node.id_parent, :), this.new_node.position, 1, 'b');
+                this.redisplay();
                 pause(delay_time);
             end
 
@@ -62,20 +60,21 @@ classdef rrt_plot < rrt
 
         end
 
-        function path_evaluate(this, path_num)
+        function path_evaluate(this, best_path)
+            path_num = length(best_path(:, 1));
             figure(2)
-            clear gca
+            % clear gca
             subplot(3, 1, 1)
-            this.path(:, 1:3) = this.path(:, 1:3) * this.map_scale;
-            this.path(:, 8:9) = this.path(:, 8:9) * this.map_scale;
-            plot(1:path_num, this.path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
-            plot(1:path_num, this.path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
+            best_path(:, 1:3) = best_path(:, 1:3) * this.map_scale;
+            best_path(:, 8:9) = best_path(:, 8:9) * this.map_scale;
+            plot(1:path_num, best_path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
+            plot(1:path_num, best_path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             legend
             subplot(3, 1, 2)
-            plot(1:path_num, this.path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
-            legend
-            subplot(3, 1, 3)
-            plot(1:path_num, this.path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
+            % plot(1:path_num, best_path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
+            % legend
+            % subplot(3, 1, 3)
+            plot(1:path_num, best_path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
             legend
         end
 
@@ -99,6 +98,24 @@ classdef rrt_plot < rrt
 
         end
 
+        function show_search_tree(this)
+
+            for i = 2:length(this.parent)
+
+                if this.parent(i) > 0
+                    this.edges(i) = this.display_line(this.tree(this.parent(i), 1:3), this.tree(i, 1:3), 1, 'b');
+                end
+
+            end
+
+        end
+
+        function delete_search_tree(this)
+
+            delete(this.edges);
+
+        end
+
         function this = rrt_plot(conf)
             this = this@rrt(conf);
         end
@@ -108,7 +125,8 @@ classdef rrt_plot < rrt
             this.show_map();
             figure(1);
             plot3(output(:, 1), output(:, 2), output(:, 3), 'LineWidth', 2, 'color', 'g');
-            %            this.path_evaluate(interp_num);
+            %this.path_evaluate(output);
+            this.show_search_tree()
         end
 
         function set_start_end(this, s, g)
@@ -148,7 +166,6 @@ classdef rrt_plot < rrt
             end
 
             this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
-            path_id = zeros(5, 1);
             this.new_node.position = this.start(1, 1:3);
             this.new_node.id_parent = -1;
             this.new_node.cost_to_parent = 0;
@@ -186,11 +203,10 @@ classdef rrt_plot < rrt
                 else %if flag == 2
                     this.isgoal = this.isgoal + 1;
                     this.insert_node();
-                    path_id(this.isgoal, 1) = this.new_node.id_parent;
+                    this.path_id(this.isgoal, 1) = this.new_node.id;
                     this.rand_num = this.rand_nums(1, 2); %搜索点不取goal
-                    % [path_len, path_num] = this.trace_back(this.new_node.id_parent);
                     path = this.trace_back(this.new_node.id);
-                    path = [this.start(1:3); path; this.goal(1:3)];
+                    path = [this.goal(1:3); path; this.start(1:3)];
                     tmp_value = path(2:end, 1:3) - path(1:end - 1, 1:3);
                     path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
@@ -213,20 +229,25 @@ classdef rrt_plot < rrt
 
             end
 
+            if delay_time == 0
+                this.show_search_tree();
+            end
+
             % [~, path_number] = size(this.path_id);
-            [~, path_num] = this.find_best_path();
+            [c, path] = this.find_best_path();
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
+            fprintf('\n路径代价为%f', c);
             % interp_num = this.interpolation(path_num);
-            [new_path, interp_num] = this.follow_ground(path_num);
+            %new_path = this.follow_ground(path);
+            new_path = path;
 
             if ~isempty(this.path_plot)
                 delete(this.path_plot);
             end
 
-            this.path = new_path;
-            plot3(this.path(1:interp_num, 1), this.path(1:interp_num, 2), this.path(1:interp_num, 3), 'LineWidth', 2, 'color', 'g');
-            this.path_evaluate(interp_num);
-            output = this.maps.to_normal_size(this.path);
+            plot3(new_path(:, 1), new_path(:, 2), new_path(:, 3), 'LineWidth', 2, 'color', 'g');
+            this.path_evaluate(new_path);
+            output = this.maps.to_normal_size(new_path);
 
         end
 

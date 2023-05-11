@@ -36,7 +36,7 @@ delay_time 画图间隔
         end
 
     else
-        [output, ~] = r.start_star(total_time);
+        output = r.start_star(total_time);
     end
 
     % %列名称
