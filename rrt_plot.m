@@ -100,7 +100,7 @@ classdef rrt_plot < rrt
 
         function show_search_tree(this)
 
-            for i = 2:length(this.parent)
+            for i = 1:length(this.parent)
 
                 if this.parent(i) > 0
                     this.edges(i) = this.display_line(this.tree(this.parent(i), 1:3), this.tree(i, 1:3), 1, 'b');
@@ -124,6 +124,8 @@ classdef rrt_plot < rrt
             output = this.start_star(max_time);
             this.show_map();
             figure(1);
+            output = output(:, 1:3);
+            output = [this.start(1:3); output; this.goal(1:3)];
             plot3(output(:, 1), output(:, 2), output(:, 3), 'LineWidth', 2, 'color', 'g');
             %this.path_evaluate(output);
             this.show_search_tree()
@@ -238,8 +240,8 @@ classdef rrt_plot < rrt
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             fprintf('\n路径代价为%f', c);
             % interp_num = this.interpolation(path_num);
-            %new_path = this.follow_ground(path);
-            new_path = path;
+            new_path = this.follow_ground(path);
+            % new_path = path;
 
             if ~isempty(this.path_plot)
                 delete(this.path_plot);

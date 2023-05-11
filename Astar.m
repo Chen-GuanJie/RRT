@@ -58,7 +58,7 @@ classdef Astar < handle
 
         function output = calc_H_1(this, from, to)
             tmp = to(1, 1:this.dimension) - from(:, 1:this.dimension);
-            tmp(:, this.ind_mapping) = this.rate * 5 * abs(to(:, this.ind_evaluate) - from(1, this.ind_evaluate));
+            tmp(:, this.ind_mapping) = this.rate * abs(to(:, this.ind_evaluate) - from(1, this.ind_evaluate));
             tmp = sum(tmp .^ 2, 2);
             output = sqrt(tmp);
 

@@ -12,9 +12,9 @@ if ~exist('dem_data', 'var')
 
 end
 conf.dem_data = dem_data;
-conf.start = [275 122 500]; %起始点
-conf.goal = [83 378 500]; %终点
+conf.start = [124 127 500]; %起始点
+conf.goal = [238 305 500]; %终点
 conf.height_limit = 500;
-conf.rate = 60;
+conf.rate = 10;
 conf.dimension = 2;
 conf.height_limit=500;

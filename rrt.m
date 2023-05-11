@@ -422,9 +422,8 @@ classdef rrt < handle
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
             fprintf('\n路径代价为%f', c);
             % interp_num = this.interpolation(path_num);
-            %output = this.follow_ground(path);
-            output =path;
-            % output = new_path(:, 1:3);
+            output = this.follow_ground(path);
+            % output = path;
         end
 
         function set_start_end(this, s, g)
