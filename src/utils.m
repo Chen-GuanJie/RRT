@@ -33,36 +33,96 @@ classdef utils < handle
 
         end
 
-        function new = new_path(Dir, patt)
+        function id = id_dir(dir_name)
+            c = strsplit(dir_name, '_');
+            id = str2double(c{end});
+
+        end
+
+        function output = assert_patten(patt, name, type)
+            output = false;
 
             if nargin == 2
-                files = dir(Dir);
-                ids = zeros(length(files), 1);
+                c = strsplit(name, '_');
 
-                for i = 3:length(files)
-                    c = strsplit(files(i).name, '_');
+                if strcmp(patt, '') && length(c) == 1
 
-                    if strcmp(patt, c{1})
-                        id = strsplit(c{2}, '.');
-                        tmp = str2double(id{1});
+                    output = true;
+                    return
+                end
 
-                        if ~ISNAN(tmp)
-                            ids(i) = tmp;
+                if strcmp(patt, c{1})
+                    output = true;
+                end
+
+            elseif nargin == 3
+                c = strsplit(name, {'_', '.'});
+
+                if strcmp(type, c{end}) && strcmp(patt, c{1})
+                    output = true;
+                end
+
+            end
+
+        end
+
+        function id = id_file(file_name)
+            c = strsplit(file_name, {'_', '.'});
+            id = str2double(c{end - 1});
+
+        end
+
+        function new = iterate_path(Dir, patt, type)
+
+            files = dir(Dir);
+            ids = zeros(length(files), 1);
+
+            switch nargin
+                case 1
+
+                    for i = 3:length(files)
+                        patt = '';
+
+                        if files(i).isdir && utils.assert_patten(patt, files(i).name)
+                            ids(i) = utils.id_dir(files(i).name);
                         end
 
                     end
 
-                end
+                    id = max(ids) + 1;
+                    new = [Dir, num2str(id), '/'];
 
-                id = max(ids) + 1;
+                case 2
 
-                if id == 1
-                    new = [Dir, patt, '/'];
-                else
+                    for i = 3:length(files)
+
+                        if files(i).isdir && utils.assert_patten(patt, files(i).name)
+                            ids(i) = utils.id_dir(files(i).name);
+                        end
+
+                    end
+
+                    id = max(ids) + 1;
                     new = [Dir, patt, '_', num2str(id), '/'];
-                end
+
+                case 3
+
+                    for i = 3:length(files)
+
+                        if ~files(i).isdir && utils.assert_patten(patt, files(i).name, type)
+                            ids(i) = utils.id_file(files(i).name);
+                        end
+
+                    end
+
+                    id = max(ids) + 1;
+                    new = [Dir, patt, '_', num2str(id), '.', type];
 
             end
+
+        end
+
+        function map_data = load_map(input)
 
         end
 

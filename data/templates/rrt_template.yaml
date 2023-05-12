@@ -1,0 +1,16 @@
+name:
+threshold_close:
+threshold_goal:
+search:
+rand_num:
+max_nodes:
+height_cost_rate:
+map_scale:
+direct_step:
+height_limit:
+benchmark:
+  is_benchmark:
+  interest:
+  is_time_step:
+  benchmark_record_step:
+  max_iter:

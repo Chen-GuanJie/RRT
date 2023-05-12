@@ -1,8 +1,9 @@
-data/
+data/*
+!/data/templates/
 output/
 codegen/
 mlapp/
 *.asv
 *.fig
 *.mat
-test.m
+test*

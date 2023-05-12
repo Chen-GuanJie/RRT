@@ -7,10 +7,15 @@ classdef map < handle
         X_num = 0
         Y_num = 0
         Z_num = 0
+        start
+        goal
         max_ind = zeros(1, 3)
     end
 
     properties (SetAccess = private)
+        name = 'map'
+        config_manger
+        map_path = ''
         ZT = zeros(1, 1) %地图转置
         height_limit = 1
         threshold_high = 1 %离地最高高度
@@ -30,8 +35,28 @@ classdef map < handle
 
     methods (Access = private)
 
-        function this = map(dem_data)
+        function this = map()
+            this.config_manger = configs.get_config(this.name);
+        end
 
+        function set_params(this)
+            conf = this.config_manger.load();
+            this.start = conf.start;
+            this.goal = conf.goal;
+
+            if ~strcmp(this.map_path, conf.map_name)
+                this.map_path = conf.map_name;
+                dem_data = utils.load_map();
+                this.build_map(dem_data);
+            end
+
+        end
+
+        function save_built_map(this)
+
+        end
+
+        function build_map(this, dem_data)
             dem_data = sortrows(dem_data);
             x = dem_data(:, 1);
             y = dem_data(:, 2);
@@ -43,8 +68,8 @@ classdef map < handle
             % x = x - this.mini_x;
             % y = y - this.mini_y;
 
-            [X, Xn] = this.grid(x);
-            [Y, Yn] = this.grid(y);
+            [this.X, Xn] = this.grid(x);
+            [this.Y, Yn] = this.grid(y);
             this.X_num = Xn;
             this.Y_num = Yn;
             this.Z_num = Xn * Yn;
@@ -74,8 +99,8 @@ classdef map < handle
                         if (stop - start + 1) == Yn
                             Height(i, :) = z(start:stop);
                         else %todo:
-                            a = find(Y == y(start));
-                            b = find(Y == y(stop));
+                            a = find(this.Y == y(start));
+                            b = find(this.Y == y(stop));
 
                             if (b - a) == stop - start
                                 Height(i, a:b) = z((start:stop));
@@ -84,7 +109,7 @@ classdef map < handle
 
                                 for k = 1:stop - start + 1
 
-                                    while Y(m) ~= y(k)
+                                    while this.Y(m) ~= y(k)
                                         m = m + 1;
 
                                         if m > Yn
@@ -116,8 +141,8 @@ classdef map < handle
 
             end
 
-            this.X = X;
-            this.Y = Y;
+            this.X = this.X;
+            this.Y = this.Y;
             this.Z = Height / this.height_scale;
             this.ZT = this.Z';
             this.tmp_h = zeros(1, 10);
@@ -134,9 +159,9 @@ classdef map < handle
         function index = find_closest(this, x, axis)
 
             if axis == 0
-                a = abs(this.X - x);
+                a = abs(this.this.X - x);
             else
-                a = abs(this.Y - x);
+                a = abs(this.this.Y - x);
             end
 
             [~, index] = min(a);
@@ -335,12 +360,12 @@ classdef map < handle
             g = sortrows(x_unique)';
         end
 
-        function obj = get_instance(dem_data)
+        function obj = get_instance()
             persistent ins;
 
             if nargin >= 1 && (isempty(ins) || ~isvalid(ins))
 
-                ins = map(dem_data);
+                ins = map();
 
             end
 

@@ -2,7 +2,6 @@ classdef rrt_plot < rrt
 
     properties (SetAccess = private)
         plot_point = []
-        % replot_num
         path_plot
         ifdisplay = false
         replot = zeros(50, 3)
@@ -45,13 +44,14 @@ classdef rrt_plot < rrt
 
         function rewire_v2(this)
             ind = rewire_v2@rrt(this);
-            this.replot(1:this.replot_num, 1) = ind;
-            this.replot(1:this.replot_num, 2) = this.new_node.id;
+            replot_num = length(ind);
+            this.replot(1:replot_num, 1) = ind;
+            this.replot(1:replot_num, 2) = this.new_node.id;
         end
 
         function redisplay(this)
 
-            for i = 1:this.replot_num
+            for i = 1:length(this.replot(:, 1))
                 delete(this.edges(this.replot(i, 1)));
                 s = this.tree(this.replot(i, 2), 1:3);
                 e = this.tree(this.replot(i, 1), 1:3);

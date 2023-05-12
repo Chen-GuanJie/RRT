@@ -1,6 +1,8 @@
 classdef uav < handle
 
     properties (SetAccess = private)
+        name = 'uav'
+        config_manger
         maps
         height_limit = 1.2 %贴地高度限制
         pitchMax = 0 %俯仰角最大
@@ -42,8 +44,9 @@ classdef uav < handle
 
     methods (Access = public)
 
-        function this = uav(conf)
-            this.maps = map.get_instance(conf.dem_data);
+        function this = uav()
+            this.config_manger = configs.get_config(this.name);
+            this.maps = map.get_instance();
         end
 
         function set_params(this, conf)
@@ -169,15 +172,15 @@ classdef uav < handle
             [n, ~] = size(target_h);
 
             if this.transferable(from, to)
-            tmp = diff(target_h);
-            tmp(tmp > max_delta) = max_delta;
-            tmp(tmp <- max_delta) = -max_delta;
+                tmp = diff(target_h);
+                tmp(tmp > max_delta) = max_delta;
+                tmp(tmp <- max_delta) = -max_delta;
 
-            for i = 2:n
-                target_h(i) = target_h(i - 1) + tmp(i - 1);
-            end
+                for i = 2:n
+                    target_h(i) = target_h(i - 1) + tmp(i - 1);
+                end
 
-            flag = true;
+                flag = true;
             end
 
         end

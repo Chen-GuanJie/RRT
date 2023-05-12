@@ -16,8 +16,8 @@ classdef configs < handle
             old_data = this.data;
             this.data = yaml.loadFile(this.config_file);
 
-            if ~strcmp(this.data.name, old_data.name)
-                this.save_path = [this.output_dir char(this.data.name)];
+            if isfield(this.data, 'name') && ~strcmp(this.data.name, old_data.name)
+                this.save_path = [this.output_dir char(this.data.name) '/'];
                 utils.checkdir(this.save_path);
             end
 
@@ -25,8 +25,8 @@ classdef configs < handle
 
         end
 
-        function output = get_save_path(this)
-            output = utils.new_path(this.save_path);
+        function output = iterate_save_path(this)
+            output = utils.iterate_path(this.save_path);
             utils.checkdir(output);
         end
 
@@ -50,7 +50,6 @@ classdef configs < handle
             end
 
             this.data.name = '';
-            disp('load config file success')
         end
 
     end
