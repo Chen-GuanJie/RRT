@@ -11,11 +11,17 @@ classdef utils < handle
 
     methods (Static)
 
-        function checkdir(dir)
+        function is_exist = checkdir(dir, make_if_none)
+            is_exist = true;
 
             if ~exist(dir, 'dir')
-                mkdir(dir);
-                disp(['creat new dir ', dir])
+
+                if ~(nargin == 2 && make_if_none == false)
+                    mkdir(dir);
+                    disp(['creat new dir ', dir])
+                end
+
+                is_exist = false;
             end
 
         end
@@ -122,8 +128,31 @@ classdef utils < handle
 
         end
 
-        function map_data = load_map(input)
+        function data = load_file(path, name)
 
+            if utils.checkdir(path, false)
+
+                if exist([path, name, '.mat'], 'file')
+                    m = load([path, name, '.mat'], '-mat');
+                    n = fieldnames(m);
+                    data = da.(n{1});
+
+                elseif exist([path, name, '.csv'], 'file')
+                    data = load([path, name, '.csv']);
+                else
+                    disp([name, ' not exist'])
+
+                end
+
+            else
+                disp([path, ' not exist'])
+            end
+
+        end
+
+        function clear_all()
+            map.get_instance(false);
+            configs.get_config(false);
         end
 
     end

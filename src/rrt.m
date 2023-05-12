@@ -27,16 +27,11 @@ classdef rrt < benchmark
         short_axis = 1 %短轴
         ellipse_rotation = zeros(2, 2)
         ellipse_displace = zeros(2, 1)
-        %temp value
-        % compare_table = zeros(1, 1)
-        % tmp_ind = zeros(10, 1)
-        % tmp_value = 1
         %output
         num_iter = 0
         num_close = 0
         num_goal = 0
         num_no_parent = 0
-        collision = 0
         num_rewire = 0
         path_id = []
     end
@@ -155,9 +150,16 @@ classdef rrt < benchmark
         end
 
         function [min_path_cost, path] = find_best_path(this)
-            path_costs = this.cumcost(this.path_id);
-            [min_path_cost, best_path_id] = min(path_costs);
-            path = this.trace_back(this.path_id(best_path_id));
+
+            if ~isempty(this.path_id)
+                path_costs = this.cumcost(this.path_id);
+                [min_path_cost, best_path_id] = min(path_costs);
+                path = this.trace_back(this.path_id(best_path_id));
+            else
+                min_path_cost = inf;
+                path = [];
+            end
+
         end
 
         function choose_parent_v2(this)
@@ -269,7 +271,7 @@ classdef rrt < benchmark
         end
 
         function new_path = follow_ground(this, path)
-            new_path = zeros(400, 10);
+            new_path = zeros(400, 5);
             ind = 1;
             path_num = length(path(:, 1));
 
@@ -282,7 +284,7 @@ classdef rrt < benchmark
                 % new_path(ind, 9) = this.maps.find_height(this.path(i, :));
 
                 new_path(ind:ind + tmp_value - 2, 1:3) = target_h(1:tmp_value - 1, 1:3);
-                new_path(ind:ind + tmp_value - 2, 9) = target_h(1:tmp_value - 1, 4); %地形高度
+                new_path(ind:ind + tmp_value - 2, 5) = target_h(1:tmp_value - 1, 4); %地形高度
 
                 ind = ind + tmp_value;
             end
@@ -290,7 +292,7 @@ classdef rrt < benchmark
             % new_path(ind, :) = this.path(1, :);
             % new_path(ind, 9) = this.maps.find_height(this.path(1, :));
 
-            new_path(:, 8) = new_path(:, 3) - new_path(:, 9); %轨迹上的高度差
+            new_path(:, 4) = new_path(:, 3) - new_path(:, 5); %轨迹上的高度差
             new_path = new_path(new_path(:, 3) ~= 0, :);
             % for i = 1:ind
             %     new_path(i, 9) = this.maps.Z(y, round(new_path(i, 2))); %轨迹对应的地形高度
@@ -382,20 +384,22 @@ classdef rrt < benchmark
         end
 
         function set_params(this)
+            this.maps.set_params();
+            this.robot.set_params();
             conf = this.config_manger.load();
-            this.start = this.maps.start; %[conf.start(1), conf.start(2), this.maps.Z(conf.start(1), conf.start(2)) + conf.start(3) / this.height_scale, conf.start(4), conf.start(5), conf.start(6)];
-            this.goal = this.maps.goal; %[conf.goal(1), conf.goal(2), this.maps.Z(conf.goal(1), conf.goal(2)) + conf.goal(3) / this.height_scale, conf.goal(4), conf.goal(5), conf.goal(6)];
+            this.start = this.maps.start;
+            this.goal = this.maps.goal;
             this.search_base = [1, 1, min(min(this.maps.Z)), -pi, -pi, -pi];
             this.search_size = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(this.maps.Z)) - min(min(this.maps.Z)), 2 * pi, 2 * pi, 2 * pi];
             this.height_cost_rate = conf.height_cost_rate;
-            this.threshold_close = (conf.threshold_close / this.maps.height_scale) ^ 2;
-            this.threshold_goal = conf.threshold_goal / this.maps.height_scale;
+            this.threshold_close = (conf.threshold_close / this.maps.map_scale) ^ 2;
+            this.threshold_goal = conf.threshold_goal / this.maps.map_scale;
             this.max_nodes = conf.max_nodes;
             this.rand_num = conf.rand_num;
-            this.neighbor_dist = (2 * conf.direct_step) ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
-            this.robot.set_params()
+            this.neighbor_dist = this.robot.get_neighbor_dist(conf.neighbor_range);
             this.tree = zeros(this.max_nodes, 3);
             this.parent = zeros(this.max_nodes, 1);
+            this.cost_to_parent = zeros(this.max_nodes, 1);
             this.node_num = 1;
             this.informed = false;
             this.num_iter = 0;
@@ -408,7 +412,7 @@ classdef rrt < benchmark
             this.new_node.id_parent = -1;
             this.new_node.cost_to_parent = 0;
             this.insert_node();
-            this.start_benchmark(conf);
+            this.start_benchmark(conf.benchmark);
         end
 
         function save(this)
@@ -422,7 +426,6 @@ classdef rrt < benchmark
             this.config_manger = configs.get_config(this.name);
             this.maps = map.get_instance();
             this.robot = uav();
-            % this.maps.set_height_limit(conf.height_limit / this.height_scale);
 
         end
 

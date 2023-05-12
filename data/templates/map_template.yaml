@@ -1,17 +1,17 @@
-map_path:
+map_path: "./data/map/"
+map_name: ""
+height_limit: 500
 start:
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
 goal:
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0

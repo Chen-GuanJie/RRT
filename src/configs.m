@@ -59,7 +59,7 @@ classdef configs < handle
         function conf = get_config(name)
             persistent all_configs;
 
-            if nargin > 0
+            if name ~= false
 
                 if (isempty(all_configs) || ~isvalid(all_configs))
                     all_configs = containers.Map();
@@ -71,7 +71,7 @@ classdef configs < handle
 
                 conf = all_configs(name);
             else
-                conf = all_configs;
+                all_configs = [];
             end
 
         end

@@ -3,8 +3,9 @@ classdef uav < handle
     properties (SetAccess = private)
         name = 'uav'
         config_manger
+        msd_path = "./data/map/"
+        msd_name = ""
         maps
-        height_limit = 1.2 %贴地高度限制
         pitchMax = 0 %俯仰角最大
         pitchMin = 0 %俯仰角最小
         pitchstep = 0 %俯仰角最大步长
@@ -23,8 +24,6 @@ classdef uav < handle
         course_change = 0 %航向角变化
         speeds = zeros(2, 2) %速度们
         acc = 0 %加速度
-
-        map_scale = 0
         max_delta_h = 1
 
     end
@@ -32,7 +31,7 @@ classdef uav < handle
     methods (Access = private)
 
         function [z, pitchangle] = climb(this, temp, closest_node)
-            targetHeight = this.maps.Z(round(temp(1)), round(temp(2))) + this.height_limit; %目标点的目标高度
+            targetHeight = this.maps.Z(round(temp(1)), round(temp(2))); %目标点的目标高度
             distanceee = norm(temp - closest_node(1:2)); %距离
             pitchangle = atan((targetHeight - closest_node(3)) / distanceee); %应该的爬升角
             pitchangle = this.limiter(pitchangle, this.pitchMax, this.pitchMin);
@@ -47,12 +46,16 @@ classdef uav < handle
         function this = uav()
             this.config_manger = configs.get_config(this.name);
             this.maps = map.get_instance();
+
         end
 
-        function set_params(this, conf)
-            this.map_scale = conf.map_scale;
+        function output = get_neighbor_dist(this, range)
+            output = (range * this.direct_step) ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
+        end
+
+        function set_params(this)
+            conf = this.config_manger.load();
             this.direct_step = conf.direct_step;
-            this.height_limit = conf.height_limit / this.map_scale;
             this.deltaT = conf.deltaT;
             this.g = conf.g;
             this.v = conf.v;
@@ -63,7 +66,14 @@ classdef uav < handle
             this.pitchMin = conf.pitchMin;
             this.GammaStep = conf.GammaStep;
             this.pitchstep = conf.pitchstep;
-            this.mini_stable_distance = 1000 * conf.mini_stable_distance; %单位米
+            this.msd_path = conf.mini_stable_distance_path;
+            this.msd_name = conf.mini_stable_distance_name;
+
+            if ~strcmp(this.msd_name, conf.mini_stable_distance_name)
+                this.msd_name = conf.msd_name;
+                this.mini_stable_distance = 1000 * utils.load_file(this.msd_path, this.mini_stable_distance);
+            end
+
             this.course_change = (0:5:120) * pi / 180;
             this.speeds = conf.speeds;
             this.max_delta_h = tan(this.pitchMax);
@@ -127,10 +137,10 @@ classdef uav < handle
                 Rou = tan(newGamma) * this.g / (this.v ^ 2); %计算水平转弯曲率
                 deltaPhi = Rou * this.v * this.deltaT;
                 newPhi = deltaPhi + phi;
-                a = [sin(deltaPhi) / Rou; ((1 - cos(deltaPhi)) / Rou)] ./ this.map_scale;
+                a = [sin(deltaPhi) / Rou; ((1 - cos(deltaPhi)) / Rou)] ./ this.maps.map_scale;
             else %直飞
                 newPhi = phi;
-                a = [this.v * this.deltaT; 0] ./ this.map_scale;
+                a = [this.v * this.deltaT; 0] ./ this.maps.map_scale;
             end
 
             temp = (rotation * a)' + closest_node(1:2);
@@ -171,17 +181,17 @@ classdef uav < handle
             max_delta = this.max_delta_h * delta_dist;
             [n, ~] = size(target_h);
 
-            if this.transferable(from, to)
-                tmp = diff(target_h);
-                tmp(tmp > max_delta) = max_delta;
-                tmp(tmp <- max_delta) = -max_delta;
+            %             if this.transferable(from, to)
+            tmp = diff(target_h);
+            tmp(tmp > max_delta) = max_delta;
+            tmp(tmp <- max_delta) = -max_delta;
 
-                for i = 2:n
-                    target_h(i) = target_h(i - 1) + tmp(i - 1);
-                end
-
-                flag = true;
+            for i = 2:n
+                target_h(i) = target_h(i - 1) + tmp(i - 1);
             end
+
+            flag = true;
+            %             end
 
         end
 
@@ -193,12 +203,12 @@ classdef uav < handle
             phi = from(4);
             deltaPhi = this.limit2pi(phi1 - phi);
             distanceee = norm(movingVec);
-            newGamma = atan(deltaPhi * this.v ^ 2 / this.g / (distanceee * this.map_scale));
+            newGamma = atan(deltaPhi * this.v ^ 2 / this.g / (distanceee * this.maps.map_scale));
 
             if (abs(newGamma - from(5)) < this.GammaStep) && (newGamma < this.GammaMax) && (newGamma > this.GammaMin)
                 pitchangle = atan((to(3) - from(3)) / distanceee);
 
-                if (abs(pitchangle - from(6)) < this.pitchstep * this.map_scale * distanceee / this.v / this.deltaT) && (pitchangle < this.pitchMax) && (pitchangle > this.pitchMin)
+                if (abs(pitchangle - from(6)) < this.pitchstep * this.maps.map_scale * distanceee / this.v / this.deltaT) && (pitchangle < this.pitchMax) && (pitchangle > this.pitchMin)
                     flag = true;
                 end
 
@@ -213,7 +223,7 @@ classdef uav < handle
             newNode(1:3) = closest_node(1:3) + this.direct_step * movingVec;
             x = uav.limiter(round(newNode(1)), this.maps.X_num, 1);
             y = uav.limiter(round(newNode(2)), this.maps.Y_num, 1);
-            newNode(3) = this.maps.Z(x, y) + this.height_limit; %目标点的目标高度
+            newNode(3) = this.maps.Z(x, y); %目标点的目标高度
 
         end
 

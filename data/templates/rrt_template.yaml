@@ -1,16 +1,22 @@
-name:
-threshold_close:
-threshold_goal:
-search:
-rand_num:
-max_nodes:
-height_cost_rate:
-map_scale:
-direct_step:
-height_limit:
+name: "rrt template"
+threshold_close: 1000
+threshold_goal: 2000
+rand_num: 0.5
+max_nodes: 3000
+height_cost_rate: 6
+neighbor_range: 2
 benchmark:
-  is_benchmark:
+  is_benchmark: true
+  is_time_step: true
+  benchmark_record_step: 0.5
+  max_iter: 7
   interest:
-  is_time_step:
-  benchmark_record_step:
-  max_iter:
+    - tree
+    - parent
+    - cost_to_parent
+    - node_num
+    - num_iter
+    - num_close
+    - num_goal
+    - num_no_parent
+    - num_rewire

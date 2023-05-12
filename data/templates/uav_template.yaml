@@ -1,12 +1,13 @@
-deltaT: 
-g: 
-v: 
-acc: 
-GammaMax: 
-GammaMin: 
-pitchMax: 
-pitchMin: 
-GammaStep: 
-pitchstep: 
-mini_stable_distance_path: 
-
+mini_stable_distance_path: "./data/map/"
+mini_stable_distance_name: "mini_stable_distance"
+deltaT: 50
+g: 9.8
+v: 100
+acc: 0
+direct_step: 8
+GammaMax:
+GammaMin:
+pitchMax:
+pitchMin:
+GammaStep:
+pitchstep:

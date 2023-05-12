@@ -116,8 +116,8 @@ classdef rrt_plot < rrt
 
         end
 
-        function this = rrt_plot(conf)
-            this = this@rrt(conf);
+        function this = rrt_plot()
+            this = this@rrt();
         end
 
         function output = start_star_1_plot(this, max_time)

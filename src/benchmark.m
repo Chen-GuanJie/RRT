@@ -10,7 +10,8 @@ classdef benchmark < handle
         iter_stamp
         last_benchmark = 0
         ind_benchmark = 1
-
+        is_time_step = true
+        num_record = 1;
     end
 
     methods (Access = private)
@@ -48,6 +49,7 @@ classdef benchmark < handle
 
         function is_finished = record(this, time, num)
             t = tic;
+            is_finished = true;
 
             if this.is_time_step
                 ind = time;
@@ -63,8 +65,6 @@ classdef benchmark < handle
                 this.ind_benchmark = this.ind_benchmark + 1;
 
                 if this.ind_benchmark > this.num_record
-                    is_finished = true;
-                else
                     is_finished = false;
                 end
 
