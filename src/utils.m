@@ -1,12 +1,68 @@
 classdef utils < handle
 
     properties (SetAccess = private)
+        figures
+        used_figure_id
     end
 
     methods (Access = private)
+
+        function this = utils()
+            this.figures = containers.Map();
+            this.used_figure_id = [];
+        end
+
+        function id = unused_id(this)
+
+            for i = 1:length(this.used_figure_id)
+
+                if i < this.used_figure_id(i)
+                    this.used_figure_id(end + 1) = i;
+                    id = i;
+                    this.used_figure_id = sortrows(this.used_figure_id);
+                    return;
+                end
+
+            end
+
+            if isempty(this.used_figure_id)
+                this.used_figure_id(end + 1) = 1;
+                id = 1;
+                return;
+            else
+                this.used_figure_id(end + 1) = length(this.used_figure_id) + 1;
+                id = length(this.used_figure_id) + 1;
+            end
+
+            this.used_figure_id = sortrows(this.used_figure_id);
+        end
+
     end
 
     methods (Access = public)
+
+        function is_exist = locate_figure(this, figure_name)
+            is_exist = false;
+
+            if ~isKey(this.figures, figure_name)
+                id = this.unused_id();
+                this.figures(figure_name) = struct('picture', figure(id), 'id', id);
+            elseif ~ishandle(this.figures(figure_name))
+                id = this.figures(figure_name).id;
+                this.figures(figure_name) = struct('picture', figure(id), 'id', id);
+            else
+                is_exist = true;
+                figure(this.figures(figure_name).id);
+            end
+
+        end
+
+        function delete_figure(this, figure_name)
+            delete(this.figures(figure_name).picture);
+            this.used_figure_id(this.used_figure_id == this.figures(figure_name).id) = [];
+            remove(this.figures, figure_name);
+        end
+
     end
 
     methods (Static)
@@ -153,6 +209,10 @@ classdef utils < handle
         function clear_all()
             map.get_instance(false);
             configs.get_config(false);
+        end
+
+        function output = in_cell(c, item)
+            output = find(strcmp(c, item));
         end
 
     end

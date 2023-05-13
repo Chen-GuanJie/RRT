@@ -1,13 +1,17 @@
-mini_stable_distance_path: "./data/map/"
-mini_stable_distance_name: "mini_stable_distance"
-deltaT: 50
-g: 9.8
-v: 100
-acc: 0
-direct_step: 8
-GammaMax:
-GammaMin:
-pitchMax:
-pitchMin:
-GammaStep:
-pitchstep:
+transfer_tactics: direct #
+direct:
+  direct_step: 8
+kinetic:
+  deltaT: 50
+  g: 9.8
+  v: 100
+  acc: 0
+  GammaMax:
+  GammaMin:
+  pitchMax:
+  pitchMin:
+  GammaStep:
+  pitchstep:
+stable:
+  mini_stable_distance_path: ./data/map/
+  mini_stable_distance_name: mini_stable_distance

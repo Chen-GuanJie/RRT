@@ -1,10 +1,16 @@
 classdef uav < handle
 
+    properties (SetAccess = public)
+        dimension = 3
+        transfer
+    end
+
     properties (SetAccess = private)
         name = 'uav'
         config_manger
         msd_path = "./data/map/"
         msd_name = ""
+        transfer_tactics = "direct"
         maps
         pitchMax = 0 %俯仰角最大
         pitchMin = 0 %俯仰角最小
@@ -25,7 +31,6 @@ classdef uav < handle
         speeds = zeros(2, 2) %速度们
         acc = 0 %加速度
         max_delta_h = 1
-
     end
 
     methods (Access = private)
@@ -46,38 +51,60 @@ classdef uav < handle
         function this = uav()
             this.config_manger = configs.get_config(this.name);
             this.maps = map.get_instance();
-
         end
 
         function output = get_neighbor_dist(this, range)
-            output = (range * this.direct_step) ^ 2; %(2 * this.robot.v * this.robot.deltaT) ^ 2;
+
+            switch this.transfer_tactics
+                case 'direct'
+                    output = (range * this.direct_step) ^ 2;
+                case 'kinetic'
+                    output = (2 * this.robot.v * this.robot.deltaT) ^ 2;
+            end
+
         end
 
         function set_params(this)
             conf = this.config_manger.load();
-            this.direct_step = conf.direct_step;
-            this.deltaT = conf.deltaT;
-            this.g = conf.g;
-            this.v = conf.v;
-            this.acc = conf.acc;
-            this.GammaMax = conf.GammaMax;
-            this.GammaMin = conf.GammaMin;
-            this.pitchMax = conf.pitchMax;
-            this.pitchMin = conf.pitchMin;
-            this.GammaStep = conf.GammaStep;
-            this.pitchstep = conf.pitchstep;
-            this.msd_path = conf.mini_stable_distance_path;
-            this.msd_name = conf.mini_stable_distance_name;
+            this.transfer_tactics = conf.transfer_tactics;
 
-            if ~strcmp(this.msd_name, conf.mini_stable_distance_name)
-                this.msd_name = conf.msd_name;
-                this.mini_stable_distance = 1000 * utils.load_file(this.msd_path, this.mini_stable_distance);
+            switch this.transfer_tactics
+                case 'direct'
+                    conf = conf.direct;
+                    this.direct_step = conf.direct_step;
+                    this.transfer = @this.transfer_direct;
+                    this.dimension = 3;
+                case 'kinetic'
+                    conf = conf.kinetic;
+                    this.transfer = @this.transfer_kinetic;
+                    this.dimension = 6;
+                    this.deltaT = conf.deltaT;
+                    this.g = conf.g;
+                    this.v = conf.v;
+                    this.acc = conf.acc;
+                    this.GammaMax = conf.GammaMax;
+                    this.GammaMin = conf.GammaMin;
+                    this.pitchMax = conf.pitchMax;
+                    this.pitchMin = conf.pitchMin;
+                    this.GammaStep = conf.GammaStep;
+                    this.pitchstep = conf.pitchstep;
+                case 'stable'
+                    conf = conf.stable;
+                    this.transfer = @this.transfer_stable;
+                    this.dimension = 4;
+                    this.msd_path = conf.mini_stable_distance_path;
+                    this.msd_name = conf.mini_stable_distance_name;
+
+                    if ~strcmp(this.msd_name, conf.mini_stable_distance_name)
+                        this.msd_name = conf.msd_name;
+                        this.mini_stable_distance = 1000 * utils.load_file(this.msd_path, this.mini_stable_distance);
+                        this.speeds = conf.speeds;
+                        this.course_change = (0:5:120) * pi / 180;
+                    end
+
             end
 
-            this.course_change = (0:5:120) * pi / 180;
-            this.speeds = conf.speeds;
-            this.max_delta_h = tan(this.pitchMax);
-
+            %this.max_delta_h = tan(this.pitchMax);
         end
 
         function newNode = transfer_stable(this, sample, closest_node)
@@ -111,7 +138,6 @@ classdef uav < handle
             temp = closest_node(1:2) + (rotation1 * [mini_distance; 0])' + (rotation2 * [mini_distance; 0])';
             [z, pitchangle] = this.climb(temp, closest_node);
             newNode = [temp(1), temp(2), z, newPhi, 0, pitchangle];
-
         end
 
         function flag = transferable_stable(this, from, to)
@@ -123,7 +149,7 @@ classdef uav < handle
             deltaPhi = 2 * this.limit2pi(phi1 - phi);
         end
 
-        function newNode = transfer(this, sample, closest_node)
+        function newNode = transfer_kinetic(this, sample, closest_node)
             %根据动力学约束的状态转移
             phi1 = atan2(sample(2) - closest_node(2), sample(1) - closest_node(1));
             phi = closest_node(4);
@@ -146,7 +172,6 @@ classdef uav < handle
             temp = (rotation * a)' + closest_node(1:2);
             [z, pitchangle] = this.climb(temp, closest_node);
             newNode = [temp(1), temp(2), z, newPhi, newGamma, pitchangle];
-
         end
 
         function consumption = calc_consumption(~)
@@ -168,11 +193,9 @@ classdef uav < handle
 
             % tmp(tmp > max_delta) = max_delta;
             % tmp(tmp < -max_delta) = -max_delta;
-
             % for i = 2:n
             %     target_h(i) = target_h(i - 1) + tmp(i - 1);
             % end
-
         end
 
         function [target_h, flag] = follow(this, from, to, target_h, delta_dist)
@@ -180,7 +203,6 @@ classdef uav < handle
             flag = false;
             max_delta = this.max_delta_h * delta_dist;
             [n, ~] = size(target_h);
-
             %             if this.transferable(from, to)
             tmp = diff(target_h);
             tmp(tmp > max_delta) = max_delta;
@@ -192,7 +214,6 @@ classdef uav < handle
 
             flag = true;
             %             end
-
         end
 
         function flag = transferable(this, from, to)
@@ -216,15 +237,14 @@ classdef uav < handle
 
         end
 
-        function newNode = transfer_directly(this, sample, closest_node)
-            movingVec = [sample(1) - closest_node(1), sample(2) - closest_node(2), sample(3) - closest_node(3)];
+        function newNode = transfer_direct(this, sample, closest_node)
+            movingVec = [sample(1) - closest_node(1), sample(2) - closest_node(2)];
             movingVec = movingVec / sqrt(sum(movingVec .^ 2)); %单位化
             newNode = zeros(1, 3);
-            newNode(1:3) = closest_node(1:3) + this.direct_step * movingVec;
+            newNode(1:2) = closest_node(1:2) + this.direct_step * movingVec;
             x = uav.limiter(round(newNode(1)), this.maps.X_num, 1);
             y = uav.limiter(round(newNode(2)), this.maps.Y_num, 1);
             newNode(3) = this.maps.Z(x, y); %目标点的目标高度
-
         end
 
     end

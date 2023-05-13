@@ -34,6 +34,7 @@ classdef rrt < benchmark
         num_no_parent = 0
         num_rewire = 0
         path_id = []
+        real_time_display = false
     end
 
     methods (Access = public)
@@ -43,23 +44,23 @@ classdef rrt < benchmark
 
             if this.informed
                 y = 0;
-                sample = [0 inf 0]';
+                sample = [0; inf];
 
                 while abs(sample(2)) > y
                     sample(1:2) = [rand * 2 * this.long_axis; rand * 2 * this.short_axis] - [this.long_axis; this.short_axis];
                     y = this.short_axis * sqrt(1 - (sample(1) / this.long_axis) ^ 2);
                 end
 
-                sample(3) = rand * this.search_size(3) + this.search_base(3);
+                % sample(3) = rand * this.search_size(3) + this.search_base(3);
                 sample(1:2) = this.ellipse_rotation * sample(1:2) + this.ellipse_displace;
                 sample = sample';
             else
 
                 if rand < this.rand_num
 
-                    sample = rand(1, 3) .* this.search_size(1, 1:3) + this.search_base(1, 1:3);
+                    sample = rand(1, 2) .* this.search_size(1, 1:2) + this.search_base(1, 1:2);
                 else
-                    sample = this.goal(1, 1:3);
+                    sample = this.goal(1, 1:2);
                 end
 
             end
@@ -75,6 +76,7 @@ classdef rrt < benchmark
             [tmp_value, ~] = min(compare_table(:, 1)); %最近的距离
 
             if tmp_value < this.threshold_close %太近
+                this.num_close = this.num_close + 1;
                 flag = 1;
             end
 
@@ -131,7 +133,6 @@ classdef rrt < benchmark
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
             cost_hight = this.height_cost_rate * sum(abs(diff(new_target_h)));
             cost = norm([cost_dist, cost_hight]);
-
         end
 
         function insert_node(this)
@@ -199,7 +200,6 @@ classdef rrt < benchmark
             [this.new_node.cost, ind] = min(compare_table(:, 1));
             this.new_node.cost_to_parent = this.near_nodes.cost_to_newNode(ind, 1);
             this.new_node.id_parent = this.near_nodes.id(ind, 1);
-
         end
 
         function output = calc_cost_v3(this)
@@ -209,17 +209,14 @@ classdef rrt < benchmark
         end
 
         function choose_parent_v3(this)
-
             tmp_value = this.calc_cost_v3(); % 新节点与附近的相邻转移代价 + this.near_nodes(i, 7);
             this.near_nodes.cost(:, 1) = this.cumcost(this.near_nodes.id(:, 1));
             this.near_nodes.cost_to_newNode(:, 1) = tmp_value;
-
             % compare_table = zeros(this.near_nodes.num, 1);
             compare_table = this.near_nodes.cost_to_newNode(:, 1) + this.near_nodes.cost(:, 1); %以附近点作新节点父亲后的代价
             [this.new_node.cost, ind] = min(compare_table(:, 1));
             this.new_node.cost_to_parent = this.near_nodes.cost_to_newNode(ind, 1);
             this.new_node.id_parent = this.near_nodes.id(ind, 1);
-
         end
 
         function ind = rewire_v2(this)
@@ -232,14 +229,13 @@ classdef rrt < benchmark
             this.num_rewire = this.num_rewire + length(ind);
             this.cost_to_parent(ind, 1) = this.near_nodes.cost_to_newNode(index, 1);
             this.parent(ind, 1) = this.new_node.id;
-
         end
 
         function prepare_informed(this, path_len)
-            this.informed = true; %开始informed搜索
+            this.informed = true;
             dist = norm(this.start(1:3) - this.goal(1:3)) / 2;
-            this.long_axis = path_len / 2; % 长轴 %1.05 * dist;
-            this.short_axis = sqrt(this.long_axis ^ 2 - dist ^ 2); %短轴
+            this.long_axis = path_len / 2;
+            this.short_axis = sqrt(this.long_axis ^ 2 - dist ^ 2);
             ang = atan2(this.goal(2) - this.start(2), this.goal(1) - this.start(1));
             this.ellipse_rotation = [cos(ang) -sin(ang); sin(ang) cos(ang)];
             this.ellipse_displace = [dist * cos(ang); dist * sin(ang)] + [this.start(1); this.start(2)];
@@ -267,7 +263,6 @@ classdef rrt < benchmark
             % for ind = 1:6
             %     this.path(1:interp_num:path_num,ind)=interp1(1:path_num,this.path(1:path_num,ind ),1:interp_num:path_num,'spline');
             % end
-
         end
 
         function new_path = follow_ground(this, path)
@@ -345,19 +340,16 @@ classdef rrt < benchmark
     methods (Access = public)
 
         function output = start_star(this)
-
-            this.set_params();
             mini_path_len = inf;
-            tic
+            t = tic;
 
-            while this.record(toc, this.num_iter)
+            while this.record(toc(t), this.num_iter)
                 this.num_iter = this.num_iter + 1;
                 sample = this.get_sample();
                 closest_node = this.get_closest(sample);
-                this.new_node.position(1, :) = this.robot.transfer_directly(sample, closest_node);
+                this.new_node.position(1, :) = this.robot.transfer(sample, closest_node);
 
                 if this.neighbors()
-                    this.num_close = this.num_close + 1;
                     continue
                 end
 
@@ -377,16 +369,23 @@ classdef rrt < benchmark
 
             end
 
+            toc(t)
             [cost, path] = this.find_best_path();
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n路径代价为%f', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, cost);
             % interp_num = this.interpolation(path_num);
             output = this.follow_ground(path);
         end
 
-        function set_params(this)
+        function set_params(this, rand_config_id)
             this.maps.set_params();
             this.robot.set_params();
-            conf = this.config_manger.load();
+
+            if nargin == 2
+                conf = this.config_manger.load(rand_config_id);
+            else
+                conf = this.config_manger.load();
+            end
+
             this.start = this.maps.start;
             this.goal = this.maps.goal;
             this.search_base = [1, 1, min(min(this.maps.Z)), -pi, -pi, -pi];
@@ -397,7 +396,7 @@ classdef rrt < benchmark
             this.max_nodes = conf.max_nodes;
             this.rand_num = conf.rand_num;
             this.neighbor_dist = this.robot.get_neighbor_dist(conf.neighbor_range);
-            this.tree = zeros(this.max_nodes, 3);
+            this.tree = zeros(this.max_nodes, this.robot.dimension);
             this.parent = zeros(this.max_nodes, 1);
             this.cost_to_parent = zeros(this.max_nodes, 1);
             this.node_num = 1;
@@ -408,11 +407,12 @@ classdef rrt < benchmark
             this.num_no_parent = 0;
             this.num_rewire = 0;
             this.path_id = [];
-            this.new_node.position = this.start(1, 1:3);
+            this.new_node.position = this.start(1, 1:this.robot.dimension);
             this.new_node.id_parent = -1;
             this.new_node.cost_to_parent = 0;
             this.insert_node();
             this.start_benchmark(conf.benchmark);
+            this.real_time_display = conf.real_time_display;
         end
 
         function save(this)
@@ -426,7 +426,6 @@ classdef rrt < benchmark
             this.config_manger = configs.get_config(this.name);
             this.maps = map.get_instance();
             this.robot = uav();
-
         end
 
     end

@@ -10,6 +10,7 @@ benchmark:
   is_time_step: true
   benchmark_record_step: 0.5
   max_iter: 7
+  save_output: true
   interest:
     - tree
     - parent
@@ -20,3 +21,29 @@ benchmark:
     - num_goal
     - num_no_parent
     - num_rewire
+real_time_display: false
+display:
+  iter_info:
+    x_data: "time_stamp"
+    x_lable: "time(s)"
+    y_lable: "num"
+    y_data:
+      node_num:
+        Color: red
+        LineStyle: '--'
+        LineWidth: 1
+      num_iter:
+        Color: blue
+        LineStyle: ':'
+        LineWidth: 2
+      num_rewire:
+        Color: green
+        LineStyle: '-.'
+        LineWidth: 1.5
+  mini_path_cost:
+    x_lable: "sampling times"
+    y_lable: "cost"
+    y_data:
+      mini_cost:
+  cutaway_view:
+  best_path:

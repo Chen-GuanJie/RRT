@@ -7,22 +7,30 @@ classdef configs < handle
         output_dir = './output/'
         data = struct
         save_path
-        changed
+        rand_id = -1
     end
 
     methods (Access = public)
 
-        function output = load(this)
-            old_data = this.data;
-            this.data = yaml.loadFile(this.config_file);
+        function output = load(this, id)
 
-            if isfield(this.data, 'name') && ~strcmp(this.data.name, old_data.name)
-                this.save_path = [this.output_dir char(this.data.name) '/'];
-                utils.checkdir(this.save_path);
+            if nargin == 1
+                id = rand;
+            end
+
+            if this.rand_id ~= id % load once
+                this.rand_id = id;
+                old_data = this.data;
+                this.data = yaml.loadFile(this.config_file);
+
+                if isfield(this.data, 'name') && ~strcmp(this.data.name, old_data.name)
+                    this.save_path = [this.output_dir char(this.data.name) '/'];
+                    utils.checkdir(this.save_path);
+                end
+
             end
 
             output = this.data;
-
         end
 
         function output = iterate_save_path(this)
@@ -50,6 +58,7 @@ classdef configs < handle
             end
 
             this.data.name = '';
+            this.rand_id = rand;
         end
 
     end

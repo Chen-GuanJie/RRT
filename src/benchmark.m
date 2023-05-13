@@ -12,6 +12,7 @@ classdef benchmark < handle
         ind_benchmark = 1
         is_time_step = true
         num_record = 1;
+        shaped_states
     end
 
     methods (Access = private)
@@ -29,6 +30,108 @@ classdef benchmark < handle
 
     methods (Access = public)
 
+        function show_result(this, display)
+            fn = fieldnames(display);
+
+            for i = 1:length(fn)
+                plot_name = fn{i};
+                plot_info = display.(plot_name);
+
+                if ~isfield(plot_info, 'x_lable') || yaml.isNull(plot_info.x_lable) ...
+                        || ~isfield(plot_info, 'y_lable') || yaml.isNull(plot_info.y_lable) ...
+                        || ~isfield(plot_info, 'y_data') || yaml.isNull(plot_info.y_data)
+                    continue
+                end
+
+                y_data = plot_info.y_data;
+
+                if yaml.isNull(y_data)
+                    continue
+                else
+                    to_plot = fieldnames(y_data);
+                end
+
+                legend_str = {};
+                utils.get_instance().locate_figure(plot_name);
+                title(strrep(plot_name, '_', ' '));
+                xlabel(plot_info.x_lable);
+                ylabel(plot_info.y_lable);
+
+                for j = 1:length(to_plot)
+
+                    if isfield(plot_info, 'x_data') && ~yaml.isNull(plot_info.x_data)
+                        x = this.(plot_info.x_data);
+
+                    else
+                        x = 1:length(this.shaped_states.(to_plot{j}));
+                    end
+
+                    if isfield(this.shaped_states, to_plot{j})
+
+                        p = plot(x, this.shaped_states.(to_plot{j}));
+
+                        if ~yaml.isNull(y_data.(to_plot{j}))
+                            line_properties = y_data.(to_plot{j});
+                            line_property = fieldnames(line_properties);
+
+                            for k = 1:length(line_property)
+                                p.(line_property{k}) = line_properties.(line_property{k});
+                            end
+
+                        end
+
+                        legend_str{end + 1} = strrep(to_plot{j}, '_', ' ');
+                        hold on
+                    end
+
+                end
+
+                legend(legend_str);
+                hold off
+            end
+
+        end
+
+        function reshape_states(this)
+            fn = fieldnames(this.states{1, 2});
+            in1 = {};
+            in2 = {};
+
+            for i = 1:length(this.interest)
+
+                if length(this.states{1, 1}.(this.interest{i})) == 1
+                    in1{end + 1} = this.interest{i};
+                end
+
+            end
+
+            for i = 1:length(fn)
+
+                if length(this.states{1, 2}.(fn{i})) == 1
+                    in2{end + 1} = fn{i};
+                end
+
+            end
+
+            for j = 1:this.ind_benchmark - 1
+
+                for i = 1:length(in1)
+
+                    new_obj.(in1{i})(j, 1) = this.states{j, 1}.(in1{i});
+
+                end
+
+                for i = 1:length(in2)
+
+                    new_obj.(in2{i})(j, 1) = this.states{j, 2}.(in2{i});
+
+                end
+
+            end
+
+            this.shaped_states = new_obj;
+        end
+
         function start_benchmark(this, conf)
             this.is_benchmark = conf.is_benchmark;
 
@@ -38,7 +141,7 @@ classdef benchmark < handle
                 this.assert_interest();
                 this.step_record = conf.benchmark_record_step;
                 this.num_record = conf.max_iter / this.step_record;
-                this.states = cell(this.num_record, 1);
+                this.states = cell(this.num_record, 2);
                 this.time_stamp = zeros(this.num_record, 1);
                 this.iter_stamp = zeros(this.num_record, 1);
                 this.last_benchmark = 0;
@@ -59,7 +162,8 @@ classdef benchmark < handle
 
             if this.is_benchmark && ind - this.last_benchmark > this.step_record
                 this.last_benchmark = ind;
-                this.states{this.ind_benchmark} = {this.copy() this.record_fun()};
+                this.states{this.ind_benchmark, 1} = this.copy();
+                this.states{this.ind_benchmark, 2} = this.record_fun();
                 this.time_stamp(this.ind_benchmark) = time;
                 this.iter_stamp(this.ind_benchmark) = num;
                 this.ind_benchmark = this.ind_benchmark + 1;

@@ -3,9 +3,10 @@ classdef rrt_plot < rrt
     properties (SetAccess = private)
         plot_point = []
         path_plot
-        ifdisplay = false
         replot = zeros(50, 3)
         edges
+        display
+
     end
 
     methods (Static)
@@ -62,15 +63,14 @@ classdef rrt_plot < rrt
 
         function path_evaluate(this, best_path)
             path_num = length(best_path(:, 1));
-            figure(2)
             % clear gca
-            subplot(3, 1, 1)
+            subplot(2, 1, 1)
             best_path(:, 1:3) = best_path(:, 1:3) * this.map_scale;
             best_path(:, 8:9) = best_path(:, 8:9) * this.map_scale;
             plot(1:path_num, best_path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
             plot(1:path_num, best_path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             legend
-            subplot(3, 1, 2)
+            subplot(2, 1, 2)
             % plot(1:path_num, best_path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             % legend
             % subplot(3, 1, 3)
@@ -86,19 +86,34 @@ classdef rrt_plot < rrt
 
     methods (Access = public)
 
+        function show_result(this)
+            show_result@benchmark(this, this.display);
+
+            if utils.in_cell(this.display, 'cutaway')
+                utils.get_instance().locate_figure('cutaway')
+                this.path_evaluate();
+                hold off;
+            end
+
+        end
+
         function show_map(this)
-            figure(1)
-            this.display_map()
-            this.plot_point(1).point = scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
-            this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
-            this.plot_point(1).text = text(this.start(1), this.start(2), this.start(3), '  起点');
-            this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  终点');
-            xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
-            title('RRT算法UAV航迹规划路径');
+
+            if ~utils.get_instance().locate_figure('main_map')
+                this.display_map()
+                this.plot_point(1).point = scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
+                this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
+                this.plot_point(1).text = text(this.start(1), this.start(2), this.start(3), '  起点');
+                this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  终点');
+                xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
+                title('RRT算法UAV航迹规划路径');
+            end
 
         end
 
         function show_search_tree(this)
+
+            utils.get_instance().locate_figure('main_map');
 
             for i = 1:length(this.parent)
 
@@ -116,12 +131,23 @@ classdef rrt_plot < rrt
 
         end
 
+        function set_params(this, rand_config_id)
+
+            if nargin < 2
+                rand_config_id = rand;
+            end
+
+            set_params@rrt(this, rand_config_id);
+            conf = this.config_manger.load(rand_config_id);
+            this.display = conf.display;
+        end
+
         function this = rrt_plot()
             this = this@rrt();
         end
 
-        function output = start_star_1_plot(this, max_time)
-            output = this.start_star(max_time);
+        function output = start_star_1_plot(this)
+            output = this.start_star();
             this.show_map();
             figure(1);
             output = output(:, 1:3);
