@@ -1,5 +1,6 @@
 map_path: ./data/map/
 map_name: ""
+save_built_map: "mat"
 height_limit: 500
 start_point:
   - 0

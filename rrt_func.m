@@ -1,4 +1,4 @@
-function rrt_func(varargin)
+function varargout = rrt_func(varargin)
     persistent problem;
     addpath(genpath(pwd));
     args = varargin;
@@ -14,7 +14,7 @@ function rrt_func(varargin)
     if strcmp(args{1}, 'debug')
 
         if length(args) > 1
-            eval(['problem.', args{2}, ';']);
+            varargout{1} = eval(['problem.', args{2}, ';']);
         end
 
         return
@@ -34,6 +34,9 @@ function rrt_func(varargin)
 
         if utils.in_cell(args, 'real_time')
             problem.start_star_rtdisplay();
+        elseif utils.in_cell(args, 'statistic_time')
+            varargout{1} = problem.statistic_time();
+            return
         else
             problem.start();
         end
