@@ -210,7 +210,7 @@ classdef utils < handle
                 if exist([path, name, '.mat'], 'file')
                     m = load([path, name, '.mat'], '-mat');
                     n = fieldnames(m);
-                    data = da.(n{1});
+                    data = m.(n{1});
 
                 elseif exist([path, name, '.csv'], 'file')
                     data = load([path, name, '.csv']);

@@ -17,13 +17,12 @@ classdef map < handle
     properties (SetAccess = private)
         name = 'map'
         config_manger
-
+        rand_id = -1
         map_path = './data/map/'
         map_name = ''
         ZT = zeros(1, 1) %地图转置
         threshold_high = 1 %离地最高高度
         threshold_low = 1 %离地最低高度
-        height_scale = 500 %地图相邻点的距离
         mini_x = 0
         mini_y = 0
         %temp value
@@ -42,7 +41,25 @@ classdef map < handle
             this.config_manger = configs.get_config(this.name);
         end
 
-        function save_built_map(this)
+        function save_built_map(this, X, Y, Z)
+            conf = this.config_manger.load(this.rand_id);
+            file_format = strsplit(conf.save_built_map);
+
+            if utils.in_cell(file_format, 'mat')
+                save([this.map_path, this.map_name, '_x.mat'], 'X');
+                save([this.map_path, this.map_name, '_y.mat'], 'Y');
+                save([this.map_path, this.map_name, '_z.mat'], 'Z');
+            end
+
+        end
+
+        function output = validate_map(this)
+            output = false;
+
+            if length(this.X) == this.X_num && length(this.Y) == this.Y_num && ...
+                    this.X_num == size(this.Z, 1) && this.Y_num == size(this.Z, 2)
+                output = true;
+            end
 
         end
 
@@ -51,7 +68,6 @@ classdef map < handle
             x = dem_data(:, 1);
             y = dem_data(:, 2);
             z = dem_data(:, 3);
-            this.height_scale = 500; %x(2) - x(1);
             this.mini_x = min(x);
             this.mini_y = min(y);
 
@@ -133,7 +149,9 @@ classdef map < handle
 
             this.X = X_data;
             this.Y = Y_data;
-            this.Z = Height / this.height_scale;
+            this.map_scale = this.X(2) - this.X(1);
+            this.save_built_map(this.X, this.Y, Height);
+            this.Z = Height / this.map_scale;
             this.ZT = this.Z';
             this.tmp_h = zeros(1, 10);
         end
@@ -143,24 +161,35 @@ classdef map < handle
     methods (Access = public)
 
         function set_params(this)
-            conf = this.config_manger.load();
+            this.rand_id = rand;
+            conf = this.config_manger.load(this.rand_id);
             this.start_point = cell2mat(conf.start_point);
             this.goal = cell2mat(conf.goal);
             conf.map_name = char(conf.map_name);
 
-            if ~strcmp(this.map_name, conf.map_name)
+            if ~strcmp(this.map_name, conf.map_name) || ~this.validate_map()
                 this.map_name = conf.map_name;
-                dem_data = utils.load_file(this.map_path, this.map_name);
-                this.build_map(dem_data);
+                n = [this.map_path, this.map_name];
+
+                if (isfile([n, '_x.mat']) || isfile([n, '_x.csv'])) && ...
+                        (isfile([n, '_y.mat']) || isfile([n, '_y.csv'])) && ...
+                        (isfile([n, '_z.mat']) || isfile([n, '_z.csv']))
+                    this.X = utils.load_file(this.map_path, [this.map_name, '_x']);
+                    this.map_scale = this.X(2) - this.X(1);
+                    this.Y = utils.load_file(this.map_path, [this.map_name, '_y']);
+                    this.Z = utils.load_file(this.map_path, [this.map_name, '_z']) / this.map_scale;
+                    this.ZT = this.Z';
+                    this.X_num = length(this.X);
+                    this.Y_num = length(this.Y);
+                    this.Z_num = size(this.Z, 1) * size(this.Z, 2);
+
+                else
+                    this.build_map(utils.load_file(this.map_path, this.map_name));
+                end
+
             end
 
-            this.map_scale = this.X(2) - this.X(1);
             this.height_limit = conf.height_limit / this.map_scale;
-
-        end
-
-        function set_height_limit(this, height_limit)
-            this.height_limit = height_limit;
         end
 
         function index = find_closest(this, x, axis)
