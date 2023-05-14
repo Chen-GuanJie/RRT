@@ -38,8 +38,8 @@ classdef configs < handle
             utils.checkdir(output);
         end
 
-        function save(this,path)
-            yaml.dumpFile([path,'config.yaml'], this.data)
+        function save(this, path)
+            yaml.dumpFile([path, 'config.yaml'], this.data)
         end
 
     end

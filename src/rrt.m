@@ -414,11 +414,8 @@ classdef rrt < benchmark
             this.start_benchmark(conf.benchmark);
         end
 
-        function save(this)
-            col = {'tree', 'parent', 'cost'};
-            result_table = table(this.tree, this.parent, this.cost_to_parent, 'VariableNames', col);
-            writetable(result_table, 'test.csv');
-
+        function save_all(this)
+            save_all@benchmark(this);
         end
 
         function this = rrt()

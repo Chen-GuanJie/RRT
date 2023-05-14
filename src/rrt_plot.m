@@ -68,16 +68,15 @@ classdef rrt_plot < rrt
             path_num = length(path(:, 1));
             % clear gca
             subplot(2, 1, 1)
-            path(:, 1:3) = path(:, 1:3) * this.map_scale;
-            path(:, 8:9) = path(:, 8:9) * this.map_scale;
+            path(:, 1:5) = path(:, 1:5) * this.maps.map_scale;
             plot(1:path_num, path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
-            plot(1:path_num, path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
+            plot(1:path_num, path(path_num:-1:1, 5), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             legend
             subplot(2, 1, 2)
             % plot(1:path_num, path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             % legend
             % subplot(3, 1, 3)
-            plot(1:path_num, path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
+            plot(1:path_num, path(path_num:-1:1, 4), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
             legend
         end
 
@@ -92,12 +91,15 @@ classdef rrt_plot < rrt
         function show_result(this)
             display = this.config_manger.load(this.rand_id).display;
             show_result@benchmark(this);
+            display_names = fieldnames(display);
 
-            if utils.in_cell(display, 'cutaway')
+            if utils.in_cell(display_names, 'cutaway')
                 utils.get_instance().locate_figure('cutaway', display.cutaway.save_format)
                 this.path_evaluate();
                 hold off;
-            elseif utils.in_cell(display, 'path_best')
+            end
+
+            if utils.in_cell(display_names, 'path_best')
                 this.show_map();
                 plot3(this.best_path(:, 1), this.best_path(:, 2), this.best_path(:, 3), 'LineWidth', 2, 'Color', 'g');
                 hold off;

@@ -22,6 +22,7 @@ benchmark:
     - num_no_parent
     - num_rewire
 is_save: true
+only_save_last: true
 display:
   iter_info:
     save_format: "fig jpg"

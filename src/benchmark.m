@@ -30,6 +30,73 @@ classdef benchmark < handle
 
         end
 
+        function save_shaped_states(this, path)
+            %save shaped_states in one file
+            sample_table = table();
+            sample_table.time_stamp = this.time_stamp;
+            sample_table.iter_stamp = this.iter_stamp;
+            col = fieldnames(this.shaped_states);
+
+            for i = 1:length(col)
+                sample_table.(col{i}) = this.shaped_states.(col{i});
+            end
+
+            writetable(sample_table, [path, 'sample_result.csv']);
+
+        end
+
+        function save_other_states(this, path, only_last)
+            %save other states
+            if nargin == 2
+                only_last = true;
+            end
+
+            fn2 = fieldnames(this.states{1, 2});
+
+            for i = 1:length(fn2)
+
+                if length(this.states{1, 2}.(fn2{i})) > 1
+                    this.states{1, 1}.(fn2{i}) = this.states{1, 2}.(fn2{i});
+                end
+
+            end
+
+            fn1 = fieldnames(this.states{1, 1});
+            data_num = zeros(length(fn1), 1);
+
+            for i = 1:length(fn1)
+                data_num(i, 1) = length(this.states{end, 1}.(fn1{i}));
+            end
+
+            unique_len = unique(data_num);
+            unique_len(unique_len == 1) = [];
+
+            for k = 1:this.ind_benchmark - 1
+
+                if only_last && k ~= this.ind_benchmark - 1
+                    continue
+                end
+
+                s = this.states{k, 1};
+
+                for i = 1:length(unique_len)
+                    gather_index = find(data_num == unique_len(i));
+                    table_name = '';
+                    sample_table = table();
+
+                    for j = 1:length(gather_index)
+                        sample_table.(fn1{j}) = s.(fn1{j});
+                        table_name = [table_name, '-', fn1{j}];
+                    end
+
+                    table_name(1) = [];
+                    writetable(sample_table, [path, table_name, '-', num2str(k), '.csv']);
+                end
+
+            end
+
+        end
+
     end
 
     methods (Access = public)
@@ -61,6 +128,7 @@ classdef benchmark < handle
                 title(strrep(plot_name, '_', ' '));
                 xlabel(plot_info.x_lable);
                 ylabel(plot_info.y_lable);
+                hold on
 
                 for j = 1:length(to_plot)
 
@@ -86,7 +154,6 @@ classdef benchmark < handle
                         end
 
                         legend_str{end + 1} = strrep(to_plot{j}, '_', ' ');
-                        hold on
                     end
 
                 end
@@ -208,10 +275,12 @@ classdef benchmark < handle
 
             if conf.is_save
                 path = [this.config_manger.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM'), '/'];
-                disp(['files saved at ', path]);
                 utils.checkdir(path, true);
+                disp(['files saved at ', path]);
                 utils.get_instance().save_figures(path);
                 this.config_manger.save(path);
+                this.save_shaped_states(path);
+                this.save_other_states(path, conf.only_save_last);
             end
 
         end
