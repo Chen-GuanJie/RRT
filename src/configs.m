@@ -38,8 +38,8 @@ classdef configs < handle
             utils.checkdir(output);
         end
 
-        function save(this)
-            yaml.dumpFile(this.save_path, this.data)
+        function save(this,path)
+            yaml.dumpFile([path,'config.yaml'], this.data)
         end
 
     end
@@ -53,7 +53,7 @@ classdef configs < handle
             if exist(this.config_file, 'file')
                 disp([name, ' config file exist'])
             else
-                disp('copy config file')
+                disp(['copy ', name, ' config template'])
                 copyfile([this.templates_dir, name, '_template.yaml'], this.config_file)
             end
 

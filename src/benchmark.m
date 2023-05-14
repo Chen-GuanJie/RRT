@@ -15,6 +15,10 @@ classdef benchmark < handle
         shaped_states
     end
 
+    properties (SetAccess = public)
+        rand_id
+    end
+
     methods (Access = private)
 
         function new_obj = copy(this)
@@ -30,7 +34,8 @@ classdef benchmark < handle
 
     methods (Access = public)
 
-        function show_result(this, display)
+        function show_result(this)
+            display = this.config_manger.load(this.rand_id).display;
             fn = fieldnames(display);
 
             for i = 1:length(fn)
@@ -52,7 +57,7 @@ classdef benchmark < handle
                 end
 
                 legend_str = {};
-                utils.get_instance().locate_figure(plot_name);
+                utils.get_instance().locate_figure(plot_name, plot_info.save_format);
                 title(strrep(plot_name, '_', ' '));
                 xlabel(plot_info.x_lable);
                 ylabel(plot_info.y_lable);
@@ -198,8 +203,20 @@ classdef benchmark < handle
             this.interest(no_prop) = [];
         end
 
-        result = record_fun(obj)
+        function path = save_all(this)
+            conf = this.config_manger.load(this.rand_id);
 
+            if conf.is_save
+                path = [this.config_manger.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM'), '/'];
+                disp(['files saved at ', path]);
+                utils.checkdir(path, true);
+                utils.get_instance().save_figures(path);
+                this.config_manger.save(path);
+            end
+
+        end
+
+        result = record_fun(obj)
     end
 
 end

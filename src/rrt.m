@@ -9,7 +9,7 @@ classdef rrt < benchmark
         max_nodes = 100
         maps
         robot
-        start = zeros(1, 6)
+        start_point = zeros(1, 6)
         goal = zeros(1, 6)
         threshold_close = 1
         threshold_goal = 1
@@ -21,6 +21,7 @@ classdef rrt < benchmark
         near_nodes = struct
         new_node = struct
         node_num = 10
+        best_path
         %informed
         informed = false
         long_axis = 1 %长轴
@@ -34,7 +35,6 @@ classdef rrt < benchmark
         num_no_parent = 0
         num_rewire = 0
         path_id = []
-        real_time_display = false
     end
 
     methods (Access = public)
@@ -233,12 +233,12 @@ classdef rrt < benchmark
 
         function prepare_informed(this, path_len)
             this.informed = true;
-            dist = norm(this.start(1:3) - this.goal(1:3)) / 2;
+            dist = norm(this.start_point(1:3) - this.goal(1:3)) / 2;
             this.long_axis = path_len / 2;
             this.short_axis = sqrt(this.long_axis ^ 2 - dist ^ 2);
-            ang = atan2(this.goal(2) - this.start(2), this.goal(1) - this.start(1));
+            ang = atan2(this.goal(2) - this.start_point(2), this.goal(1) - this.start_point(1));
             this.ellipse_rotation = [cos(ang) -sin(ang); sin(ang) cos(ang)];
-            this.ellipse_displace = [dist * cos(ang); dist * sin(ang)] + [this.start(1); this.start(2)];
+            this.ellipse_displace = [dist * cos(ang); dist * sin(ang)] + [this.start_point(1); this.start_point(2)];
         end
 
         function s = interpolation(this, path_num)
@@ -320,7 +320,7 @@ classdef rrt < benchmark
             this.num_goal = this.num_goal + 1;
             this.path_id(this.num_goal, 1) = this.new_node.id;
             path = this.trace_back(this.new_node.id);
-            path = [this.goal(1:3); path; this.start(1:3)];
+            path = [this.goal(1:3); path; this.start_point(1:3)];
             tmp_value = path(2:end, 1:3) - path(1:end - 1, 1:3);
             path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
@@ -339,7 +339,7 @@ classdef rrt < benchmark
 
     methods (Access = public)
 
-        function output = start_star(this)
+        function start(this)
             mini_path_len = inf;
             t = tic;
 
@@ -373,20 +373,20 @@ classdef rrt < benchmark
             [cost, path] = this.find_best_path();
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n路径代价为%f', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, cost);
             % interp_num = this.interpolation(path_num);
-            output = this.follow_ground(path);
+            this.best_path = this.follow_ground(path);
         end
 
-        function set_params(this, rand_config_id)
+        function set_params(this)
             this.maps.set_params();
             this.robot.set_params();
 
             if nargin == 2
-                conf = this.config_manger.load(rand_config_id);
+                conf = this.config_manger.load(this.rand_id);
             else
                 conf = this.config_manger.load();
             end
 
-            this.start = this.maps.start;
+            this.start_point = this.maps.start_point;
             this.goal = this.maps.goal;
             this.search_base = [1, 1, min(min(this.maps.Z)), -pi, -pi, -pi];
             this.search_size = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(this.maps.Z)) - min(min(this.maps.Z)), 2 * pi, 2 * pi, 2 * pi];
@@ -407,12 +407,11 @@ classdef rrt < benchmark
             this.num_no_parent = 0;
             this.num_rewire = 0;
             this.path_id = [];
-            this.new_node.position = this.start(1, 1:this.robot.dimension);
+            this.new_node.position = this.start_point(1, 1:this.robot.dimension);
             this.new_node.id_parent = -1;
             this.new_node.cost_to_parent = 0;
             this.insert_node();
             this.start_benchmark(conf.benchmark);
-            this.real_time_display = conf.real_time_display;
         end
 
         function save(this)

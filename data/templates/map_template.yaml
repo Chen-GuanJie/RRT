@@ -1,7 +1,7 @@
 map_path: ./data/map/
 map_name: ""
 height_limit: 500
-start:
+start_point:
   - 0
   - 0
   - 0

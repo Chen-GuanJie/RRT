@@ -41,15 +41,34 @@ classdef utils < handle
 
     methods (Access = public)
 
-        function is_exist = locate_figure(this, figure_name)
+        function save_figures(this, path)
+            names = keys(this.figures);
+
+            for i = 1:this.figures.Count
+                figure = this.figures(names{i});
+                formats = strsplit(figure.format, ' ');
+
+                for j = 1:length(formats)
+                    saveas(figure.picture, [path, '/', names{i}, '.', formats{j}]);
+                end
+
+            end
+
+        end
+
+        function is_exist = locate_figure(this, figure_name, format)
             is_exist = false;
+
+            if nargin == 2 || (nargin == 3 && yaml.isNull(format))
+                format = {'fig'};
+            end
 
             if ~isKey(this.figures, figure_name)
                 id = this.unused_id();
-                this.figures(figure_name) = struct('picture', figure(id), 'id', id);
+                this.figures(figure_name) = struct('picture', figure(id), 'id', id, 'format', format);
             elseif ~ishandle(this.figures(figure_name))
                 id = this.figures(figure_name).id;
-                this.figures(figure_name) = struct('picture', figure(id), 'id', id);
+                this.figures(figure_name) = struct('picture', figure(id), 'id', id, 'format', format);
             else
                 is_exist = true;
                 figure(this.figures(figure_name).id);

@@ -21,29 +21,32 @@ benchmark:
     - num_goal
     - num_no_parent
     - num_rewire
-real_time_display: false
+is_save: true
 display:
   iter_info:
+    save_format: "fig jpg"
     x_data: "time_stamp"
     x_lable: "time(s)"
     y_lable: "num"
     y_data:
       node_num:
         Color: red
-        LineStyle: '--'
+        LineStyle: "--"
         LineWidth: 1
       num_iter:
         Color: blue
-        LineStyle: ':'
+        LineStyle: ":"
         LineWidth: 2
       num_rewire:
         Color: green
-        LineStyle: '-.'
+        LineStyle: "-."
         LineWidth: 1.5
   mini_path_cost:
+    save_format: "fig jpg"
     x_lable: "sampling times"
     y_lable: "cost"
     y_data:
       mini_cost:
-  cutaway_view:
-  best_path:
+  cutaway:
+    save_format:
+  path_best:

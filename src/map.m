@@ -7,7 +7,7 @@ classdef map < handle
         X_num = 0
         Y_num = 0
         Z_num = 0
-        start
+        start_point
         goal
         map_scale
         height_limit
@@ -144,7 +144,7 @@ classdef map < handle
 
         function set_params(this)
             conf = this.config_manger.load();
-            this.start = cell2mat(conf.start);
+            this.start_point = cell2mat(conf.start_point);
             this.goal = cell2mat(conf.goal);
             conf.map_name = char(conf.map_name);
 

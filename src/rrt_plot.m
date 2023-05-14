@@ -5,8 +5,6 @@ classdef rrt_plot < rrt
         path_plot
         replot = zeros(50, 3)
         edges
-        display
-
     end
 
     methods (Static)
@@ -61,20 +59,25 @@ classdef rrt_plot < rrt
 
         end
 
-        function path_evaluate(this, best_path)
-            path_num = length(best_path(:, 1));
+        function path_evaluate(this, path)
+
+            if nargin == 1
+                path = this.best_path;
+            end
+
+            path_num = length(path(:, 1));
             % clear gca
             subplot(2, 1, 1)
-            best_path(:, 1:3) = best_path(:, 1:3) * this.map_scale;
-            best_path(:, 8:9) = best_path(:, 8:9) * this.map_scale;
-            plot(1:path_num, best_path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
-            plot(1:path_num, best_path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
+            path(:, 1:3) = path(:, 1:3) * this.map_scale;
+            path(:, 8:9) = path(:, 8:9) * this.map_scale;
+            plot(1:path_num, path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
+            plot(1:path_num, path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             legend
             subplot(2, 1, 2)
-            % plot(1:path_num, best_path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
+            % plot(1:path_num, path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             % legend
             % subplot(3, 1, 3)
-            plot(1:path_num, best_path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
+            plot(1:path_num, path(path_num:-1:1, 8), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
             legend
         end
 
@@ -87,11 +90,16 @@ classdef rrt_plot < rrt
     methods (Access = public)
 
         function show_result(this)
-            show_result@benchmark(this, this.display);
+            display = this.config_manger.load(this.rand_id).display;
+            show_result@benchmark(this);
 
-            if utils.in_cell(this.display, 'cutaway')
-                utils.get_instance().locate_figure('cutaway')
+            if utils.in_cell(display, 'cutaway')
+                utils.get_instance().locate_figure('cutaway', display.cutaway.save_format)
                 this.path_evaluate();
+                hold off;
+            elseif utils.in_cell(display, 'path_best')
+                this.show_map();
+                plot3(this.best_path(:, 1), this.best_path(:, 2), this.best_path(:, 3), 'LineWidth', 2, 'Color', 'g');
                 hold off;
             end
 
@@ -101,12 +109,12 @@ classdef rrt_plot < rrt
 
             if ~utils.get_instance().locate_figure('main_map')
                 this.display_map()
-                this.plot_point(1).point = scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
+                this.plot_point(1).point = scatter3(this.start_point(1), this.start_point(2), this.start_point(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
                 this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
-                this.plot_point(1).text = text(this.start(1), this.start(2), this.start(3), '  起点');
-                this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  终点');
+                this.plot_point(1).text = text(this.start_point(1), this.start_point(2), this.start_point(3), '  start');
+                this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  goal');
                 xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
-                title('RRT算法UAV航迹规划路径');
+                title('RRT算法');
             end
 
         end
@@ -134,12 +142,12 @@ classdef rrt_plot < rrt
         function set_params(this, rand_config_id)
 
             if nargin < 2
-                rand_config_id = rand;
+                this.rand_id = rand;
+            else
+                this.rand_id = rand_config_id;
             end
 
-            set_params@rrt(this, rand_config_id);
-            conf = this.config_manger.load(rand_config_id);
-            this.display = conf.display;
+            set_params@rrt(this);
         end
 
         function this = rrt_plot()
@@ -151,7 +159,7 @@ classdef rrt_plot < rrt
             this.show_map();
             figure(1);
             output = output(:, 1:3);
-            output = [this.start(1:3); output; this.goal(1:3)];
+            output = [this.start_point(1:3); output; this.goal(1:3)];
             plot3(output(:, 1), output(:, 2), output(:, 3), 'LineWidth', 2, 'color', 'g');
             %this.path_evaluate(output);
             this.show_search_tree()
@@ -164,8 +172,8 @@ classdef rrt_plot < rrt
             delete(this.plot_point(2).point);
             delete(this.plot_point(1).text);
             delete(this.plot_point(2).text);
-            this.plot_point(1).point = scatter3(this.start(1), this.start(2), this.start(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k');
-            this.plot_point(1).text = text(this.start(1), this.start(2), this.start(3), '  起点');
+            this.plot_point(1).point = scatter3(this.start_point(1), this.start_point(2), this.start_point(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k');
+            this.plot_point(1).text = text(this.start_point(1), this.start_point(2), this.start_point(3), '  起点');
             this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', 'o', 'MarkerEdgeColor', 'k');
             this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  终点');
 
@@ -194,7 +202,7 @@ classdef rrt_plot < rrt
             end
 
             this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
-            this.new_node.position = this.start(1, 1:3);
+            this.new_node.position = this.start_point(1, 1:3);
             this.new_node.id_parent = -1;
             this.new_node.cost_to_parent = 0;
             this.insert_node();
@@ -234,7 +242,7 @@ classdef rrt_plot < rrt
                     this.path_id(this.isgoal, 1) = this.new_node.id;
                     this.rand_num = this.rand_nums(1, 2); %搜索点不取goal
                     path = this.trace_back(this.new_node.id);
-                    path = [this.goal(1:3); path; this.start(1:3)];
+                    path = [this.goal(1:3); path; this.start_point(1:3)];
                     tmp_value = path(2:end, 1:3) - path(1:end - 1, 1:3);
                     path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
