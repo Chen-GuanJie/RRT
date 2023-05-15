@@ -76,8 +76,8 @@ classdef map < handle
 
             [X_data, Xn] = this.grid(x);
             [Y_data, Yn] = this.grid(y);
-            this.X_num = Yn;
-            this.Y_num = Xn;
+            this.X_num = Xn;
+            this.Y_num = Yn;
             this.Z_num = Xn * Yn;
             x_index = this.get_uniqu_index(x);
             [x_size, ~] = size(x);
@@ -147,8 +147,8 @@ classdef map < handle
 
             end
 
-            this.X = Y_data;
-            this.Y = X_data;
+            this.X = X_data;
+            this.Y = Y_data;
             this.map_scale = this.X(2) - this.X(1);
             this.save_built_map(this.X, this.Y, Height);
             this.Z = Height / this.map_scale;
@@ -211,15 +211,15 @@ classdef map < handle
             end_insdex = round(to(1:2));
 
             if all (start_insdex == end_insdex) || any(start_insdex < 1) || ...
-                    any(end_insdex < 1) || start_insdex(1) > this.Y_num || ...
-                    end_insdex(1) > this.Y_num || start_insdex(2) > this.X_num || ...
-                    end_insdex(1) > this.X_num
+                    any(end_insdex < 1) || start_insdex(1) > this.X_num || ...
+                    end_insdex(1) > this.X_num || start_insdex(2) > this.Y_num || ...
+                    end_insdex(2) > this.Y_num
                 ground_h = [];
                 flag = false;
                 return
             end
 
-            ind_s = sub2ind([this.Y_num, this.X_num], start_insdex(1), start_insdex(2));
+            ind_s = sub2ind([this.X_num, this.Y_num], start_insdex(1), start_insdex(2));
             x_len = end_insdex(2) - start_insdex(2);
 
             if x_len ~= 0
@@ -227,8 +227,8 @@ classdef map < handle
                 ind_y = ind_x * (end_insdex(1) - start_insdex(1)) / (x_len);
                 ind_y_up = ceil(ind_y);
                 ind_y_fo = floor(ind_y);
-                ind_up = ind_s + ind_x * this.Y_num +ind_y_up;
-                ind_fo = ind_s + ind_x * this.Y_num +ind_y_fo;
+                ind_up = ind_s + ind_x * this.X_num +ind_y_up;
+                ind_fo = ind_s + ind_x * this.X_num +ind_y_fo;
                 ground_h = 0.5 * (this.Z(ind_up) + this.Z(ind_fo));
             else
                 y_len = end_insdex(1) - start_insdex(1);

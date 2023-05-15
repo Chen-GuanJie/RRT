@@ -41,8 +41,8 @@ classdef rrt_plot < rrt
 
         end
 
-        function rewire_v2(this)
-            ind = rewire_v2@rrt(this);
+        function rewire(this)
+            ind = rewire@rrt(this);
             replot_num = length(ind);
             this.replot(1:replot_num, 1) = ind;
             this.replot(1:replot_num, 2) = this.new_node.id;
@@ -50,11 +50,15 @@ classdef rrt_plot < rrt
 
         function redisplay(this)
 
-            for i = 1:length(this.replot(:, 1))
-                delete(this.edges(this.replot(i, 1)));
-                s = this.position(this.replot(i, 2), 1:3);
-                e = this.position(this.replot(i, 1), 1:3);
-                this.edges(this.replot(i, 1)) = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1, 'Color', 'r');
+            if ~isempty(this.replot)
+
+                for i = 1:length(this.replot(:, 1))
+                    delete(this.edges(this.replot(i, 1)));
+                    s = this.position(this.replot(i, 2), 1:3);
+                    e = this.position(this.replot(i, 1), 1:3);
+                    this.edges(this.replot(i, 1)) = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1, 'Color', 'r');
+                end
+
             end
 
         end
@@ -81,7 +85,7 @@ classdef rrt_plot < rrt
         end
 
         function display_map(this)
-            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z); hold on
+            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z - this.maps.height_limit); hold on
         end
 
     end
@@ -171,7 +175,7 @@ classdef rrt_plot < rrt
         function start_rtdisplay(this, delay_time)
             mini_path_len = inf;
             this.show_map();
-            t = tic;
+                t = tic;
 
             while this.record(toc(t), this.num_iter)
                 this.num_iter = this.num_iter + 1;
