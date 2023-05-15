@@ -29,7 +29,7 @@ function varargout = rrt_func(varargin)
         problem.delete_search_tree();
         return
     elseif utils.in_cell(args, 'run')
-
+        close all;
         problem.set_params();
 
         if utils.in_cell(args, 'real_time')

@@ -67,6 +67,7 @@ classdef uav < handle
         function set_params(this)
             conf = this.config_manger.load();
             this.transfer_tactics = conf.transfer_tactics;
+            this.pitchMax = conf.kinetic.pitchMax;
 
             switch this.transfer_tactics
                 case 'direct'
@@ -104,7 +105,7 @@ classdef uav < handle
 
             end
 
-            %this.max_delta_h = tan(this.pitchMax);
+            this.max_delta_h = tan(this.pitchMax);
         end
 
         function newNode = transfer_stable(this, sample, closest_node)

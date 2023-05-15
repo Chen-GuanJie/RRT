@@ -76,8 +76,8 @@ classdef map < handle
 
             [X_data, Xn] = this.grid(x);
             [Y_data, Yn] = this.grid(y);
-            this.X_num = Xn;
-            this.Y_num = Yn;
+            this.X_num = Yn;
+            this.Y_num = Xn;
             this.Z_num = Xn * Yn;
             x_index = this.get_uniqu_index(x);
             [x_size, ~] = size(x);
@@ -147,8 +147,8 @@ classdef map < handle
 
             end
 
-            this.X = X_data;
-            this.Y = Y_data;
+            this.X = Y_data;
+            this.Y = X_data;
             this.map_scale = this.X(2) - this.X(1);
             this.save_built_map(this.X, this.Y, Height);
             this.Z = Height / this.map_scale;
@@ -201,6 +201,39 @@ classdef map < handle
             end
 
             [~, index] = min(a);
+        end
+
+        function [ground_h, flag] = checkPath_v3(this, from, to)
+            flag = true;
+            start_insdex = round(from(1:2));
+            end_insdex = round(to(1:2));
+
+            if all (start_insdex == end_insdex) || any(start_insdex < 1) || ...
+                    any(end_insdex < 1) || start_insdex(1) > this.Y_num || ...
+                    end_insdex(1) > this.Y_num || start_insdex(2) > this.X_num || ...
+                    end_insdex(1) > this.X_num
+                ground_h = [];
+                flag = false;
+                return
+            end
+
+            ind_s = sub2ind([this.Y_num, this.X_num], start_insdex(1), start_insdex(2));
+            x_len = end_insdex(2) - start_insdex(2);
+
+            if x_len ~= 0
+                ind_x = 0:x_len / abs(x_len):(x_len);
+                ind_y = ind_x * (end_insdex(1) - start_insdex(1)) / (x_len);
+                ind_y_up = ceil(ind_y);
+                ind_y_fo = floor(ind_y);
+                ind_up = ind_s + ind_x * this.Y_num +ind_y_up;
+                ind_fo = ind_s + ind_x * this.Y_num +ind_y_fo;
+                ground_h = 0.5 * (this.Z(ind_up) + this.Z(ind_fo));
+            else
+                y_len = end_insdex(1) - start_insdex(1);
+                ind = start_insdex(1):(y_len / abs(y_len)):end_insdex(1);
+                ground_h = this.Z(ind, start_insdex(2));
+            end
+
         end
 
         function [target_loc, delta_dist, flag, cost] = checkPath_v2(this, from, to)
