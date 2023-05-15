@@ -64,7 +64,7 @@ classdef uav < handle
 
         end
 
-        function set_params(this)
+        function init(this)
             conf = this.config_manger.load();
             this.transfer_tactics = conf.transfer_tactics;
             this.pitchMax = conf.kinetic.pitchMax;

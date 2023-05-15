@@ -141,7 +141,7 @@ classdef rrt_plot < rrt
 
         end
 
-        function set_params(this, rand_config_id)
+        function init(this, rand_config_id)
 
             if nargin < 2
                 this.rand_id = rand;
@@ -149,7 +149,7 @@ classdef rrt_plot < rrt
                 this.rand_id = rand_config_id;
             end
 
-            set_params@rrt(this);
+            init@rrt(this);
         end
 
         function this = rrt_plot()

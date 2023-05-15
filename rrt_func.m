@@ -30,7 +30,7 @@ function varargout = rrt_func(varargin)
         return
     elseif utils.in_cell(args, 'run')
         close all;
-        problem.set_params();
+        problem.init();
 
         if utils.in_cell(args, 'real_time')
             problem.start_star_rtdisplay();

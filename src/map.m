@@ -160,7 +160,7 @@ classdef map < handle
 
     methods (Access = public)
 
-        function set_params(this)
+        function init(this)
             this.rand_id = rand;
             conf = this.config_manger.load(this.rand_id);
             this.start_point = cell2mat(conf.start_point);
