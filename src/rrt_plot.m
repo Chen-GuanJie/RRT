@@ -3,8 +3,8 @@ classdef rrt_plot < rrt
     properties (SetAccess = private)
         plot_point = []
         path_plot
-        replot = zeros(50, 3)
-        edges
+        replot = []
+        edges = []
     end
 
     methods (Static)
@@ -34,7 +34,7 @@ classdef rrt_plot < rrt
         function display_states(this, delay_time)
             % this.display_arrow(this.newNode.position, 10); %
             if delay_time ~= 0
-                this.edges(this.new_node.id) = this.display_line(this.tree(this.new_node.id_parent, :), this.new_node.position, 1, 'b');
+                this.edges(this.new_node.id) = this.display_line(this.position(this.new_node.id_parent, :), this.new_node.position, 1, 'b');
                 this.redisplay();
                 pause(delay_time);
             end
@@ -52,8 +52,8 @@ classdef rrt_plot < rrt
 
             for i = 1:length(this.replot(:, 1))
                 delete(this.edges(this.replot(i, 1)));
-                s = this.tree(this.replot(i, 2), 1:3);
-                e = this.tree(this.replot(i, 1), 1:3);
+                s = this.position(this.replot(i, 2), 1:3);
+                e = this.position(this.replot(i, 1), 1:3);
                 this.edges(this.replot(i, 1)) = plot3([s(1); e(1)], [s(2); e(2)], [s(3); e(3)], 'LineWidth', 1, 'Color', 'r');
             end
 
@@ -122,13 +122,12 @@ classdef rrt_plot < rrt
         end
 
         function show_search_tree(this)
-
             utils.get_instance().locate_figure('main_map');
 
             for i = 1:length(this.parent)
 
                 if this.parent(i) > 0
-                    this.edges(i) = this.display_line(this.tree(this.parent(i), 1:3), this.tree(i, 1:3), 1, 'b');
+                    this.edges(i) = this.display_line(this.position(this.parent(i), 1:3), this.position(i, 1:3), 1, 'b');
                 end
 
             end
@@ -136,9 +135,7 @@ classdef rrt_plot < rrt
         end
 
         function delete_search_tree(this)
-
             delete(this.edges);
-
         end
 
         function init(this, rand_config_id)
@@ -149,22 +146,12 @@ classdef rrt_plot < rrt
                 this.rand_id = rand_config_id;
             end
 
+            this.replot = [];
             init@rrt(this);
         end
 
         function this = rrt_plot()
             this = this@rrt();
-        end
-
-        function output = start_star_1_plot(this)
-            output = this.start_star();
-            this.show_map();
-            figure(1);
-            output = output(:, 1:3);
-            output = [this.start_point(1:3); output; this.goal(1:3)];
-            plot3(output(:, 1), output(:, 2), output(:, 3), 'LineWidth', 2, 'color', 'g');
-            %this.path_evaluate(output);
-            this.show_search_tree()
         end
 
         function set_start_end(this, s, g)
@@ -181,72 +168,35 @@ classdef rrt_plot < rrt
 
         end
 
-        function output = start_star_plot(this, max_time, delay_time)
-
-            if nargin < 2
-                max_time = 7;
-                delay_time = 0.01;
-            end
-
-            this.tree = zeros(this.max_nodes, 3);
-            this.node_num = 1;
-            this.informed = false;
-            this.rand_num = this.rand_nums(1, 1);
-            this.search_num = 0;
-            this.tooclose = 0;
-            this.isgoal = 0;
-            this.no_parent = 0;
-            this.rewire_num = 0;
-            figure(1);
-
-            if ~isempty(this.edges)
-                delete(this.edges);
-            end
-
-            this.edges = matlab.graphics.chart.primitive.Line(this.max_nodes);
-            this.new_node.position = this.start_point(1, 1:3);
-            this.new_node.id_parent = -1;
-            this.new_node.cost_to_parent = 0;
-            this.insert_node();
-            this.show_map();
+        function start_rtdisplay(this, delay_time)
             mini_path_len = inf;
+            this.show_map();
+            t = tic;
 
-            tic
-
-            while toc <= max_time
-                this.search_num = this.search_num + 1;
+            while this.record(toc(t), this.num_iter)
+                this.num_iter = this.num_iter + 1;
                 sample = this.get_sample();
-                [closest_node, ~] = this.get_closest(sample);
-                this.new_node.position(1, :) = this.robot.transfer_directly(sample, closest_node);
-                this.display_serachline(closest_node, sample, delay_time);
+                closest_node = this.get_closest(sample);
+                this.new_node.position(1, :) = this.robot.transfer(sample, closest_node);
 
                 if this.neighbors()
-                    this.tooclose = this.tooclose + 1;
                     continue
                 end
 
-                this.choose_parent_v2();
+                this.num_neighbor = this.num_neighbor + this.near_nodes.num;
+                this.choose_parent();
 
-                if norm(this.new_node.position(1:3) - this.goal(1:3)) > this.threshold_goal
-
-                    if this.new_node.id_parent > 0
-                        this.insert_node();
-                        this.rewire_v2();
-                        this.display_states(delay_time)
-
-                    else
-                        this.no_parent = this.no_parent + 1;
-                    end
-
-                else %if flag == 2
-                    this.isgoal = this.isgoal + 1;
+                if this.new_node.id_parent > 0
                     this.insert_node();
-                    this.path_id(this.isgoal, 1) = this.new_node.id;
-                    this.rand_num = this.rand_nums(1, 2); %搜索点不取goal
-                    path = this.trace_back(this.new_node.id);
-                    path = [this.goal(1:3); path; this.start_point(1:3)];
-                    tmp_value = path(2:end, 1:3) - path(1:end - 1, 1:3);
-                    path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
+                    this.rewire();
+                    this.display_states(delay_time)
+
+                else
+                    this.num_no_parent = this.num_no_parent + 1;
+                end
+
+                if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
+                    [mini_path_len, path] = this.find_path(mini_path_len);
 
                     if ~isempty(this.path_plot)
                         delete(this.path_plot);
@@ -254,39 +204,15 @@ classdef rrt_plot < rrt
 
                     this.path_plot = plot3(path(:, 1), path(:, 2), path(:, 3), 'LineWidth', 2, 'color', 'g');
 
-                    if mini_path_len > path_len
-                        mini_path_len = path_len;
-                        this.prepare_informed(path_len);
-                    end
-
                 end
 
-                % if this.nodenum > this.max_nodes
-                %     this.delete_unuesd_node();
-                % end
-
             end
 
-            if delay_time == 0
-                this.show_search_tree();
-            end
-
-            % [~, path_number] = size(this.path_id);
-            [c, path] = this.find_best_path();
-            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d', this.search_num, this.tooclose, this.isgoal, this.no_parent, this.rewire_num);
-            fprintf('\n路径代价为%f', c);
+            toc(t)
+            [cost, path] = this.find_best_path();
+            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
             % interp_num = this.interpolation(path_num);
-            new_path = this.follow_ground(path);
-            % new_path = path;
-
-            if ~isempty(this.path_plot)
-                delete(this.path_plot);
-            end
-
-            plot3(new_path(:, 1), new_path(:, 2), new_path(:, 3), 'LineWidth', 2, 'color', 'g');
-            this.path_evaluate(new_path);
-            output = this.maps.to_normal_size(new_path);
-
+            this.best_path = this.follow_ground(path);
         end
 
     end

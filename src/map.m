@@ -166,6 +166,8 @@ classdef map < handle
             this.start_point = cell2mat(conf.start_point);
             this.goal = cell2mat(conf.goal);
             conf.map_name = char(conf.map_name);
+            this.start_point([1 2]) = this.start_point([2 1]);
+            this.goal([1 2]) = this.goal([2 1]);
 
             if ~strcmp(this.map_name, conf.map_name) || ~this.validate_map()
                 this.map_name = conf.map_name;

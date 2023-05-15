@@ -32,7 +32,6 @@ classdef rrt < benchmark & tree
         num_no_parent = 0
         num_rewire = 0
         num_neighbor = 0;
-
         path_id = []
     end
 
@@ -112,7 +111,7 @@ classdef rrt < benchmark & tree
 
         function insert_node(this)
             %插入节点
-            insert_node@tree();
+            insert_node@tree(this);
             this.position(this.new_node.id, :) = this.new_node.position;
             this.cost_to_parent(this.new_node.id, 1) = this.new_node.cost_to_parent;
             this.cost_to_root(this.new_node.id, 1) = this.new_node.cost_to_root;
@@ -280,7 +279,7 @@ classdef rrt < benchmark & tree
 
         end
 
-        function mini_path_len = find_path(this, mini_path_len)
+        function [mini_path_len, path] = find_path(this, mini_path_len)
             this.num_goal = this.num_goal + 1;
             this.path_id(this.num_goal, 1) = this.new_node.id;
             path = this.trace_back(this.new_node.id);
@@ -329,7 +328,7 @@ classdef rrt < benchmark & tree
                 end
 
                 if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
-                    mini_path_len = this.find_path(mini_path_len);
+                    [mini_path_len, ~] = this.find_path(mini_path_len);
                 end
 
             end
@@ -376,7 +375,7 @@ classdef rrt < benchmark & tree
                 end
 
                 if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
-                    mini_path_len = this.find_path(mini_path_len);
+                    [mini_path_len, ~] = this.find_path(mini_path_len);
                 end
 
             end
@@ -406,7 +405,7 @@ classdef rrt < benchmark & tree
             this.threshold_close = (conf.threshold_close / this.maps.map_scale) ^ 2;
             this.threshold_goal = conf.threshold_goal / this.maps.map_scale;
             this.max_nodes = conf.max_nodes;
-            init@tree();
+            init@tree(this);
             this.rand_num = conf.rand_num;
             this.neighbor_dist = this.robot.get_neighbor_dist(conf.neighbor_range);
             this.position = zeros(this.max_nodes, this.robot.dimension);

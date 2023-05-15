@@ -12,7 +12,7 @@ benchmark:
   max_iter: 7
   save_output: true
   interest:
-    - tree
+    - position
     - parent
     - cost_to_parent
     - node_num
@@ -21,6 +21,7 @@ benchmark:
     - num_goal
     - num_no_parent
     - num_rewire
+    - num_neighbor
 is_save: true
 only_save_last: true
 display:

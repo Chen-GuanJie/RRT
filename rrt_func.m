@@ -31,10 +31,11 @@ function varargout = rrt_func(varargin)
     elseif utils.in_cell(args, 'run')
         close all;
         problem.init();
+        ind = utils.in_cell(args, 'real time');
 
-        if utils.in_cell(args, 'real_time')
-            problem.start_star_rtdisplay();
-        elseif utils.in_cell(args, 'statistic_time')
+        if ind
+            problem.start_rtdisplay(args{ind + 1});
+        elseif utils.in_cell(args, 'statistic time')
             varargout{1} = problem.statistic_time();
             return
         else
