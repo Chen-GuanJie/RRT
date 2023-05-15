@@ -166,8 +166,6 @@ classdef map < handle
             this.start_point = cell2mat(conf.start_point);
             this.goal = cell2mat(conf.goal);
             conf.map_name = char(conf.map_name);
-            this.start_point([1 2]) = this.start_point([2 1]);
-            this.goal([1 2]) = this.goal([2 1]);
 
             if ~strcmp(this.map_name, conf.map_name) || ~this.validate_map()
                 this.map_name = conf.map_name;
@@ -189,6 +187,14 @@ classdef map < handle
                     this.build_map(utils.load_file(this.map_path, this.map_name));
                 end
 
+            end
+
+            if this.start_point(3) == 0
+                this.start_point(3) = this.Z(this.start_point(1), this.start_point(2));
+            end
+
+            if this.goal(3) == 0
+                this.goal(3) = this.Z(this.goal(1), this.goal(2));
             end
 
             this.height_limit = conf.height_limit / this.map_scale;
@@ -219,26 +225,47 @@ classdef map < handle
                 return
             end
 
-            ind_s = sub2ind([this.X_num, this.Y_num], start_insdex(1), start_insdex(2));
             x_len = end_insdex(2) - start_insdex(2);
+            y_len = end_insdex(1) - start_insdex(1);
 
-            if x_len ~= 0
-                ind_x = 0:x_len / abs(x_len):(x_len);
-                ind_y = ind_x * (end_insdex(1) - start_insdex(1)) / (x_len);
-                ind_y_up = ceil(ind_y);
-                ind_y_fo = floor(ind_y);
-                ind_up = ind_s + ind_x * this.X_num +ind_y_up;
-                ind_fo = ind_s + ind_x * this.X_num +ind_y_fo;
-                ground_h = 0.5 * (this.Z(ind_up) + this.Z(ind_fo));
+            if x_len >= y_len
+                ind_s = sub2ind([this.X_num, this.Y_num], start_insdex(1), start_insdex(2));
+
+                if x_len ~= 0
+                    ind_x = 0:x_len / abs(x_len):(x_len);
+                    ind_y = ind_x * y_len / (x_len);
+                    ind_y_up = ceil(ind_y);
+                    ind_y_fo = floor(ind_y);
+                    ind_up = ind_s + ind_x * this.X_num + ind_y_up;
+                    ind_fo = ind_s + ind_x * this.X_num + ind_y_fo;
+                    ground_h = 0.5 * (this.Z(ind_up) + this.Z(ind_fo));
+                else
+                    ind = start_insdex(1):(y_len / abs(y_len)):end_insdex(1);
+                    ground_h = this.Z(ind, start_insdex(2));
+                end
+
             else
-                y_len = end_insdex(1) - start_insdex(1);
-                ind = start_insdex(1):(y_len / abs(y_len)):end_insdex(1);
-                ground_h = this.Z(ind, start_insdex(2));
+                ind_s = sub2ind([this.Y_num, this.X_num], start_insdex(2), start_insdex(1));
+
+                if y_len ~= 0
+                    ind_y = 0:y_len / abs(y_len):(y_len);
+                    ind_x = ind_y * x_len / (y_len);
+                    ind_x_up = ceil(ind_x);
+                    ind_x_fo = floor(ind_x);
+                    ind_up = ind_s + ind_y * this.Y_num + ind_x_up;
+                    ind_fo = ind_s + ind_y * this.Y_num + ind_x_fo;
+                    ground_h = 0.5 * (this.ZT(ind_up) + this.ZT(ind_fo));
+
+                else
+                    ind = start_insdex(2):(x_len / abs(x_len)):end_insdex(2);
+                    ground_h = this.ZT(ind, start_insdex(1));
+                end
+
             end
 
         end
 
-        function [target_loc, delta_dist, flag, cost] = checkPath_v2(this, from, to)
+        function [target_loc, delta_dist, flag] = checkPath_v2(this, from, to)
             %检查两点连线是否与地形碰撞
             flag = true;
             delta_dist = norm(from(1:2) - to(1:2));
@@ -277,7 +304,6 @@ classdef map < handle
                 flag = false;
                 target_loc = 0;
                 delta_dist = 0;
-                cost = 0;
                 return
             end
 
@@ -297,23 +323,11 @@ classdef map < handle
             this.y_down(this.y_down < 1) = 1;
             this.y_down(this.y_down > y_max) = y_max;
 
-            x_mid = 0.5 * (this.x_ind(1) + this.x_ind(num));
-            y_mid = 0.5 * (this.y_up(1) + this.y_up(num));
-            y_ind_2 = round(this.x_ind - x_mid + y_mid);
-            x_ind_2 = round(this.y_up - y_mid + x_mid);
-            h_2 = zeros(num, 1);
-            x_ind_2(x_ind_2 > x_max) = x_max;
-            x_ind_2(x_ind_2 < 1) = 1;
-            y_ind_2(y_ind_2 < 1) = 1;
-            y_ind_2(y_ind_2 > y_max) = y_max;
-
             for i = 1:1:num
                 this.h_up(i, 1) = new_Height(this.x_ind(i), this.y_up(i));
                 this.h_down(i, 1) = new_Height(this.x_ind(i), this.y_down(i));
-                h_2(i, 1) = new_Height(x_ind_2(i), y_ind_2(i));
             end
 
-            cost = 6 * sum(abs(diff(h_2)));
             ground_h = 0.5 .* (this.h_up + this.h_down); %地形高度
             delta_dist = delta_dist / num;
             target_h = this.height_limit + ground_h; %跟踪高度

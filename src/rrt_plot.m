@@ -85,7 +85,7 @@ classdef rrt_plot < rrt
         end
 
         function display_map(this)
-            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z - this.maps.height_limit); hold on
+            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z' - this.maps.height_limit); hold on
         end
 
     end

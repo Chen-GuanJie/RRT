@@ -129,6 +129,7 @@ classdef rrt < benchmark & tree
                 path_costs = this.cumcost(this.path_id);
                 [min_path_cost, best_path_id] = min(path_costs);
                 path = this.trace_back(this.path_id(best_path_id));
+                path = [this.goal(1:3); path];
             else
                 min_path_cost = inf;
                 path = [];
@@ -150,7 +151,7 @@ classdef rrt < benchmark & tree
                 this.near_nodes.cost_to_newNode(i, 1) = tmp_value;
             end
 
-            this.near_nodes.cost_to_root(:, 1) = this.cumcost(this.near_nodes.id(:, 1));
+            % this.near_nodes.cost_to_root(:, 1) = this.cumcost(this.near_nodes.id(:, 1));
             % compare_table = zeros(this.near_nodes.num, 1);
             compare_table = this.near_nodes.cost_to_newNode(:, 1) + this.near_nodes.cost_to_root(:, 1); %以附近点作新节点父亲后的代价
             [this.new_node.cost_to_root, ind] = min(compare_table(:, 1));
@@ -192,6 +193,7 @@ classdef rrt < benchmark & tree
             end
 
             this.cost_to_root(id_rewire, 1) = compare_table(index_rewire, 1);
+            this.parent(id_rewire, 1) = this.new_node.id;
         end
 
         function prepare_informed(this, path_len)
@@ -229,35 +231,24 @@ classdef rrt < benchmark & tree
         end
 
         function new_path = follow_ground(this, path)
-            new_path = zeros(400, 5);
+            new_path = zeros(1, 5);
             ind = 1;
             path_num = length(path(:, 1));
 
             for i = path_num:-1:2
-                [target_h, delta_dist, ~, ~] = this.maps.checkPath_v2(path(i, 1:3), path(i - 1, 1:3));
-                % new_target_h = this.robot.just_follow(target_h(:, 3), delta_dist);
+                [target_h, delta_dist, ~] = this.maps.checkPath_v2(path(i, 1:3), path(i - 1, 1:3));
+                target_h = this.robot.just_follow(target_h, delta_dist);
                 % target_h(:, 3) = new_target_h;
                 [tmp_value, ~] = size(target_h);
                 % new_path(ind, :) = this.path(i, :);
                 % new_path(ind, 9) = this.maps.find_height(this.path(i, :));
-
-                new_path(ind:ind + tmp_value - 2, 1:3) = target_h(1:tmp_value - 1, 1:3);
+                new_path(ind:ind + tmp_value - 2, 1:3) = target_h(1: - 1, 1:3);
                 new_path(ind:ind + tmp_value - 2, 5) = target_h(1:tmp_value - 1, 4); %地形高度
-
-                ind = ind + tmp_value;
+                ind = ind + tmp_value - 1;
             end
-
-            % new_path(ind, :) = this.path(1, :);
-            % new_path(ind, 9) = this.maps.find_height(this.path(1, :));
 
             new_path(:, 4) = new_path(:, 3) - new_path(:, 5); %轨迹上的高度差
             new_path = new_path(new_path(:, 3) ~= 0, :);
-            % for i = 1:ind
-            %     new_path(i, 9) = this.maps.Z(y, round(new_path(i, 2))); %轨迹对应的地形高度
-            %     new_path(i, 8) = new_path(i, 3) - new_path(i, 9); %轨迹上的高度差
-            % end
-
-            % num = ind - 1;
         end
 
         function ind_parent = delete_unuesd_node(this)
@@ -283,7 +274,7 @@ classdef rrt < benchmark & tree
             this.num_goal = this.num_goal + 1;
             this.path_id(this.num_goal, 1) = this.new_node.id;
             path = this.trace_back(this.new_node.id);
-            path = [this.goal(1:3); path; this.start_point(1:3)];
+            path = [this.goal(1:3); path];
             tmp_value = path(2:end, 1:3) - path(1:end - 1, 1:3);
             path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
@@ -337,7 +328,7 @@ classdef rrt < benchmark & tree
             [cost, path] = this.find_best_path();
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
             % interp_num = this.interpolation(path_num);
-            this.best_path = this.follow_ground(path);
+            this.best_path = this.follow_ground(path); %todo: bug
         end
 
         function times = statistic_time(this)
@@ -390,13 +381,7 @@ classdef rrt < benchmark & tree
         function init(this)
             this.maps.init();
             this.robot.init();
-
-            if nargin == 2
-                conf = this.config_manger.load(this.rand_id);
-            else
-                conf = this.config_manger.load();
-            end
-
+            conf = this.config_manger.load(this.rand_id);
             this.start_point = this.maps.start_point;
             this.goal = this.maps.goal;
             this.search_base = [1, 1, min(min(this.maps.Z)), -pi, -pi, -pi];
@@ -417,6 +402,7 @@ classdef rrt < benchmark & tree
             this.num_goal = 0;
             this.num_no_parent = 0;
             this.num_rewire = 0;
+            this.num_neighbor = 0;
             this.path_id = [];
             this.new_node.cost_to_parent = 0;
             this.new_node.cost_to_root = 0;

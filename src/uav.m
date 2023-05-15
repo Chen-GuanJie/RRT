@@ -182,21 +182,25 @@ classdef uav < handle
 
         function target_h = just_follow(this, target_h, delta_dist)
             max_delta = this.max_delta_h * delta_dist;
-            % [n, ~] = size(target_h);
-            tmp = diff(target_h);
+            tmp = diff(target_h(:, 3));
             index = find(abs(tmp) > max_delta);
 
-            while (~isempty(index))
-                target_h = smooth(target_h); %todo: codegen not support smooth
-                tmp = diff(target_h);
-                index = find(abs(tmp) > max_delta);
+            if length (index) > 2
+
+                while (~isempty(index))
+                    old = target_h;
+                    target_h = smooth(target_h, 3);
+
+                    if (length(old) == length(target_h) && all(old == target_h)) || length(target_h) == 2
+                        break;
+                    end
+
+                    tmp = diff(target_h);
+                    index = find(abs(tmp) > max_delta);
+                end
+
             end
 
-            % tmp(tmp > max_delta) = max_delta;
-            % tmp(tmp < -max_delta) = -max_delta;
-            % for i = 2:n
-            %     target_h(i) = target_h(i - 1) + tmp(i - 1);
-            % end
         end
 
         function [target_h, flag] = follow(this, from, to, target_h, delta_dist)
