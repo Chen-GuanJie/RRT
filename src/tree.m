@@ -35,9 +35,7 @@ classdef tree < handle
             if ind_self < length(peers)
                 next_id = peers(ind_self + 1);
             elseif ind_self == length(peers) %is last one
-
                 next_id = this.next_peer_id(parent_id);
-
             end
 
         end
@@ -61,9 +59,8 @@ classdef tree < handle
 
             if parent_id > 0
                 this.children{parent_id}(end + 1) = this.new_node.id;
-                %insert before parent's next peer
                 ind = this.next_preorder_ind(this.new_node.id);
-                this.preorder = [this.preorder(1:ind - 1); this.new_node.id; this.preorder(ind:end)];
+                this.preorder = [this.preorder(1:ind - 1); this.new_node.id; this.preorder(ind:end)]; %insert before parent's next peer
             end
 
             this.node_num = this.node_num + 1;
@@ -83,7 +80,7 @@ classdef tree < handle
                 next_ind = this.next_preorder_ind(self_id); %next index of last offspring in preorder array
                 insert_ind = this.next_preorder_ind(new_parent_id); %insert index
 
-                if ind < insert_ind
+                if ind < insert_ind % move the sub tree to new place
                     this.preorder = [this.preorder(1:ind - 1); this.preorder(next_ind:insert_ind - 1); this.preorder(ind:next_ind - 1); this.preorder(insert_ind:end)];
                 else
                     this.preorder = [this.preorder(1:insert_ind - 1); this.preorder(ind:next_ind - 1); this.preorder(insert_ind:ind - 1); this.preorder(next_ind:end)];

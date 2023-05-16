@@ -8,6 +8,7 @@ classdef configs < handle
         data = struct
         save_path
         rand_id = -1
+        name = ''
     end
 
     methods (Access = public)
@@ -39,7 +40,7 @@ classdef configs < handle
         end
 
         function save(this, path)
-            yaml.dumpFile([path, 'config.yaml'], this.data)
+            yaml.dumpFile([path,this.name, '_config.yaml'], this.data)
         end
 
     end
@@ -58,6 +59,7 @@ classdef configs < handle
             end
 
             this.data.name = '';
+            this.name = name;
             this.rand_id = rand;
         end
 

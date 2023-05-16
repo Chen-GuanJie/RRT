@@ -239,6 +239,7 @@ classdef benchmark < handle
                 this.time_stamp(this.ind_benchmark) = time;
                 this.iter_stamp(this.ind_benchmark) = num;
                 this.ind_benchmark = this.ind_benchmark + 1;
+                fprintf('search %d times in %f seconds\n', num, time)
 
                 if this.ind_benchmark > this.num_record
                     is_finished = false;
@@ -270,11 +271,17 @@ classdef benchmark < handle
             this.interest(no_prop) = [];
         end
 
-        function path = save_all(this)
+        function path = save_all(this, annotation)
             conf = this.config_manger.load(this.rand_id);
 
             if conf.is_save
-                path = [this.config_manger.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM'), '/'];
+
+                if nargin == 1
+                    path = [this.config_manger.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM'), '/'];
+                elseif nargin == 2 && ~isempty(annotation)
+                    path = [this.config_manger.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM '), annotation, '/'];
+                end
+
                 utils.checkdir(path, true);
                 disp(['files saved at ', path]);
                 utils.get_instance().save_figures(path);

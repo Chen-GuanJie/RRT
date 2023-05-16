@@ -14,7 +14,7 @@ function varargout = rrt_func(varargin)
     if strcmp(args{1}, 'debug')
 
         if length(args) > 1
-            varargout{1} = eval(['problem.', args{2}, ';']);
+            eval(['problem.', args{2}, ';']);
         end
 
         return
@@ -52,7 +52,14 @@ function varargout = rrt_func(varargin)
 
         problem.reshape_states();
         problem.show_result();
-        problem.save_all();
+        ind = utils.in_cell(args, 'run');
+
+        if length(args) > ind && ischar(args{ind + 1})
+            problem.save_all(args{ind + 1});
+        else
+            problem.save_all();
+        end
+
     end
 
     if utils.in_cell(args, 'show tree')

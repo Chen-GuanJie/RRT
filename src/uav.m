@@ -53,13 +53,13 @@ classdef uav < handle
             this.maps = map.get_instance();
         end
 
-        function output = get_neighbor_dist(this, range)
+        function output = get_threshold(this, rate)
 
             switch this.transfer_tactics
                 case 'direct'
-                    output = (range * this.direct_step) ^ 2;
+                    output = rate * this.direct_step;
                 case 'kinetic'
-                    output = (2 * this.robot.v * this.robot.deltaT) ^ 2;
+                    output = rate * this.robot.v * this.robot.deltaT;
             end
 
         end

@@ -84,10 +84,6 @@ classdef rrt_plot < rrt
             legend
         end
 
-        function display_map(this)
-            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.ZT - this.maps.height_limit); hold on
-        end
-
     end
 
     methods (Access = public)
@@ -105,6 +101,7 @@ classdef rrt_plot < rrt
 
             if utils.in_cell(display_names, 'path_best')
                 this.show_map();
+                this.best_path = this.maps.to_normal_size(this.best_path);
                 plot3(this.best_path(:, 1), this.best_path(:, 2), this.best_path(:, 3), 'LineWidth', 2, 'Color', 'g');
                 hold off;
             end
@@ -114,11 +111,11 @@ classdef rrt_plot < rrt
         function show_map(this)
 
             if ~utils.get_instance().locate_figure('main_map')
-                this.display_map()
-                this.plot_point(1).point = scatter3(this.start_point(1), this.start_point(2), this.start_point(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
-                this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
-                this.plot_point(1).text = text(this.start_point(1), this.start_point(2), this.start_point(3), '  start');
-                this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  goal');
+                this.maps.display_map(); hold on
+                % this.plot_point(1).point = scatter3(this.start_point(1), this.start_point(2), this.start_point(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
+                % this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
+                % this.plot_point(1).text = text(this.start_point(1), this.start_point(2), this.start_point(3), '  start');
+                % this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  goal');
                 xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
                 title('RRT算法');
             end

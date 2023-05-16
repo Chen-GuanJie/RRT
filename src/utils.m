@@ -54,7 +54,7 @@ classdef utils < handle
                 formats = strsplit(figure.format, ' ');
 
                 for j = 1:length(formats)
-                    saveas(figure.picture, [path, '/', names{i}, '.', formats{j}]);
+                    saveas(figure.picture, [path, names{i}, '.', formats{j}]);
                 end
 
             end

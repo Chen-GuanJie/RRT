@@ -1,6 +1,6 @@
 name: "rrt template"
-threshold_close: 1000
-threshold_goal: 2000
+threshold_close: 1
+threshold_goal: 2
 rand_num: 0.5
 max_nodes: 3000
 height_cost_rate: 6

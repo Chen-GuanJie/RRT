@@ -21,10 +21,6 @@ classdef map < handle
         map_path = './data/map/'
         map_name = ''
         ZT = zeros(1, 1) %地图转置
-        threshold_high = 1 %离地最高高度
-        threshold_low = 1 %离地最低高度
-        mini_x = 0
-        mini_y = 0
         %temp value
         tmp_ind = 0
         h_up = zeros(1, 1)
@@ -68,12 +64,6 @@ classdef map < handle
             x = dem_data(:, 1);
             y = dem_data(:, 2);
             z = dem_data(:, 3);
-            this.mini_x = min(x);
-            this.mini_y = min(y);
-
-            % x = x - this.mini_x;
-            % y = y - this.mini_y;
-
             [X_data, Xn] = this.grid(x);
             [Y_data, Yn] = this.grid(y);
             this.X_num = Xn;
@@ -174,6 +164,7 @@ classdef map < handle
                 if (isfile([n, '_x.mat']) || isfile([n, '_x.csv'])) && ...
                         (isfile([n, '_y.mat']) || isfile([n, '_y.csv'])) && ...
                         (isfile([n, '_z.mat']) || isfile([n, '_z.csv']))
+                    disp('find built map')
                     this.X = utils.load_file(this.map_path, [this.map_name, '_x']);
                     this.map_scale = this.X(2) - this.X(1);
                     this.Y = utils.load_file(this.map_path, [this.map_name, '_y']);
@@ -184,6 +175,7 @@ classdef map < handle
                     this.Z_num = size(this.Z, 1) * size(this.Z, 2);
 
                 else
+                    disp('build map')
                     this.build_map(utils.load_file(this.map_path, this.map_name));
                 end
 
@@ -249,10 +241,32 @@ classdef map < handle
 
         end
 
-        function best_path = to_normal_size(this, best_path)
-            best_path(:, 1) = best_path(:, 1) + this.mini_x;
-            best_path(:, 2) = best_path(:, 2) + this.mini_y;
-            best_path(:, 3) = best_path(:, 3);
+        function shit = to_normal_size(this, shit)
+            shit = shit * this.map_scale;
+            shit(:, 1) = shit(:, 1) + min(this.X);
+            shit(:, 2) = shit(:, 2) + min(this.Y);
+        end
+
+        function display_map(this, interval, normal_map)
+
+            if nargin < 3
+                interval = 5;
+                normal_map = true;
+            end
+
+            x = 1:interval:this.X_num;
+            y = 1:interval:this.Y_num;
+            z = this.ZT(y, x);
+            z = z - this.height_limit;
+
+            if normal_map
+                x = this.X(x);
+                y = this.Y(y);
+                z = z * this.map_scale;
+            end
+
+            meshz(x, y, z);
+
         end
 
     end
