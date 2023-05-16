@@ -174,17 +174,20 @@ classdef rrt < benchmark & tree
 
         function id_rewire = rewire(this)
             %重布线
-            this.near_nodes.cost_to_newNode(find(this.near_nodes.id(:, 1) == this.new_node.id_parent), 1) = inf;
+            if this.near_nodes.num == 1 %no need to rewire
+                id_rewire = []; return
+            end
+
             compare_table = zeros(this.near_nodes.num, 1);
             compare_table(:, 1) = this.near_nodes.cost_to_newNode(:, 1) + this.new_node.cost_to_root; %新节点作为附近点的父节点后的代价
             index_rewire = find(compare_table(:, 1) < this.near_nodes.cost_to_root(:, 1)); %替换后代价变小的点的下标
             id_rewire = this.near_nodes.id(index_rewire, 1); %替换后代价变小的点的id
             this.num_rewire = this.num_rewire + length(id_rewire);
             this.cost_to_parent(id_rewire, 1) = this.near_nodes.cost_to_newNode(index_rewire, 1);
+            this.change_parent(id_rewire, this.new_node.id);
 
             for i = 1:length(id_rewire)
-                this.change_parent(id_rewire(i), this.new_node.id);
-                offspring = this.get_offspring(id_rewire(i), []);
+                offspring = this.get_offspring(id_rewire(i));
 
                 if ~isempty(offspring)
                     this.cost_to_root(offspring, 1) = this.cost_to_root(offspring, 1) + compare_table(index_rewire(i), 1) - this.near_nodes.cost_to_root(index_rewire(i), 1);
@@ -193,7 +196,6 @@ classdef rrt < benchmark & tree
             end
 
             this.cost_to_root(id_rewire, 1) = compare_table(index_rewire, 1);
-            this.parent(id_rewire, 1) = this.new_node.id;
         end
 
         function prepare_informed(this, path_len)
