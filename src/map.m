@@ -200,18 +200,7 @@ classdef map < handle
             this.height_limit = conf.height_limit / this.map_scale;
         end
 
-        function index = find_closest(this, x, axis)
-
-            if axis == 0
-                a = abs(this.this.X - x);
-            else
-                a = abs(this.this.Y - x);
-            end
-
-            [~, index] = min(a);
-        end
-
-        function [ground_h, flag] = checkPath_v3(this, from, to)
+        function [ground_h, flag] = checkPath(this, from, to)
             flag = true;
             start_insdex = round(from(1:2));
             end_insdex = round(to(1:2));
@@ -220,24 +209,21 @@ classdef map < handle
                     any(end_insdex < 1) || start_insdex(1) > this.X_num || ...
                     end_insdex(1) > this.X_num || start_insdex(2) > this.Y_num || ...
                     end_insdex(2) > this.Y_num
-                ground_h = [];
-                flag = false;
+                ground_h = []; flag = false;
                 return
             end
 
             x_len = end_insdex(2) - start_insdex(2);
             y_len = end_insdex(1) - start_insdex(1);
 
-            if x_len >= y_len
+            if abs(x_len) >= abs(y_len)
                 ind_s = sub2ind([this.X_num, this.Y_num], start_insdex(1), start_insdex(2));
 
                 if x_len ~= 0
                     ind_x = 0:x_len / abs(x_len):(x_len);
                     ind_y = ind_x * y_len / (x_len);
-                    ind_y_up = ceil(ind_y);
-                    ind_y_fo = floor(ind_y);
-                    ind_up = ind_s + ind_x * this.X_num + ind_y_up;
-                    ind_fo = ind_s + ind_x * this.X_num + ind_y_fo;
+                    ind_up = ind_s + ind_x * this.X_num + ceil(ind_y);
+                    ind_fo = ind_s + ind_x * this.X_num + floor(ind_y);
                     ground_h = 0.5 * (this.Z(ind_up) + this.Z(ind_fo));
                 else
                     ind = start_insdex(1):(y_len / abs(y_len)):end_insdex(1);
@@ -250,10 +236,8 @@ classdef map < handle
                 if y_len ~= 0
                     ind_y = 0:y_len / abs(y_len):(y_len);
                     ind_x = ind_y * x_len / (y_len);
-                    ind_x_up = ceil(ind_x);
-                    ind_x_fo = floor(ind_x);
-                    ind_up = ind_s + ind_y * this.Y_num + ind_x_up;
-                    ind_fo = ind_s + ind_y * this.Y_num + ind_x_fo;
+                    ind_up = ind_s + ind_y * this.Y_num + ceil(ind_x);
+                    ind_fo = ind_s + ind_y * this.Y_num + floor(ind_x);
                     ground_h = 0.5 * (this.ZT(ind_up) + this.ZT(ind_fo));
 
                 else
@@ -262,162 +246,6 @@ classdef map < handle
                 end
 
             end
-
-        end
-
-        function [target_loc, delta_dist, flag] = checkPath_v2(this, from, to)
-            %检查两点连线是否与地形碰撞
-            flag = true;
-            delta_dist = norm(from(1:2) - to(1:2));
-            start_insdex = zeros(1, 2);
-            end_insdex = zeros(1, 2);
-
-            start_insdex(1:2) = round(from(1:2));
-            end_insdex(1:2) = round(to(1:2));
-
-            if end_insdex(1, 1) ~= start_insdex (1, 1)
-                k_index = (end_insdex(1, 2) - start_insdex(1, 2)) / (end_insdex(1, 1) - start_insdex(1, 1));
-            else
-                k_index = inf;
-            end
-
-            if abs(k_index) > 1
-                y_max = this.X_num;
-                x_max = this.Y_num;
-                new_Height = this.ZT;
-                start_insdex(1, [1 2]) = start_insdex(1, [2 1]);
-                end_insdex(1, [1 2]) = end_insdex(1, [2 1]);
-                k_index = 1 / k_index;
-            else
-                y_max = this.Y_num;
-                x_max = this.X_num;
-                new_Height = this.Z;
-            end
-
-            deltaX = end_insdex(1, 1) - start_insdex(1, 1);
-
-            if deltaX > 0
-                this.tmp_ind = (0:1:deltaX)';
-            elseif deltaX < 0
-                this.tmp_ind = (0:-1:deltaX)';
-            else
-                flag = false;
-                target_loc = 0;
-                delta_dist = 0;
-                return
-            end
-
-            num = abs(deltaX) + 1;
-            this.h_up = zeros(num, 1);
-            this.h_down = zeros(num, 1);
-            % this.tmp_h = start_insdex(1, 3) + (end_insdex(1, 3) - start_insdex(1, 3)) * this.tmp_ind / (deltaX); %轨迹高度
-            this.y_up = ceil((this.tmp_ind) * k_index + start_insdex(1, 2));
-            this.y_down = floor((this.tmp_ind) * k_index + start_insdex(1, 2));
-            this.x_ind = start_insdex(1, 1) + this.tmp_ind;
-            this.x_ind(this.x_ind > x_max) = x_max;
-            this.x_ind(this.x_ind < 1) = 1;
-
-            this.y_up(this.y_up > y_max) = y_max;
-            this.y_up(this.y_up < 1) = 1;
-
-            this.y_down(this.y_down < 1) = 1;
-            this.y_down(this.y_down > y_max) = y_max;
-
-            for i = 1:1:num
-                this.h_up(i, 1) = new_Height(this.x_ind(i), this.y_up(i));
-                this.h_down(i, 1) = new_Height(this.x_ind(i), this.y_down(i));
-            end
-
-            ground_h = 0.5 .* (this.h_up + this.h_down); %地形高度
-            delta_dist = delta_dist / num;
-            target_h = this.height_limit + ground_h; %跟踪高度
-            target1 = from(1):(to(1) - from(1)) / (num - 1):to(1);
-            target2 = from(2):(to(2) - from(2)) / (num - 1):to(2);
-            target_loc = [target1', target2', target_h, ground_h];
-
-        end
-
-        function output = find_height(this, node)
-            node(1:2) = round(node(1:2));
-            x_up = ceil(node(1));
-            x_down = floor(node(1));
-            up_y = ceil(node(2));
-            down_y = floor(node(2));
-            output = 0.25 * (this.Z(x_up, up_y) + this.Z(x_up, down_y) + this.Z(x_down, up_y) + this.Z(x_down, down_y));
-        end
-
-        function flag = checkPath(this, start_insdex, end_insdex)
-            %检查两点连线是否与地形碰撞
-            flag = true;
-            start_insdex(1:2) = round(start_insdex(1:2));
-            end_insdex(1:2) = round(end_insdex(1:2));
-
-            if end_insdex(1, 1) ~= start_insdex (1, 1)
-                k_index = (end_insdex(1, 2) - start_insdex(1, 2)) / (end_insdex(1, 1) - start_insdex(1, 1));
-            else
-                k_index = inf;
-            end
-
-            if abs(k_index) > 1
-                y_max = this.X_num;
-                new_Height = this.ZT;
-                start_insdex(1, [1 2]) = start_insdex(1, [2 1]);
-                end_insdex(1, [1 2]) = end_insdex(1, [2 1]);
-                k_index = 1 / k_index;
-            else
-                y_max = this.Y_num;
-                new_Height = this.Z;
-            end
-
-            deltaX = end_insdex(1, 1) - start_insdex(1, 1);
-
-            if deltaX > 0
-                this.tmp_ind = 0:1:deltaX;
-
-            elseif deltaX < 0
-                this.tmp_ind = 0:-1:deltaX;
-            else
-                return
-            end
-
-            this.h_up = zeros(1, abs(deltaX) + 1);
-            this.h_down = zeros(1, abs(deltaX) + 1);
-            this.tmp_h = start_insdex(1, 3) + (end_insdex(1, 3) - start_insdex(1, 3)) * this.tmp_ind / (deltaX); %轨迹高度
-            this.y_up = ceil((this.tmp_ind) * k_index + start_insdex(1, 2));
-            this.y_down = floor((this.tmp_ind) * k_index + start_insdex(1, 2));
-            this.x_ind = start_insdex(1, 1) + this.tmp_ind;
-            this.y_up(this.y_up > y_max) = y_max;
-            this.y_down(this.y_down < 1) = 1;
-
-            for i = 1:1:abs(deltaX) + 1
-
-                this.h_up(1, i) = new_Height(this.x_ind(i), this.y_up(i));
-                this.h_down(1, i) = new_Height(this.x_ind(i), this.y_down(i));
-
-            end
-
-            ground_h = 0.5 .* (this.h_up + this.h_down); %地形高度
-            % target_h = this.height_limit + ground_h; %跟踪高度
-            this.tmp_h = this.tmp_h - ground_h; %离地高度
-            % too_hight = this.tmp_h > this.threshold_high;
-            % too_low = this.tmp_h < this.threshold_low;
-            % retval =  k_index target_h;
-
-            % this.tmp_h = (this.tmp_h - target_h) ./ target_h;
-
-            if min(this.tmp_h) < 0
-                flag = false;
-            end
-
-            % if min(this.tmp_h) < 0.4
-            %     flag = true;
-            % end
-
-            % if min(this.tmp_h) < 0
-            %     % flag = false;
-            % else
-            %     [h, i] = min(this.tmp_h);
-            % end
 
         end
 

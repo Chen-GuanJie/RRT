@@ -30,11 +30,19 @@ function varargout = rrt_func(varargin)
         return
     elseif utils.in_cell(args, 'run')
         close all;
+        utils.get_instance().init();
         problem.init();
         ind = utils.in_cell(args, 'real time');
 
         if ind
-            problem.start_rtdisplay(args{ind + 1});
+
+            if (length(args) > ind && isnumeric(args{ind + 1}))
+                delay_time = args{ind + 1};
+            else
+                delay_time = 0.01;
+            end
+
+            problem.start_rtdisplay(delay_time);
         elseif utils.in_cell(args, 'statistic time')
             varargout{1} = problem.statistic_time();
             return

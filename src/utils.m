@@ -41,6 +41,11 @@ classdef utils < handle
 
     methods (Access = public)
 
+        function init(this)
+            this.figures = containers.Map();
+            this.used_figure_id = [];
+        end
+
         function save_figures(this, path)
             names = keys(this.figures);
 

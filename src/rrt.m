@@ -103,7 +103,7 @@ classdef rrt < benchmark & tree
 
         end
 
-        function cost = calc_cost_v2(this, from_node, dest_node, new_target_h)
+        function cost = calc_cost(this, from_node, dest_node, new_target_h)
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
             cost_hight = this.height_cost_rate * sum(abs(diff(new_target_h)));
             cost = norm([cost_dist, cost_hight]);
@@ -140,10 +140,10 @@ classdef rrt < benchmark & tree
         function choose_parent(this)
 
             for i = 1:this.near_nodes.num
-                [ground_h, f] = this.maps.checkPath_v3(this.near_nodes.position(i, :), this.new_node.position(1, :));
+                [ground_h, f] = this.maps.checkPath(this.near_nodes.position(i, :), this.new_node.position(1, :));
 
                 if f
-                    tmp_value = this.calc_cost_v2(this.near_nodes.position(i, :), this.new_node.position(1, :), ground_h); % 新节点与附近的相邻转移代价 + this.near_nodes(i, 7);
+                    tmp_value = this.calc_cost(this.near_nodes.position(i, :), this.new_node.position(1, :), ground_h); % 新节点与附近的相邻转移代价 + this.near_nodes(i, 7);
                 else
                     tmp_value = inf;
                 end
@@ -206,49 +206,29 @@ classdef rrt < benchmark & tree
             this.ellipse_displace = [dist * cos(ang); dist * sin(ang)] + [this.start_point(1); this.start_point(2)];
         end
 
-        function s = interpolation(this, path_num)
-            interp_num = 0.1;
-            tmp = interp1(1:path_num, this.path(1:path_num, 1:6), 1:interp_num:path_num, 'spline');
-            [s, ~] = size(tmp);
-            this.path(1:s, 1:6) = tmp;
-            this.path(s, 7) = 0;
-
-            for i = s - 1:-1:1
-                this.path(i, 7) = this.calc_cost(this.path(i + 1, :), this.path(i, :)) + this.path(i + 1, 7); %轨迹上的cost
-            end
-
-            for i = 1:s
-                this.path(i, 9) = this.maps.Z(round(this.path(i, 1)), round(this.path(i, 2))); %轨迹对应的地形高度
-                this.path(i, 8) = this.path(i, 3) - this.path(i, 9); %轨迹上的高度差
-            end
-
-            % this.path(:,1:3)=this.path(:,1:3)*this.height_scale;
-            % this.path(:,8:9)=this.path(:,8:9)*this.height_scale;
-
-            % for ind = 1:6
-            %     this.path(1:interp_num:path_num,ind)=interp1(1:path_num,this.path(1:path_num,ind ),1:interp_num:path_num,'spline');
-            % end
-        end
-
         function new_path = follow_ground(this, path)
+
+            if nargin == 1
+                path = this.best_path;
+            end
+
             new_path = zeros(1, 5);
             ind = 1;
             path_num = length(path(:, 1));
 
             for i = path_num:-1:2
-                [target_h, delta_dist, ~] = this.maps.checkPath_v2(path(i, 1:3), path(i - 1, 1:3));
-                target_h = this.robot.just_follow(target_h, delta_dist);
-                % target_h(:, 3) = new_target_h;
-                [tmp_value, ~] = size(target_h);
-                % new_path(ind, :) = this.path(i, :);
-                % new_path(ind, 9) = this.maps.find_height(this.path(i, :));
-                new_path(ind:ind + tmp_value - 2, 1:3) = target_h(1: - 1, 1:3);
-                new_path(ind:ind + tmp_value - 2, 5) = target_h(1:tmp_value - 1, 4); %地形高度
-                ind = ind + tmp_value - 1;
+                [ground_h, ~] = this.maps.checkPath(path(i, 1:2), path(i - 1, 1:2));
+                target_h = this.robot.just_follow(ground_h, norm(path(i, 1:2) - path(i - 1, 1:2)));
+                len = length(target_h);
+                ind_x = path(i, 1):(path(i - 1, 1) - path(i, 1)) / (length(ground_h) - 1):path(i - 1, 1);
+                ind_y = path(i, 2):(path(i - 1, 2) - path(i, 2)) / (length(ground_h) - 1):path(i - 1, 2);
+                tmp = [ind_x; ind_y; target_h; ground_h]';
+                new_path(ind:ind + len - 2, 1:4) = tmp(1:end - 1, 1:4);
+                ind = ind + len - 1;
             end
 
-            new_path(:, 4) = new_path(:, 3) - new_path(:, 5); %轨迹上的高度差
-            new_path = new_path(new_path(:, 3) ~= 0, :);
+            new_path(:, 3) = new_path(:, 3) +this.maps.height_limit;
+            new_path(:, 5) = new_path(:, 3) - new_path(:, 4);
         end
 
         function ind_parent = delete_unuesd_node(this)
@@ -326,9 +306,8 @@ classdef rrt < benchmark & tree
 
             toc(t)
             [cost, path] = this.find_best_path();
-            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
-            % interp_num = this.interpolation(path_num);
-            this.best_path = this.follow_ground(path); %todo: bug
+            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f\n', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
+            this.best_path = this.follow_ground(path);
         end
 
         function times = statistic_time(this)
@@ -373,8 +352,7 @@ classdef rrt < benchmark & tree
 
             toc(t)
             [cost, path] = this.find_best_path();
-            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
-            % interp_num = this.interpolation(path_num);
+            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f\n', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
             this.best_path = this.follow_ground(path);
         end
 

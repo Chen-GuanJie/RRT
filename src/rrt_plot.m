@@ -74,18 +74,18 @@ classdef rrt_plot < rrt
             subplot(2, 1, 1)
             path(:, 1:5) = path(:, 1:5) * this.maps.map_scale;
             plot(1:path_num, path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
-            plot(1:path_num, path(path_num:-1:1, 5), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
+            plot(1:path_num, path(path_num:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             legend
             subplot(2, 1, 2)
             % plot(1:path_num, path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             % legend
             % subplot(3, 1, 3)
-            plot(1:path_num, path(path_num:-1:1, 4), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
+            plot(1:path_num, path(path_num:-1:1, 5), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
             legend
         end
 
         function display_map(this)
-            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z' - this.maps.height_limit); hold on
+            meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.ZT - this.maps.height_limit); hold on
         end
 
     end
@@ -175,7 +175,7 @@ classdef rrt_plot < rrt
         function start_rtdisplay(this, delay_time)
             mini_path_len = inf;
             this.show_map();
-                t = tic;
+            t = tic;
 
             while this.record(toc(t), this.num_iter)
                 this.num_iter = this.num_iter + 1;
@@ -215,7 +215,6 @@ classdef rrt_plot < rrt
             toc(t)
             [cost, path] = this.find_best_path();
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
-            % interp_num = this.interpolation(path_num);
             this.best_path = this.follow_ground(path);
         end
 
