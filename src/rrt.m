@@ -3,17 +3,17 @@ classdef rrt < benchmark & tree
     properties (SetAccess = public)
         config_manger
         name = 'rrt'
-        position = zeros(1, 3)
-        cost_to_parent = zeros(1, 1)
-        cost_to_root = zeros(1, 1)
+        position = zeros(1, 3, 'single')
+        cost_to_parent = zeros(1, 1, 'single')
+        cost_to_root = zeros(1, 1, 'single')
         maps
         robot
-        start_point = zeros(1, 6)
-        goal = zeros(1, 6)
+        start_point = zeros(1, 6, 'single')
+        goal = zeros(1, 6, 'single')
         threshold_close = 1
         threshold_goal = 1
-        search_size = zeros(1, 6)
-        search_base = zeros(1, 6)
+        search_size = zeros(1, 6, 'single')
+        search_base = zeros(1, 6, 'single')
         rand_num = 1
         height_cost_rate = 6
         neighbor_dist
@@ -23,20 +23,20 @@ classdef rrt < benchmark & tree
         informed = false
         long_axis = 0
         short_axis = 0
-        ellipse_rotation = zeros(2, 2)
-        ellipse_displace = zeros(2, 1)
+        ellipse_rotation = zeros(2, 2, 'single')
+        ellipse_displace = zeros(2, 1, 'single')
         %output
         num_iter = 0
         num_close = 0
         num_goal = 0
         num_no_parent = 0
         num_rewire = 0
-        num_neighbor = 0;
-        stamp = zeros(6, 1);
+        num_neighbor = 0
+        stamp = zeros(6, 1, 'single');
         path_id = []
         %temporary
-        compare_all = zeros(1, 2)
-        compare_near = zeros(1, 1)
+        compare_all = zeros(1, 2, 'single')
+        compare_near = zeros(1, 1, 'single')
         is_delete = false;
     end
 
@@ -326,9 +326,9 @@ classdef rrt < benchmark & tree
             init@tree(this);
             this.rand_num = conf.rand_num;
             this.neighbor_dist = this.robot.get_threshold(conf.neighbor_range) ^ 2;
-            this.position = zeros(this.max_nodes, this.robot.dimension);
-            this.cost_to_parent = zeros(this.max_nodes, 1);
-            this.cost_to_root = zeros(this.max_nodes, 1);
+            this.position = zeros(this.max_nodes, this.robot.dimension, 'single');
+            this.cost_to_parent = zeros(this.max_nodes, 1, 'single');
+            this.cost_to_root = zeros(this.max_nodes, 1, 'single');
             this.informed = false;
             this.num_iter = 0;
             this.num_close = 0;

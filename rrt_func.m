@@ -63,7 +63,7 @@ function varargout = rrt_func(varargin)
     end
 
     if utils.in_cell(args, 'show tree')
-        problem.show_map();
+        problem.show_map(5, false);
         problem.show_search_tree();
         return
     end

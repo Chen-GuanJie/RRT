@@ -3,11 +3,12 @@ classdef tree < handle
     properties (SetAccess = public)
         children = cell(1, 1) %todo: use neet peer instead of recording children
         parent = zeros(1, 1, 'uint32')
-        node_num = 0
-        max_nodes = 0
+        node_num = uint32(0)
+        max_nodes = uint32(0)
         new_node = struct
-        preorder = []
+        preorder = zeros(1, 1, 'uint32')
         mapping = zeros(1, 1, 'uint32')
+        next_peer = zeros(1, 1, 'uint32')
     end
 
     methods (Access = public)
@@ -15,8 +16,8 @@ classdef tree < handle
         function init(this)
             this.parent = zeros(this.max_nodes, 1, 'uint32');
             this.children = cell(this.max_nodes, 1);
-            this.node_num = 0;
-            this.new_node.id_parent = 0;
+            this.node_num = uint32(0);
+            this.new_node.id_parent = uint32(0);
             this.preorder = zeros(1, 1, 'uint32');
             this.preorder(1, 1) = 1;
         end

@@ -108,10 +108,15 @@ classdef rrt_plot < rrt
 
         end
 
-        function show_map(this)
+        function show_map(this, interval, normal_map)
+
+            if nargin < 3
+                interval = 5;
+                normal_map = true;
+            end
 
             if ~utils.get_instance().locate_figure('main_map')
-                this.maps.display_map(); hold on
+                this.maps.display_map(interval, normal_map); hold on
                 % this.plot_point(1).point = scatter3(this.start_point(1), this.start_point(2), this.start_point(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
                 % this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
                 % this.plot_point(1).text = text(this.start_point(1), this.start_point(2), this.start_point(3), '  start');
