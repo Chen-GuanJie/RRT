@@ -1,22 +1,23 @@
 classdef tree < handle
 
     properties (SetAccess = public)
-        children = cell(1, 1)
-        parent = zeros(1, 1)
-        node_num = 1
-        max_nodes = 5000
+        children = cell(1, 1) %todo: use neet peer instead of recording children
+        parent = zeros(1, 1, 'uint32')
+        node_num = 0
+        max_nodes = 0
         new_node = struct
         preorder = []
+        mapping = zeros(1, 1, 'uint32')
     end
 
     methods (Access = public)
 
         function init(this)
-            this.parent = zeros(this.max_nodes, 1);
+            this.parent = zeros(this.max_nodes, 1, 'uint32');
             this.children = cell(this.max_nodes, 1);
-            this.node_num = 1;
-            this.new_node.id_parent = -1;
-            this.preorder = zeros(1, 1);
+            this.node_num = 0;
+            this.new_node.id_parent = 0;
+            this.preorder = zeros(1, 1, 'uint32');
             this.preorder(1, 1) = 1;
         end
 
@@ -24,7 +25,7 @@ classdef tree < handle
             %get next peer's id or find parent's if none
             parent_id = this.parent(id, 1);
 
-            if parent_id == -1
+            if ~parent_id
                 next_id = 0;
                 return
             end
@@ -52,6 +53,7 @@ classdef tree < handle
         end
 
         function insert_node(this)
+            this.node_num = this.node_num + 1;
             this.new_node.id = this.node_num;
             parent_id = this.new_node.id_parent;
             this.parent(this.new_node.id, 1) = parent_id;
@@ -63,10 +65,25 @@ classdef tree < handle
                 this.preorder = [this.preorder(1:ind - 1); this.new_node.id; this.preorder(ind:end)]; %insert before parent's next peer
             end
 
-            this.node_num = this.node_num + 1;
         end
 
-        function mapping = delete_node(this, id_delete)
+        function delete_node(this, id_remain, id_delete)
+            %map old id to new id
+            this.mapping(this.node_num, 1) = 0;
+            this.mapping(id_remain, 1) = 1:length(id_remain);
+            %delete
+            this.preorder(ismember(this.preorder, id_delete)) = [];
+            this.parent(id_delete) = [];
+            this.children(id_delete) = [];
+            this.node_num = length(this.parent);
+            %map
+            this.preorder = this.mapping(this.preorder);
+            this.parent(2:end) = this.mapping(this.parent(2:end));
+
+            for i = 1:this.node_num
+                this.children{i} = this.children{i}(~ismember(this.children{i}, id_delete));
+                this.children{i} = this.mapping(this.children{i});
+            end
 
         end
 

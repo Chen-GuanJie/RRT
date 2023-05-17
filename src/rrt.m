@@ -37,6 +37,7 @@ classdef rrt < benchmark & tree
         %temporary
         compare_all = zeros(1, 2)
         compare_near = zeros(1, 1)
+        is_delete = false;
     end
 
     methods (Access = public)
@@ -70,7 +71,7 @@ classdef rrt < benchmark & tree
 
         function flag = neighbors(this)
             flag = 0;
-            this.compare_all(:, 1:2) = this.position(1:this.node_num - 1, 1:2) - this.new_node.position(1, 1:2);
+            this.compare_all(:, 1:2) = this.position(1:this.node_num, 1:2) - this.new_node.position(1, 1:2);
             this.compare_all(:, 1) = sum(this.compare_all(:, 1:2) .^ 2, 2);
             [tmp_value, ~] = min(this.compare_all(:, 1));
 
@@ -86,11 +87,10 @@ classdef rrt < benchmark & tree
             this.near_nodes.cost_to_root = this.cost_to_root(this.near_nodes.id, 1);
             this.near_nodes.cost_to_newNode = zeros(this.near_nodes.num, 1);
             this.compare_near = zeros(this.near_nodes.num, 1);
-
         end
 
         function node = get_closest(this, sample)
-            this.compare_all = this.position(1:this.node_num - 1, 1:2) - sample(1:2);
+            this.compare_all = this.position(1:this.node_num, 1:2) - sample(1:2);
             [~, index] = min(sum(this.compare_all(:, 1:2) .^ 2, 2));
             node = this.position(index, :);
         end
@@ -231,23 +231,19 @@ classdef rrt < benchmark & tree
             new_path(:, 5) = new_path(:, 3) - new_path(:, 4);
         end
 
-        function ind_parent = delete_unuesd_node(this)
-            ind_parent = unique(this.parent(:, 1));
-            ind_parent(ind_parent < 0) = [];
-            ind_parent = [ind_parent; this.path_id];
-            ind_parent = sortrows(unique(ind_parent));
-            this.position = this.position(ind_parent, :);
-            this.node_num = size(this.position, 1) + 1;
-            id_map = containers.Map(ind_parent, 1:(this.node_num - 1));
-
-            for i = 1:length(this.path_id)
-                this.path_id(i) = id_map(this.path_id(i));
-            end
-
-            for i = 2:this.node_num - 1
-                this.parent(i, 1) = id_map(this.parent(i, 1));
-            end
-
+        function delete_unuesd_node(this)
+            id_remain = unique(this.parent(:, 1));
+            id_remain = id_remain(id_remain > 0);
+            id_remain = [id_remain; this.path_id];
+            id_remain = sortrows(unique(id_remain));
+            old_id = zeros(this.node_num, 1, 'uint32');
+            old_id(:, 1) = (1:this.node_num)';
+            id_delete = old_id(~ismember(old_id, id_remain));
+            this.delete_node(id_remain, id_delete);
+            this.position(id_delete, :) = [];
+            this.cost_to_parent(id_delete) = [];
+            this.cost_to_root(id_delete) = [];
+            this.path_id = this.mapping(this.path_id);
         end
 
         function [mini_path_len, path] = find_path(this, mini_path_len)
@@ -302,6 +298,10 @@ classdef rrt < benchmark & tree
                     [mini_path_len, ~] = this.find_path(mini_path_len);
                 end
 
+                if this.is_delete && this.node_num > this.max_nodes
+                    this.delete_unuesd_node();
+                end
+
             end
 
             toc(t)
@@ -319,9 +319,10 @@ classdef rrt < benchmark & tree
             this.search_base = [1, 1, min(min(this.maps.Z)), -pi, -pi, -pi];
             this.search_size = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(this.maps.Z)) - min(min(this.maps.Z)), 2 * pi, 2 * pi, 2 * pi];
             this.height_cost_rate = conf.height_cost_rate;
-            this.threshold_close = (this.robot.get_threshold(conf.threshold_close) / this.maps.map_scale) ^ 2;
-            this.threshold_goal = (this.robot.get_threshold(conf.threshold_goal) / this.maps.map_scale) ^ 2;
-            this.max_nodes = conf.max_nodes;
+            this.threshold_close = (this.robot.get_threshold(conf.threshold_close)) ^ 2;
+            this.threshold_goal = (this.robot.get_threshold(conf.threshold_goal)) ^ 2;
+            this.max_nodes = conf.delete_node.max_nodes;
+            this.is_delete = conf.delete_node.is_delete;
             init@tree(this);
             this.rand_num = conf.rand_num;
             this.neighbor_dist = this.robot.get_threshold(conf.neighbor_range) ^ 2;

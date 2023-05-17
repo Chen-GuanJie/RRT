@@ -21,14 +21,6 @@ classdef map < handle
         map_path = './data/map/'
         map_name = ''
         ZT = zeros(1, 1) %地图转置
-        %temp value
-        tmp_ind = 0
-        h_up = zeros(1, 1)
-        h_down = zeros(1, 1)
-        tmp_h = zeros(1, 1)
-        y_up = zeros(1, 1)
-        y_down = zeros(1, 1)
-        x_ind = zeros(1, 1)
     end
 
     methods (Access = private)
@@ -143,7 +135,6 @@ classdef map < handle
             this.save_built_map(this.X, this.Y, Height);
             this.Z = Height / this.map_scale;
             this.ZT = this.Z';
-            this.tmp_h = zeros(1, 10);
         end
 
     end

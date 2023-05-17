@@ -166,7 +166,6 @@ classdef rrt_plot < rrt
             this.plot_point(1).text = text(this.start_point(1), this.start_point(2), this.start_point(3), '  起点');
             this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', 'o', 'MarkerEdgeColor', 'k');
             this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  终点');
-
         end
 
         function start_rtdisplay(this, delay_time)

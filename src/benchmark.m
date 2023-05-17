@@ -123,7 +123,6 @@ classdef benchmark < handle
                     to_plot = fieldnames(y_data);
                 end
 
-                legend_str = {};
                 utils.get_instance().locate_figure(plot_name, plot_info.save_format);
                 title(strrep(plot_name, '_', ' '));
                 xlabel(plot_info.x_lable);
@@ -151,14 +150,17 @@ classdef benchmark < handle
                                 p.(line_property{k}) = line_properties.(line_property{k});
                             end
 
+                            if isempty(utils.in_cell(line_property, 'DisplayName'))
+                                p.DisplayName = strrep(to_plot{j}, '_', ' ');
+                            end
+
                         end
 
-                        legend_str{end + 1} = strrep(to_plot{j}, '_', ' ');
                     end
 
                 end
 
-                legend(legend_str);
+                legend;
                 hold off
             end
 
