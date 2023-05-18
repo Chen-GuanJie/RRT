@@ -70,7 +70,6 @@ classdef rrt < benchmark & tree
         end
 
         function flag = neighbors(this)
-            flag = 0;
             this.compare_all(:, 1:2) = this.position(1:this.node_num, 1:2) - this.new_node.position(1, 1:2);
             this.compare_all(:, 1) = sum(this.compare_all(:, 1:2) .^ 2, 2);
             [tmp_value, ~] = min(this.compare_all(:, 1));
@@ -78,8 +77,10 @@ classdef rrt < benchmark & tree
             if tmp_value < this.threshold_close
                 this.num_close = this.num_close + 1;
                 flag = 1;
+                return
             end
 
+            flag = 0;
             this.near_nodes = struct;
             this.near_nodes.id = find(this.compare_all(:, 1) < this.neighbor_dist);
             this.near_nodes.position = this.position(this.near_nodes.id, :);
