@@ -19,6 +19,7 @@ classdef rrt < benchmark & tree
         neighbor_dist
         near_nodes = struct
         best_path
+        rand_delete
         %informed
         informed = false
         long_axis = 0
@@ -240,6 +241,8 @@ classdef rrt < benchmark & tree
             old_id = zeros(this.node_num, 1, 'uint32');
             old_id(:, 1) = (1:this.node_num)';
             id_delete = old_id(~ismember(old_id, id_remain));
+            id_delete = id_delete(rand(length(id_delete), 1) < this.rand_delete);
+            id_remain = old_id(~ismember(old_id, id_delete));
             this.delete_node(id_remain, id_delete);
             this.position(id_delete, :) = [];
             this.cost_to_parent(id_delete) = [];
@@ -324,6 +327,7 @@ classdef rrt < benchmark & tree
             this.threshold_goal = (this.robot.get_threshold(conf.threshold_goal)) ^ 2;
             this.max_nodes = conf.delete_node.max_nodes;
             this.is_delete = conf.delete_node.is_delete;
+            this.rand_delete= conf.delete_node.rand_delete;
             init@tree(this);
             this.rand_num = conf.rand_num;
             this.neighbor_dist = this.robot.get_threshold(conf.neighbor_range) ^ 2;

@@ -7,6 +7,7 @@ neighbor_range: 2
 delete_node:
   max_nodes: 3000
   is_delete: false
+  rand_delete: 0.6
 benchmark:
   is_benchmark: true
   is_time_step: true
