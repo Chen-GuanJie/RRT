@@ -59,7 +59,7 @@ classdef uav < handle
                 case 'direct'
                     output = rate * this.direct_step;
                 case 'kinetic'
-                    output = rate * this.robot.v * this.robot.deltaT;
+                    output = rate * this.v * this.deltaT / this.maps.map_scale;
             end
 
         end
@@ -139,6 +139,14 @@ classdef uav < handle
             temp = closest_node(1:2) + (rotation1 * [mini_distance; 0])' + (rotation2 * [mini_distance; 0])';
             [z, pitchangle] = this.climb(temp, closest_node);
             newNode = [temp(1), temp(2), z, newPhi, 0, pitchangle];
+        end
+
+        function update_step(this, direct_step)
+
+            if direct_step < this.direct_step
+                this.direct_step = direct_step;
+            end
+
         end
 
         function flag = transferable_stable(this, from, to)

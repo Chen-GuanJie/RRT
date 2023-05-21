@@ -19,12 +19,17 @@ classdef rrt < benchmark & tree
         neighbor_dist
         near_nodes = struct
         best_path
+        threshold_close_rate
+        threshold_goal_rate
+        neighbor_range_rate
         %informed
         informed = false
         long_axis = 0
         short_axis = 0
         ellipse_rotation = zeros(2, 2, 'single')
         ellipse_displace = zeros(2, 1, 'single')
+        search_area = 0
+        search_area_rate
         %output
         num_iter = 0
         num_close = 0
@@ -109,7 +114,7 @@ classdef rrt < benchmark & tree
         function cost = calc_cost(this, from_node, dest_node, new_target_h)
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
             cost_hight = this.height_cost_rate * sum(abs(diff(new_target_h)));
-            cost = norm([cost_dist, cost_hight]);
+            cost = sqrt(cost_dist ^ 2 + cost_hight ^ 2);
         end
 
         function insert_node(this)
@@ -139,19 +144,18 @@ classdef rrt < benchmark & tree
         end
 
         function choose_parent(this)
+            this.compare_near(:, 1:2) = this.near_nodes.position(:, 1:2) - this.new_node.position(1, 1:2);
+            this.compare_near(:, 1) = sqrt(sum(this.compare_near .^ 2, 2));
+            f = false(this.near_nodes.num, 1);
 
             for i = 1:this.near_nodes.num
-                [ground_h, f] = this.maps.checkPath(this.near_nodes.position(i, :), this.new_node.position(1, :));
-
-                if f
-                    tmp_value = this.calc_cost(this.near_nodes.position(i, :), this.new_node.position(1, :), ground_h);
-                else
-                    tmp_value = inf;
-                end
-
-                this.near_nodes.cost_to_newNode(i, 1) = tmp_value;
+                [ground_h, f(i)] = this.maps.checkPath(this.near_nodes.position(i, :), this.new_node.position(1, :));
+                this.compare_near(i, 2) = this.height_cost_rate * sum(abs(diff(ground_h)));
             end
 
+            this.compare_near(:, 1) = sqrt(this.compare_near(:, 1) .^ 2 + this.compare_near(:, 2) .^ 2);
+            this.compare_near(~f, 1) = inf;
+            this.near_nodes.cost_to_newNode(:, 1) = this.compare_near(:, 1);
             % this.near_nodes.cost_to_root(:, 1) = this.cumcost(this.near_nodes.id(:, 1));
             this.compare_near = this.near_nodes.cost_to_newNode(:, 1) + this.near_nodes.cost_to_root(:, 1);
             [this.new_node.cost_to_root, ind] = min(this.compare_near(:, 1));
@@ -197,6 +201,56 @@ classdef rrt < benchmark & tree
             this.cost_to_root(id_rewire, 1) = this.compare_near(index_rewire, 1);
         end
 
+        function id_rewire = rewire2(this)
+
+            if this.near_nodes.num == 1 %no need to rewire
+                id_rewire = []; return
+            end
+
+            this.compare_near(:, 1) = this.near_nodes.cost_to_newNode(:, 1) + this.new_node.cost_to_root; %near new cost
+            index_rewire = find(this.compare_near(:, 1) < this.near_nodes.cost_to_root(:, 1));
+
+            if isempty(index_rewire)
+                id_rewire = []; return
+            end
+
+            id_rewire = this.near_nodes.id(index_rewire, 1);
+            delta_cost = this.compare_near(index_rewire, 1) - this.near_nodes.cost_to_root(index_rewire, 1);
+            % this.parent(id_rewire, 1) = this.new_node.id;
+            preorder_id = this.preorder(ismember(this.preorder, id_rewire), 1);
+            flag = false;
+
+            for i = length(preorder_id):-1:2
+                offspring = this.get_offspring(preorder_id(i - 1));
+
+                if ismember(preorder_id(i), offspring) && delta_cost(id_rewire == preorder_id(i - 1)) < delta_cost(id_rewire == preorder_id(i - 1))
+                    index_rewire(id_rewire == preorder_id(i)) = [];
+                    flag = true;
+                end
+
+            end
+
+            if flag
+                id_rewire = this.near_nodes.id(index_rewire, 1);
+                delta_cost = this.compare_near(index_rewire, 1) - this.near_nodes.cost_to_root(index_rewire, 1);
+            end
+
+            this.change_parent(id_rewire, this.new_node.id);
+
+            for i = 1:length(id_rewire)
+                offspring = this.get_offspring(id_rewire(i));
+
+                if ~isempty(offspring)
+                    this.cost_to_root(offspring, 1) = this.cost_to_root(offspring, 1) + delta_cost(i); %this.compare_near(index_rewire(i), 1) - this.near_nodes.cost_to_root(index_rewire(i), 1);
+                end
+
+            end
+
+            this.num_rewire = this.num_rewire + length(id_rewire);
+            this.cost_to_parent(id_rewire, 1) = this.near_nodes.cost_to_newNode(index_rewire, 1);
+            this.cost_to_root(id_rewire, 1) = this.compare_near(index_rewire, 1);
+        end
+
         function prepare_informed(this, path_len)
             this.informed = true;
             dist = norm(this.start_point(1:3) - this.goal(1:3)) / 2;
@@ -205,6 +259,7 @@ classdef rrt < benchmark & tree
             ang = atan2(this.goal(2) - this.start_point(2), this.goal(1) - this.start_point(1));
             this.ellipse_rotation = [cos(ang) -sin(ang); sin(ang) cos(ang)];
             this.ellipse_displace = [dist * cos(ang); dist * sin(ang)] + [this.start_point(1); this.start_point(2)];
+            this.search_area = pi * this.long_axis * this.short_axis;
         end
 
         function new_path = follow_ground(this, path)
@@ -238,7 +293,7 @@ classdef rrt < benchmark & tree
             id_remain = [id_remain; this.path_id];
             id_remain = sortrows(unique(id_remain));
             old_id = zeros(this.node_num, 1, 'uint32');
-            old_id(:, 1) = (1:this.node_num)';
+            old_id(:, 1) = 1:this.node_num;
             id_delete = old_id(~ismember(old_id, id_remain));
             this.delete_node(id_remain, id_delete);
             this.position(id_delete, :) = [];
@@ -264,6 +319,50 @@ classdef rrt < benchmark & tree
 
         function result = record_fun(this)
             [result.mini_cost, ~] = this.find_best_path();
+        end
+
+        function rewire_all(this)
+            this.num_rewire = 0;
+            this.compare_all = zeros(this.node_num, 1, 'single');
+
+            for i = 1:this.node_num
+                this.new_node.id = i;
+                this.new_node.cost_to_root = this.cost_to_root(i);
+                this.new_node.position = this.position(i, :);
+                this.new_node.id_parent = this.parent(i);
+                this.new_node.cost_to_parent = this.cost_to_parent(i);
+                this.neighbors();
+
+                this.compare_near = this.near_nodes.position(:, 1:2) - this.new_node.position(1, 1:2);
+                this.compare_near(:, 1) = sqrt(sum(this.compare_near .^ 2, 2));
+                f = false(this.near_nodes.num, 1);
+
+                for j = 1:this.near_nodes.num
+                    [ground_h, f(j)] = this.maps.checkPath(this.near_nodes.position(j, :), this.new_node.position(1, :));
+                    this.compare_near(j, 2) = this.height_cost_rate * sum(abs(diff(ground_h)));
+                end
+
+                this.compare_near(:, 1) = sqrt(this.compare_near(:, 1) .^ 2 + this.compare_near(:, 2) .^ 2);
+                this.compare_near(~f, 1) = inf;
+                this.near_nodes.cost_to_newNode(:, 1) = this.compare_near(:, 1);
+
+                this.rewire();
+            end
+
+            this.num_rewire
+
+        end
+
+        function update_step(this)
+
+            if this.informed
+                r = sqrt(this.search_area * this.search_area_rate / this.node_num / pi);
+                this.robot.update_step(r / this.neighbor_range_rate);
+                this.threshold_close = (this.robot.get_threshold(this.threshold_close_rate)) ^ 2;
+                this.threshold_goal = (this.robot.get_threshold(this.threshold_goal_rate)) ^ 2;
+                this.neighbor_dist = this.robot.get_threshold(this.neighbor_range_rate) ^ 2;
+            end
+
         end
 
     end
@@ -303,6 +402,7 @@ classdef rrt < benchmark & tree
                     this.delete_unuesd_node();
                 end
 
+                this.update_step();
             end
 
             toc(t)
@@ -321,7 +421,7 @@ classdef rrt < benchmark & tree
             this.search_size = [this.maps.X_num - 1, this.maps.Y_num - 1, max(max(this.maps.Z)) - min(min(this.maps.Z)), 2 * pi, 2 * pi, 2 * pi];
             this.height_cost_rate = conf.height_cost_rate;
             this.threshold_close = (this.robot.get_threshold(conf.threshold_close)) ^ 2;
-            this.threshold_goal = (this.robot.get_threshold(conf.threshold_goal)) ^ 2;
+            this.threshold_goal = (this.robot.get_threshold(conf.threshold_goal));
             this.max_nodes = conf.delete_node.max_nodes;
             this.is_delete = conf.delete_node.is_delete;
             init@tree(this);
@@ -343,18 +443,27 @@ classdef rrt < benchmark & tree
             this.new_node.position = this.start_point(1, 1:this.robot.dimension);
             this.insert_node();
             this.start_benchmark(conf.benchmark);
+            this.threshold_close_rate = conf.threshold_close;
+            this.threshold_goal_rate = conf.threshold_goal;
+            this.neighbor_range_rate = conf.neighbor_range;
+            this.search_area_rate = conf.search_area_rate;
         end
 
         function save_all(this, annotation)
+            conf = this.config_manger.load(this.rand_id);
 
-            if nargin == 1
-                path = save_all@benchmark(this);
-            elseif nargin == 2
-                path = save_all@benchmark(this, annotation);
+            if conf.is_save
+
+                if nargin == 1
+                    path = save_all@benchmark(this);
+                elseif nargin == 2
+                    path = save_all@benchmark(this, annotation);
+                end
+
+                this.maps.config_manger.save(path);
+                this.robot.config_manger.save(path);
             end
 
-            this.maps.config_manger.save(path);
-            this.robot.config_manger.save(path);
         end
 
         function this = rrt()

@@ -3,7 +3,7 @@ classdef tree < handle
     properties (SetAccess = public)
         children = cell(1, 1) %todo: use neet peer instead of recording children
         parent = zeros(1, 1, 'uint32')
-        node_num = uint32(0)
+        node_num = 0
         max_nodes = uint32(0)
         new_node = struct
         preorder = zeros(1, 1, 'uint32')
@@ -16,7 +16,7 @@ classdef tree < handle
         function init(this)
             this.parent = zeros(this.max_nodes, 1, 'uint32');
             this.children = cell(this.max_nodes, 1);
-            this.node_num = uint32(0);
+            this.node_num = 0;
             this.new_node.id_parent = uint32(0);
             this.preorder = zeros(1, 1, 'uint32');
             this.preorder(1, 1) = 1;
@@ -89,11 +89,10 @@ classdef tree < handle
         end
 
         function change_parent(this, id, new_parent_id)
-            ind_all = find(ismember(this.preorder, id));
-            id_all = this.preorder(ind_all, 1); %ordered id
+            preorder_id = this.preorder(ismember(this.preorder, id), 1); %ordered id
 
-            for i = length(id_all):-1:1 %change in inverse order
-                self_id = id_all(i);
+            for i = length(preorder_id):-1:1 %change in inverse order
+                self_id = preorder_id(i);
                 ind = find(this.preorder == self_id);
                 next_ind = this.next_preorder_ind(self_id); %next index of last offspring in preorder array
                 insert_ind = this.next_preorder_ind(new_parent_id); %insert index

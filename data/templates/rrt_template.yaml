@@ -4,6 +4,7 @@ threshold_goal: 0.4
 rand_num: 0.5
 height_cost_rate: 6
 neighbor_range: 2
+search_area_rate: 20
 delete_node:
   max_nodes: 3000
   is_delete: false
