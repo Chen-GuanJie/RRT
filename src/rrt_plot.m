@@ -73,14 +73,27 @@ classdef rrt_plot < rrt
             % clear gca
             subplot(2, 1, 1)
             path(:, 1:5) = path(:, 1:5) * this.maps.map_scale;
-            plot(1:path_num, path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞机高度'); hold on
-            plot(1:path_num, path(path_num:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
+            plot(1:path_num, path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', 'aircraft altitude'); hold on
+            plot(1:path_num, path(path_num:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', 'topographic height');
             legend
-            subplot(2, 1, 2)
+            % subplot(2, 1, 2)
             % plot(1:path_num, path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             % legend
-            % subplot(3, 1, 3)
-            plot(1:path_num, path(path_num:-1:1, 5), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
+            subplot(2, 1, 2)
+            % plot(1:path_num, path(path_num:-1:1, 5), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
+            % legend
+            n = length(this.best_path);
+            angle = zeros(n - 1, 2);
+
+            for i = n:-1:2
+                v = this.best_path(i - 1, 1:2) - this.best_path(i, 1:2);
+                angle(n - i + 1, 1) = atan2(v(2), v(1));
+                angle(n - i + 1, 2) = atan2((this.best_path(i - 1, 3) - this.best_path(i, 3)), norm(v));
+            end
+
+            angle = angle .* 180 ./ pi;
+            % plot(angle(:, 1), 'DisplayName', 'course');
+            plot(angle(:, 2), 'DisplayName', 'pitch angle');
             legend
         end
 
@@ -103,7 +116,24 @@ classdef rrt_plot < rrt
                 this.show_map();
                 this.best_path = this.maps.to_normal_size(this.best_path);
                 plot3(this.best_path(:, 1), this.best_path(:, 2), this.best_path(:, 3), 'LineWidth', 2, 'Color', 'g');
+                axis equal;
                 hold off;
+            end
+
+            if utils.in_cell(display_names, 'angle')
+                utils.get_instance().locate_figure('angle', display.cutaway.save_format)
+                n = length(this.best_path);
+                angle = zeros(n - 1, 2);
+
+                for i = n:-1:2
+                    v = this.best_path(i - 1, 1:2) - this.best_path(i, 1:2);
+                    angle(n - i + 1, 1) = atan2(v(2), v(1));
+                    angle(n - i + 1, 2) = atan2((this.best_path(i - 1, 3) - this.best_path(i, 3)), norm(v));
+                end
+
+                plot(angle(:, 1), 'DisplayName', 'course'); hold on
+                plot(angle(:, 2), 'DisplayName', 'pitch');
+                legend
             end
 
         end

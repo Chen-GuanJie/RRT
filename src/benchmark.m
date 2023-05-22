@@ -160,7 +160,12 @@ classdef benchmark < handle
 
                 end
 
-                legend;
+                if this.shaped_states.(to_plot{1})(end) > this.shaped_states.(to_plot{1})(1)
+                    legend('Location', 'NorthWest');
+                else
+                    legend();
+                end
+
                 hold off
             end
 

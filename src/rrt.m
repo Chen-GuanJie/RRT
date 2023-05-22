@@ -322,6 +322,7 @@ classdef rrt < benchmark & tree
 
         function result = record_fun(this)
             [result.mini_cost, ~] = this.find_best_path();
+            result.direct_step = this.robot.get_step();
         end
 
         function rewire_all(this)
@@ -427,7 +428,7 @@ classdef rrt < benchmark & tree
             this.threshold_goal = (this.robot.get_threshold(conf.threshold_goal));
             this.max_nodes = conf.delete_node.max_nodes;
             this.is_delete = conf.delete_node.is_delete;
-            this.rand_delete= conf.delete_node.rand_delete;
+            this.rand_delete = conf.delete_node.rand_delete;
             init@tree(this);
             this.rand_num = conf.rand_num;
             this.neighbor_dist = this.robot.get_threshold(conf.neighbor_range) ^ 2;

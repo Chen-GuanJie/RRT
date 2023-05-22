@@ -141,6 +141,10 @@ classdef uav < handle
             newNode = [temp(1), temp(2), z, newPhi, 0, pitchangle];
         end
 
+        function step = get_step(this)
+            step = this.direct_step;
+        end
+
         function update_step(this, direct_step)
 
             if direct_step < this.direct_step
