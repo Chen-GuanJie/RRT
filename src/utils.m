@@ -122,7 +122,6 @@ classdef utils < handle
         function id = id_dir(dir_name)
             c = strsplit(dir_name, '_');
             id = str2double(c{end});
-
         end
 
         function output = assert_patten(patt, name, type)
@@ -155,7 +154,6 @@ classdef utils < handle
         function id = id_file(file_name)
             c = strsplit(file_name, {'_', '.'});
             id = str2double(c{end - 1});
-
         end
 
         function new = iterate_path(Dir, patt, type)

@@ -43,9 +43,6 @@ function varargout = rrt_func(varargin)
             end
 
             problem.start_rtdisplay(delay_time);
-        elseif utils.in_cell(args, 'statistic time')
-            varargout{1} = problem.statistic_time();
-            return
         else
             problem.start();
         end
@@ -63,6 +60,7 @@ function varargout = rrt_func(varargin)
     end
 
     if utils.in_cell(args, 'show tree')
+        utils.get_instance().locate_figure('search tree')
         problem.show_map(5, false);
         problem.show_search_tree();
         return

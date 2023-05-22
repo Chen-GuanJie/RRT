@@ -113,15 +113,15 @@ classdef rrt_plot < rrt
             end
 
             if utils.in_cell(display_names, 'path_best')
+                utils.get_instance().locate_figure('path_best')
                 this.show_map();
                 this.best_path = this.maps.to_normal_size(this.best_path);
                 plot3(this.best_path(:, 1), this.best_path(:, 2), this.best_path(:, 3), 'LineWidth', 2, 'Color', 'g');
-                axis equal;
-                hold off;
+                view(2); axis equal; hold off;
             end
 
             if utils.in_cell(display_names, 'angle')
-                utils.get_instance().locate_figure('angle', display.cutaway.save_format)
+                utils.get_instance().locate_figure('angle', display.angle.save_format)
                 n = length(this.best_path);
                 angle = zeros(n - 1, 2);
 
@@ -136,6 +136,21 @@ classdef rrt_plot < rrt
                 legend
             end
 
+            if utils.in_cell(display_names, 'search_tree')
+
+                for i = 1:length(display.search_tree.save_index)
+                    ind = display.search_tree.save_index{i}(1);
+                    utils.get_instance().locate_figure(['search tree ' num2str(ind)])
+                    this.show_search_tree(this.states{ind, 1}.position, this.states{ind, 1}.parent)
+                    view(2); axis equal; hold off
+                end
+
+            end
+
+        end
+
+        function show_tree(this)
+
         end
 
         function show_map(this, interval, normal_map)
@@ -145,25 +160,29 @@ classdef rrt_plot < rrt
                 normal_map = true;
             end
 
-            if ~utils.get_instance().locate_figure('main_map')
-                this.maps.display_map(interval, normal_map); hold on
-                % this.plot_point(1).point = scatter3(this.start_point(1), this.start_point(2), this.start_point(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
-                % this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
-                % this.plot_point(1).text = text(this.start_point(1), this.start_point(2), this.start_point(3), '  start');
-                % this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  goal');
-                xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
-                title('RRT算法');
-            end
+            % if ~utils.get_instance().locate_figure('main_map')
+            this.maps.display_map(interval, normal_map); hold on
+            % this.plot_point(1).point = scatter3(this.start_point(1), this.start_point(2), this.start_point(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
+            % this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
+            % this.plot_point(1).text = text(this.start_point(1), this.start_point(2), this.start_point(3), '  start');
+            % this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  goal');
+            xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
+            title('RRT算法');
+            % end
 
         end
 
-        function show_search_tree(this)
-            utils.get_instance().locate_figure('main_map');
+        function show_search_tree(this, position_data, parent_data)
 
-            for i = 1:length(this.parent)
+            if nargin < 3
+                position_data = this.position;
+                parent_data = this.parent;
+            end
 
-                if this.parent(i) > 0
-                    this.edges(i) = this.display_line(this.position(this.parent(i), 1:3), this.position(i, 1:3), 1, 'b');
+            for i = 1:length(parent_data)
+
+                if parent_data(i) > 0
+                    this.display_line(position_data(parent_data(i), 1:3), position_data(i, 1:3), 1, 'b'); hold on
                 end
 
             end

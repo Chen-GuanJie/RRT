@@ -42,7 +42,6 @@ classdef benchmark < handle
             end
 
             writetable(sample_table, [path, 'sample_result.csv']);
-
         end
 
         function save_other_states(this, path, only_last)
