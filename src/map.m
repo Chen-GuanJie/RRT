@@ -1,9 +1,9 @@
 classdef map < handle
 
     properties (SetAccess = public)
-        X = zeros(1, 1)
-        Y = zeros(1, 1)
-        Z = zeros(1, 1)
+        X = zeros(1, 1, 'single')
+        Y = zeros(1, 1, 'single')
+        Z = zeros(1, 1, 'single')
         X_num = 0
         Y_num = 0
         Z_num = 0
@@ -20,7 +20,9 @@ classdef map < handle
         rand_id = -1
         map_path = './data/map/'
         map_name = ''
-        ZT = zeros(1, 1) %地图转置
+        ZT = zeros(1, 1, 'single') %地图转置
+        size_map = zeros(1, 2, 'single')
+        size_mapT = zeros(1, 2, 'single')
     end
 
     methods (Access = private)
@@ -172,6 +174,9 @@ classdef map < handle
 
             end
 
+            this.size_map = [this.X_num, this.Y_num];
+            this.size_mapT = [this.Y_num, this.X_num];
+
             if this.start_point(3) == 0
                 this.start_point(3) = this.Z(this.start_point(1), this.start_point(2));
             end
@@ -200,7 +205,7 @@ classdef map < handle
             y_len = end_insdex(1) - start_insdex(1);
 
             if abs(x_len) >= abs(y_len)
-                ind_s = sub2ind([this.X_num, this.Y_num], start_insdex(1), start_insdex(2));
+                ind_s = sub2ind(this.size_map, start_insdex(1), start_insdex(2));
 
                 if x_len ~= 0
                     ind_x = 0:x_len / abs(x_len):(x_len);
@@ -214,7 +219,7 @@ classdef map < handle
                 end
 
             else
-                ind_s = sub2ind([this.Y_num, this.X_num], start_insdex(2), start_insdex(1));
+                ind_s = sub2ind(this.size_mapT, start_insdex(2), start_insdex(1));
 
                 if y_len ~= 0
                     ind_y = 0:y_len / abs(y_len):(y_len);
