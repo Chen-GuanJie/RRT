@@ -237,6 +237,32 @@ classdef utils < handle
             output = find(strcmp(c, item));
         end
 
+        function flag = is_drawable(plot_name, plot_info)
+
+            if ~isfield(plot_info, 'x_lable') || yaml.isNull(plot_info.x_lable) ...
+                    || ~isfield(plot_info, 'y_lable') || yaml.isNull(plot_info.y_lable) ...
+                    || ~isfield(plot_info, 'y_data') || yaml.isNull(plot_info.y_data)
+                flag = false; return
+            end
+
+            flag = true;
+            utils.get_instance().locate_figure(plot_name, plot_info.save_format);
+            hold on
+        end
+
+        function assign_value(obj, properties)
+            property = fieldnames(properties);
+
+            for k = 1:length(property)
+                obj.(property{k}) = properties.(property{k});
+            end
+
+        end
+
+        function draw(obj, x, y_info)
+
+        end
+
     end
 
 end

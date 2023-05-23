@@ -108,25 +108,18 @@ classdef benchmark < handle
                 plot_name = fn{i};
                 plot_info = display.(plot_name);
 
-                if ~isfield(plot_info, 'x_lable') || yaml.isNull(plot_info.x_lable) ...
-                        || ~isfield(plot_info, 'y_lable') || yaml.isNull(plot_info.y_lable) ...
-                        || ~isfield(plot_info, 'y_data') || yaml.isNull(plot_info.y_data)
+                if ~utils.is_drawable(plot_name, plot_info)
                     continue
                 end
 
                 y_data = plot_info.y_data;
-
-                if yaml.isNull(y_data)
-                    continue
-                else
-                    to_plot = fieldnames(y_data);
-                end
-
-                utils.get_instance().locate_figure(plot_name, plot_info.save_format);
-                title(strrep(plot_name, '_', ' '));
-                xlabel(plot_info.x_lable);
-                ylabel(plot_info.y_lable);
-                hold on
+                to_plot = fieldnames(y_data);
+                t = title(strrep(plot_name, '_', ' '));
+                xl = xlabel(plot_info.x_lable.txt);
+                yl = ylabel(plot_info.y_lable.txt);
+                utils.assign_value(t, plot_info.property);
+                utils.assign_value(xl, plot_info.x_lable.property);
+                utils.assign_value(yl, plot_info.y_lable.property);
 
                 for j = 1:length(to_plot)
 
@@ -142,16 +135,11 @@ classdef benchmark < handle
                         p = plot(x, this.shaped_states.(to_plot{j}));
 
                         if ~yaml.isNull(y_data.(to_plot{j}))
-                            line_properties = y_data.(to_plot{j});
-                            line_property = fieldnames(line_properties);
+                            utils.assign_value(p, y_data.(to_plot{j}));
 
-                            for k = 1:length(line_property)
-                                p.(line_property{k}) = line_properties.(line_property{k});
-                            end
-
-                            if isempty(utils.in_cell(line_property, 'DisplayName'))
-                                p.DisplayName = strrep(to_plot{j}, '_', ' ');
-                            end
+                            % if isempty(utils.in_cell(line_property, 'DisplayName'))
+                            %     p.DisplayName = strrep(to_plot{j}, '_', ' ');
+                            % end
 
                         end
 
