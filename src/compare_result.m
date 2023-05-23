@@ -14,7 +14,7 @@ if isempty (dirs)
     d = dir(dir_path);
 
     for i = 3:length(d)
-        dirs{end + 1} = d(i).namee;
+        dirs{end + 1} = d(i).name;
     end
 
 end

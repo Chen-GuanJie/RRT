@@ -63,25 +63,27 @@ classdef rrt_plot < rrt
 
         end
 
-        function path_evaluate(this, path)
+        function path_evaluate(this, bp)
 
             if nargin == 1
-                path = this.best_path;
+                bp = this.best_path;
             end
 
-            path_num = length(path(:, 1));
-            % clear gca
-            subplot(2, 1, 1)
-            path(:, 1:5) = path(:, 1:5) * this.maps.map_scale;
-            plot(1:path_num, path(path_num:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', 'aircraft altitude'); hold on
-            plot(1:path_num, path(path_num:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', 'topographic height');
+            x_data = diff(bp);
+            x_data = sqrt(x_data(:, 1) .^ 2 + x_data(:, 2) .^ 2);
+            x_data = [0; x_data];
+            x_data = cumsum(x_data);
+            x_data = x_data * this.maps.map_scale;
+            path_num = length(bp(:, 1));
+            subplot(3, 1, 1)
+            bp(:, 1:5) = bp(:, 1:5) * this.maps.map_scale;
+            plot(x_data, bp(end:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', 'aircraft altitude'); hold on
+            plot(x_data, bp(end:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', 'topographic height');
+            ylabel('height(m)')
+            xlabel('distance(m)')
+            hold off
             legend
-            % subplot(2, 1, 2)
-            % plot(1:path_num, path(path_num:-1:1, 9), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
-            % legend
-            subplot(2, 1, 2)
-            % plot(1:path_num, path(path_num:-1:1, 5), 'LineWidth', 1.5, 'color', 'k', 'DisplayName', '离地高度');
-            % legend
+            subplot(3, 1, 2)
             n = length(this.best_path);
             angle = zeros(n - 1, 2);
 
@@ -92,8 +94,15 @@ classdef rrt_plot < rrt
             end
 
             angle = angle .* 180 ./ pi;
-            % plot(angle(:, 1), 'DisplayName', 'course');
-            plot(angle(:, 2), 'DisplayName', 'pitch angle');
+            angle = [angle(1, :); angle];
+            plot(x_data, angle(:, 2), 'DisplayName', 'pitch angle');
+            ylabel('angle')
+            xlabel('distance(m)')
+            legend
+            subplot(3, 1, 3)
+            plot(x_data, angle(:, 1), 'DisplayName', 'course');
+            xlabel('distance(m)')
+            ylabel('angle')
             legend
         end
 
@@ -113,11 +122,20 @@ classdef rrt_plot < rrt
             end
 
             if utils.in_cell(display_names, 'path_best')
-                utils.get_instance().locate_figure('path_best')
+                utils.get_instance().locate_figure('path_best', display.path_best.save_format)
                 this.show_map();
-                this.best_path = this.maps.to_normal_size(this.best_path);
-                plot3(this.best_path(:, 1), this.best_path(:, 2), this.best_path(:, 3), 'LineWidth', 2, 'Color', 'g');
-                view(2); axis equal; hold off;
+                bp = this.maps.to_normal_size(this.best_path);
+                plot3(bp(:, 1), bp(:, 2), bp(:, 3), 'LineWidth', 2, 'Color', 'g');
+                view(2); axis equal;
+                ylim([0 this.maps.Y(end)])
+                xlim([0 this.maps.X(end)])
+                title(display.path_best.title)
+
+                if this.maps.Y(end) > this.maps.X(end)
+                    view(-90, 90);
+                end
+
+                hold off;
             end
 
             if utils.in_cell(display_names, 'angle')
@@ -162,10 +180,12 @@ classdef rrt_plot < rrt
 
             % if ~utils.get_instance().locate_figure('main_map')
             this.maps.display_map(interval, normal_map); hold on
-            % this.plot_point(1).point = scatter3(this.start_point(1), this.start_point(2), this.start_point(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
-            % this.plot_point(2).point = scatter3(this.goal(1), this.goal(2), this.goal(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
-            % this.plot_point(1).text = text(this.start_point(1), this.start_point(2), this.start_point(3), '  start');
-            % this.plot_point(2).text = text(this.goal(1), this.goal(2), this.goal(3), '  goal');
+            s = this.maps.to_normal_size(this.start_point);
+            g = this.maps.to_normal_size(this.goal);
+            this.plot_point(1).point = scatter3(s(1), s(2), s(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
+            this.plot_point(2).point = scatter3(g(1), g(2), g(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
+            this.plot_point(1).text = text(s(1), s(2), s(3), '  start');
+            this.plot_point(2).text = text(g(1), g(2), g(3), '  goal');
             xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
             title('RRT算法');
             % end
