@@ -11,10 +11,16 @@ function varargout = rrt_func(varargin)
         problem = rrt_plot();
     end
 
-    if strcmp(args{1}, 'debug')
+    if utils.in_cell(args, 'init')
+        utils.get_instance().init();
+        problem.init();
+    end
 
-        if length(args) > 1
-            eval(['problem.', args{2}, ';']);
+    if utils.in_cell(args, 'debug')
+        ind = utils.in_cell(args, 'debug');
+
+        if length(args) > ind
+            eval(['problem.', args{ind + 1}, ';']);
         end
 
         return

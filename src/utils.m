@@ -250,17 +250,57 @@ classdef utils < handle
             hold on
         end
 
-        function assign_value(obj, properties)
-            property = fieldnames(properties);
+        function assign_value(obj, properties, property_name)
 
-            for k = 1:length(property)
-                obj.(property{k}) = properties.(property{k});
+            if ~isfield(properties, property_name)
+                return
+            end
+
+            property = fieldnames(properties.(property_name));
+
+            for i = 1:length(property)
+                obj.(property{i}) = properties.(property_name).(property{i});
             end
 
         end
 
-        function draw(obj, x, y_info)
+        function draw(obj, plot_info)
+            y_data = plot_info.y_data;
+            y_data_names = fieldnames(y_data);
 
+            for j = 1:length(y_data_names)
+
+                if isfield(plot_info, 'x_data') && ~yaml.isNull(plot_info.x_data)
+                    x = obj.(plot_info.x_data);
+
+                else
+                    x = 1:length(obj.(y_data_names{j}));
+                end
+
+                if isfield(obj, y_data_names{j})
+
+                    p = plot(x, obj.(y_data_names{j}));
+
+                    if ~yaml.isNull(y_data.(y_data_names{j}))
+                        utils.assign_value(p, y_data, y_data_names{j});
+                    end
+
+                end
+
+            end
+
+            if obj.(y_data_names{1})(end) > obj.(y_data_names{1})(1)
+                legend('Location', 'NorthWest');
+            else
+                legend();
+            end
+
+        end
+
+        function eval_execute(func, args)
+            arg = join(args, ',');
+            arg = arg{1};
+            eval([func, '(', arg, ')']);
         end
 
     end

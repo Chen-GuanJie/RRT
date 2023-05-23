@@ -33,8 +33,6 @@ classdef benchmark < handle
         function save_shaped_states(this, path)
             %save shaped_states in one file
             sample_table = table();
-            sample_table.time_stamp = this.time_stamp;
-            sample_table.iter_stamp = this.iter_stamp;
             col = fieldnames(this.shaped_states);
 
             for i = 1:length(col)
@@ -112,48 +110,23 @@ classdef benchmark < handle
                     continue
                 end
 
-                y_data = plot_info.y_data;
-                to_plot = fieldnames(y_data);
                 t = title(strrep(plot_name, '_', ' '));
                 xl = xlabel(plot_info.x_lable.txt);
                 yl = ylabel(plot_info.y_lable.txt);
-                utils.assign_value(t, plot_info.property);
-                utils.assign_value(xl, plot_info.x_lable.property);
-                utils.assign_value(yl, plot_info.y_lable.property);
+                utils.assign_value(t, plot_info, 'title_property');
+                utils.assign_value(xl, plot_info.x_lable, 'property');
+                utils.assign_value(yl, plot_info.y_lable, 'property');
+                utils.draw(this.shaped_states, plot_info);
 
-                for j = 1:length(to_plot)
+                if isfield(plot_info, 'eval')
+                    funcs = fieldnames(plot_info.eval);
 
-                    if isfield(plot_info, 'x_data') && ~yaml.isNull(plot_info.x_data)
-                        x = this.(plot_info.x_data);
-
-                    else
-                        x = 1:length(this.shaped_states.(to_plot{j}));
-                    end
-
-                    if isfield(this.shaped_states, to_plot{j})
-
-                        p = plot(x, this.shaped_states.(to_plot{j}));
-
-                        if ~yaml.isNull(y_data.(to_plot{j}))
-                            utils.assign_value(p, y_data.(to_plot{j}));
-
-                            % if isempty(utils.in_cell(line_property, 'DisplayName'))
-                            %     p.DisplayName = strrep(to_plot{j}, '_', ' ');
-                            % end
-
-                        end
-
+                    for index = 1:length(funcs)
+                        utils.eval_execute(funcs{index}, plot_info.eval.(funcs{index}));
                     end
 
                 end
 
-                if this.shaped_states.(to_plot{1})(end) > this.shaped_states.(to_plot{1})(1)
-                    legend('Location', 'NorthWest');
-                else
-                    legend();
-                end
-
-                hold off
             end
 
         end
@@ -196,6 +169,9 @@ classdef benchmark < handle
             end
 
             this.shaped_states = new_obj;
+            this.shaped_states.time_stamp = this.time_stamp;
+            this.shaped_states.iter_stamp = this.iter_stamp;
+
         end
 
         function start_benchmark(this, conf)

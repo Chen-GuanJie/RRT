@@ -115,7 +115,8 @@ classdef rrt < benchmark & tree
         function cost = calc_cost(this, from_node, dest_node, new_target_h)
             cost_dist = norm(from_node(1:2) - dest_node(1:2));
             cost_hight = this.height_cost_rate * sum(abs(diff(new_target_h)));
-            cost = sqrt(cost_dist ^ 2 + cost_hight ^ 2);
+            % cost = sqrt(cost_dist ^ 2 + cost_hight ^ 2);
+            cost = cost_dist + cost_hight;
         end
 
         function insert_node(this)

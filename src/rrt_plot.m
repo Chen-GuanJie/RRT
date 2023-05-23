@@ -74,7 +74,6 @@ classdef rrt_plot < rrt
             x_data = [0; x_data];
             x_data = cumsum(x_data);
             x_data = x_data * this.maps.map_scale;
-            path_num = length(bp(:, 1));
             subplot(3, 1, 1)
             bp(:, 1:5) = bp(:, 1:5) * this.maps.map_scale;
             plot(x_data, bp(end:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', 'aircraft altitude'); hold on
@@ -82,7 +81,7 @@ classdef rrt_plot < rrt
             ylabel('height(m)')
             xlabel('distance(m)')
             hold off
-            legend
+            legend('Location', 'best')
             subplot(3, 1, 2)
             n = length(this.best_path);
             angle = zeros(n - 1, 2);
@@ -98,12 +97,12 @@ classdef rrt_plot < rrt
             plot(x_data, angle(:, 2), 'DisplayName', 'pitch angle');
             ylabel('angle')
             xlabel('distance(m)')
-            legend
+            legend('Location', 'best')
             subplot(3, 1, 3)
             plot(x_data, angle(:, 1), 'DisplayName', 'course');
             xlabel('distance(m)')
             ylabel('angle')
-            legend
+            legend('Location', 'best')
         end
 
     end
@@ -118,6 +117,7 @@ classdef rrt_plot < rrt
             if utils.in_cell(display_names, 'cutaway')
                 utils.get_instance().locate_figure('cutaway', display.cutaway.save_format)
                 this.path_evaluate();
+                set(gcf, 'unit', 'centimeters', 'position', [3 5 10 10])
                 hold off;
             end
 
@@ -127,9 +127,11 @@ classdef rrt_plot < rrt
                 bp = this.maps.to_normal_size(this.best_path);
                 plot3(bp(:, 1), bp(:, 2), bp(:, 3), 'LineWidth', 2, 'Color', 'g');
                 view(2); axis equal;
-                ylim([0 this.maps.Y(end)])
-                xlim([0 this.maps.X(end)])
+                ylim([this.maps.Y(1) this.maps.Y(end)])
+                xlim([this.maps.X(1) this.maps.X(end)])
                 title(display.path_best.title)
+                d = this.maps.X_num / this.maps.Y_num;
+                set(gcf, 'unit', 'centimeters', 'position', [3 5 10 10 * d])
 
                 if this.maps.Y(end) > this.maps.X(end)
                     view(-90, 90);
@@ -159,8 +161,17 @@ classdef rrt_plot < rrt
                 for i = 1:length(display.search_tree.save_index)
                     ind = display.search_tree.save_index{i}(1);
                     utils.get_instance().locate_figure(['search tree ' num2str(ind)])
+                    this.show_map(5, false);
                     this.show_search_tree(this.states{ind, 1}.position, this.states{ind, 1}.parent)
-                    view(2); axis equal; hold off
+                    view(2);% axis equal;
+                    d = this.maps.X_num / this.maps.Y_num;
+                    set(gcf, 'unit', 'centimeters', 'position', [3 5 10.5 10.5 * d])
+
+                    if this.maps.Y(end) > this.maps.X(end)
+                        view(-90, 90);
+                    end
+
+                    hold off
                 end
 
             end
@@ -180,12 +191,19 @@ classdef rrt_plot < rrt
 
             % if ~utils.get_instance().locate_figure('main_map')
             this.maps.display_map(interval, normal_map); hold on
-            s = this.maps.to_normal_size(this.start_point);
-            g = this.maps.to_normal_size(this.goal);
+
+            if normal_map
+                s = this.maps.to_normal_size(this.start_point);
+                g = this.maps.to_normal_size(this.goal);
+            else
+                s = this.start_point;
+                g = this.goal;
+            end
+
             this.plot_point(1).point = scatter3(s(1), s(2), s(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
             this.plot_point(2).point = scatter3(g(1), g(2), g(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
-            this.plot_point(1).text = text(s(1), s(2), s(3), '  start');
-            this.plot_point(2).text = text(g(1), g(2), g(3), '  goal');
+            this.plot_point(1).text = text(s(1), s(2), s(3) + 500, '  start');
+            this.plot_point(2).text = text(g(1), g(2), g(3) + 500, '  goal');
             xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
             title('RRT算法');
             % end
@@ -202,7 +220,7 @@ classdef rrt_plot < rrt
             for i = 1:length(parent_data)
 
                 if parent_data(i) > 0
-                    this.display_line(position_data(parent_data(i), 1:3), position_data(i, 1:3), 1, 'b'); hold on
+                    this.display_line(position_data(parent_data(i), 1:3), position_data(i, 1:3), 0.5, 'b'); hold on
                 end
 
             end
