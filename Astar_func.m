@@ -1,24 +1,21 @@
-function [a, output] = Astar_func(a, ifdispaly)
-    %clc; close all;
+function Astar_func(varargin)
+    persistent problem;
     addpath(genpath(pwd));
+    args = varargin;
 
-    if exist('config_Astar.m', 'file')
-        run([pwd '/config_Astar.m']);
-    else
-        disp('ERROR: There is no configuration file!')
-        return
+    if nargin == 0
+        args = {'run'};
     end
 
-    if exist('a', 'var') && isa(a, 'Astar')
-        a.set_params(conf);
-    else
-        a = Astar(conf);
+    if ~isa(problem, 'Astar')
+        problem = Astar();
     end
 
-    if ifdispaly
-        output = a.start_Astar_plot(delay_time);
-    else
-        output = a.start_Astar();
+    if utils.in_cell(args, 'run')
+        close all;
+        utils.get_instance().init();
+        problem.init();
+        problem.start();
     end
 
 end

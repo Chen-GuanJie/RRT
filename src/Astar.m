@@ -1,6 +1,8 @@
 classdef Astar < handle
 
     properties (SetAccess = private)
+        config_manger
+        name = 'Astar'
         ind_mapping = 3
         ind_F = 4
         ind_G = 5
@@ -18,17 +20,16 @@ classdef Astar < handle
         G = zeros(1, 1)
         H = zeros(1, 1)
         maps %= map([0 0])
-        robot %= uav()
         dimension = 2
         neighbors = zeros(1, 3)
         grid_displace = zeros(1, 3)
-        start = zeros(1, 3)
+        start_point = zeros(1, 3)
         goal = zeros(1, 3)
+        max_ind = zeros(1, 3)
         node
         calc_G
         calc_H
         rate
-        height_limit = 500
     end
 
     methods (Static)
@@ -84,10 +85,10 @@ classdef Astar < handle
             n = m / 3;
             s = 1;
 
-            function add_value(this, start, num, i)
-                % this.grid_displace(start + 1:start + num, i) = 0;
-                this.grid_displace(start + num + 1:start + 2 * num, i) = 1;
-                this.grid_displace(start + 2 * num + 1:start + 3 * num, i) = -1;
+            function add_value(this, start_point, num, i)
+                % this.grid_displace(start_point + 1:start_point + num, i) = 0;
+                this.grid_displace(start_point + num + 1:start_point + 2 * num, i) = 1;
+                this.grid_displace(start_point + 2 * num + 1:start_point + 3 * num, i) = -1;
             end
 
             for i = 1:this.dimension
@@ -116,7 +117,7 @@ classdef Astar < handle
             this.neighbors(:, this.ind_mapping) = this.mapping(this.neighbors);
             %超出边界的删去
             for i = 1:this.dimension
-                ind = this.neighbors(:, i) <= 0 | this.neighbors(:, i) >= this.maps.max_ind(i);
+                ind = this.neighbors(:, i) <= 0 | this.neighbors(:, i) >= this.max_ind(i);
 
                 if max(abs(ind)) ~= 0
                     this.neighbors(ind, :) = [];
@@ -201,7 +202,7 @@ classdef Astar < handle
             end
 
             output = output(:, [1 2 8]);
-            output(ind, 3) = output(ind, 3) + this.height_limit / (this.maps.X(2) - this.maps.X(1));
+            output(ind, 3) = output(ind, 3) + this.maps.height_limit / (this.maps.X(2) - this.maps.X(1));
             output = flipud(output);
         end
 
@@ -209,22 +210,22 @@ classdef Astar < handle
 
     methods (Access = public)
 
-        function this = Astar(conf)
-            this.maps = map.get_instance(conf.dem_data);
-            % this.robot = uav(conf);
-            this.set_params(conf);
+        function this = Astar()
+            this.config_manger = configs.get_config(this.name);
+            this.maps = map.get_instance();
         end
 
         function set_start_end(this, s, g)
-            this.start = s(1, 1:this.dimension);
+            this.start_point = s(1, 1:this.dimension);
             this.goal = g(1, 1:this.dimension);
-            this.start(1, this.ind_evaluate) = this.maps.Z(this.start(1, 1), this.start(1, 2));
+            this.start_point(1, this.ind_evaluate) = this.maps.Z(this.start_point(1, 1), this.start_point(1, 2));
             this.goal(1, this.ind_evaluate) = this.maps.Z(this.goal(1, 1), this.goal(1, 2));
 
         end
 
-        function set_params(this, conf)
-            this.height_limit = conf.height_limit;
+        function init(this)
+            this.maps.init();
+            conf = this.config_manger.load();
             this.dimension = conf.dimension;
             this.ind_mapping = this.dimension + 1;
             this.ind_F = this.dimension + 2;
@@ -236,12 +237,13 @@ classdef Astar < handle
             this.init_para();
             this.max_neighbor_num = 3 ^ this.dimension - 1;
             this.rate = conf.rate;
-            this.start = conf.start(1, 1:this.dimension);
-            this.goal = conf.goal(1, 1:this.dimension);
-            this.start(1, this.ind_evaluate) = this.maps.Z(this.start(1, 1), this.start(1, 2));
+            this.start_point = this.maps.start_point(1, 1:this.dimension);
+            this.goal = this.maps.goal(1, 1:this.dimension);
+            this.start_point(1, this.ind_evaluate) = this.maps.Z(this.start_point(1, 1), this.start_point(1, 2));
             this.goal(1, this.ind_evaluate) = this.maps.Z(this.goal(1, 1), this.goal(1, 2));
             this.open_num = 2;
             this.node_num = 2;
+            this.max_ind = [this.maps.X_num, this.maps.Y_num, inf];
 
             if this.dimension == 2
                 this.calc_G = @this.calc_G_1;
@@ -255,15 +257,15 @@ classdef Astar < handle
 
         end
 
-        function output = start_Astar(this)
+        function output = start(this)
             flag = true;
             this.open = zeros(1, this.ind_evaluate);
             this.close_closed = zeros(1, this.ind_closed_neighbor_num);
             this.closed = zeros(1, this.ind_closed_neighbor_num);
             this.all_node = zeros(1, this.ind_evaluate);
-            this.start(1, this.ind_id:this.ind_parent) = [1 -1];
-            this.open(1, :) = this.start; %0 0 0 1 -1 0;
-            this.all_node(1, :) = this.start;
+            this.start_point(1, this.ind_id:this.ind_parent) = [1 -1];
+            this.open(1, :) = this.start_point; %0 0 0 1 -1 0;
+            this.all_node(1, :) = this.start_point;
             % figure(1);
             % meshz(1:this.maps.X_num, 1:this.maps.Y_num, this.maps.Z'); hold on
             tic

@@ -78,11 +78,12 @@ classdef rrt_plot < rrt
             bp(:, 1:5) = bp(:, 1:5) * this.maps.map_scale;
             plot(x_data, bp(end:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', 'aircraft altitude'); hold on
             plot(x_data, bp(end:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', 'topographic height');
-            ylabel('height(m)')
-            xlabel('distance(m)')
+            ylabel('height(m)');
+            xlabel('distance(m)');
+            xlim([x_data(1) x_data(end)]);
             hold off
-            legend('Location', 'best')
-            subplot(3, 1, 2)
+            legend('Location', 'best');
+            subplot(3, 1, 2);
             n = length(this.best_path);
             angle = zeros(n - 1, 2);
 
@@ -94,14 +95,18 @@ classdef rrt_plot < rrt
 
             angle = angle .* 180 ./ pi;
             angle = [angle(1, :); angle];
+            angle = diff(angle);
+            angle = [angle(1, :); angle];
             plot(x_data, angle(:, 2), 'DisplayName', 'pitch angle');
-            ylabel('angle')
-            xlabel('distance(m)')
+            ylabel('angle');
+            xlabel('distance(m)');
+            xlim([x_data(1) x_data(end)]);
             legend('Location', 'best')
             subplot(3, 1, 3)
             plot(x_data, angle(:, 1), 'DisplayName', 'course');
-            xlabel('distance(m)')
-            ylabel('angle')
+            xlabel('distance(m)');
+            ylabel('angle');
+            xlim([x_data(1) x_data(end)]);
             legend('Location', 'best')
         end
 
@@ -123,13 +128,21 @@ classdef rrt_plot < rrt
 
             if utils.in_cell(display_names, 'path_best')
                 utils.get_instance().locate_figure('path_best', display.path_best.save_format)
-                this.show_map();
-                bp = this.maps.to_normal_size(this.best_path);
-                plot3(bp(:, 1), bp(:, 2), bp(:, 3), 'LineWidth', 2, 'Color', 'g');
+                this.show_map(display.path_best.map_interval, display.path_best.normal_map);
+
+                if display.path_best.normal_map
+                    bp = this.maps.to_normal_size(this.best_path);
+                    y_lim = [this.maps.Y(1) this.maps.Y(end)];
+                    x_lim = [this.maps.X(1) this.maps.X(end)];
+                else
+                    bp = this.best_path;
+                    y_lim = [1 this.maps.Y_num];
+                    x_lim = [1 this.maps.X_num];
+                end
+
+                plot3(bp(:, 1), bp(:, 2), bp(:, 3), 'LineWidth', 1, 'Color', 'red');
                 view(2); axis equal;
-                ylim([this.maps.Y(1) this.maps.Y(end)])
-                xlim([this.maps.X(1) this.maps.X(end)])
-                title(display.path_best.title)
+                ylim(y_lim); xlim(x_lim);
                 d = this.maps.X_num / this.maps.Y_num;
                 set(gcf, 'unit', 'centimeters', 'position', [3 5 10 10 * d])
 
@@ -160,12 +173,27 @@ classdef rrt_plot < rrt
 
                 for i = 1:length(display.search_tree.save_index)
                     ind = display.search_tree.save_index{i}(1);
-                    utils.get_instance().locate_figure(['search tree ' num2str(ind)])
-                    this.show_map(5, false);
-                    this.show_search_tree(this.states{ind, 1}.position, this.states{ind, 1}.parent)
-                    view(2);% axis equal;
+                    utils.get_instance().locate_figure(['search tree ' num2str(ind)], display.search_tree.save_format)
+                    this.show_map(display.search_tree.map_interval, display.search_tree.normal_map);
+
+                    if display.search_tree.normal_map
+                        this.show_search_tree( ...
+                            this.maps.to_normal_size(this.states{ind, 1}.position), ...
+                            this.states{ind, 1}.parent);
+                        y_lim = [this.maps.Y(1) this.maps.Y(end)];
+                        x_lim = [this.maps.X(1) this.maps.X(end)];
+
+                    else
+                        this.show_search_tree(this.states{ind, 1}.position, this.states{ind, 1}.parent);
+                        y_lim = [1 this.maps.Y_num];
+                        x_lim = [1 this.maps.X_num];
+
+                    end
+
+                    view(2); axis equal;
+                    ylim(y_lim); xlim(x_lim);
                     d = this.maps.X_num / this.maps.Y_num;
-                    set(gcf, 'unit', 'centimeters', 'position', [3 5 10.5 10.5 * d])
+                    set(gcf, 'unit', 'centimeters', 'position', [3 5 20.5 20.5 * d]);
 
                     if this.maps.Y(end) > this.maps.X(end)
                         view(-90, 90);

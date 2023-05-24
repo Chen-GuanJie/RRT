@@ -364,7 +364,7 @@ classdef rrt < benchmark & tree
                 r = sqrt(this.search_area * this.search_area_rate / this.node_num / pi);
                 this.robot.update_step(r / this.neighbor_range_rate);
                 this.threshold_close = (this.robot.get_threshold(this.threshold_close_rate)) ^ 2;
-                this.threshold_goal = (this.robot.get_threshold(this.threshold_goal_rate)) ^ 2;
+                this.threshold_goal = this.robot.get_threshold(this.threshold_goal_rate);
                 this.neighbor_dist = this.robot.get_threshold(this.neighbor_range_rate) ^ 2;
             end
 

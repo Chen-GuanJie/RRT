@@ -193,7 +193,7 @@ classdef uav < handle
         end
 
         function target_h = just_follow(this, target_h, delta_dist)
-            max_delta = this.max_delta_h * delta_dist;
+            max_delta = this.max_delta_h * delta_dist / length(target_h);
             tmp = diff(target_h);
             index = find(abs(tmp) > max_delta);
 
