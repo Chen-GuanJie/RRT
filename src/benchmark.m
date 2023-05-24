@@ -110,10 +110,10 @@ classdef benchmark < handle
                     continue
                 end
 
-                t = title(strrep(plot_name, '_', ' '));
+                % t = title(strrep(plot_name, '_', ' '));
                 xl = xlabel(plot_info.x_lable.txt);
                 yl = ylabel(plot_info.y_lable.txt);
-                utils.assign_value(t, plot_info, 'title_property');
+                % utils.assign_value(t, plot_info, 'title_property');
                 utils.assign_value(xl, plot_info.x_lable, 'property');
                 utils.assign_value(yl, plot_info.y_lable, 'property');
                 utils.draw(this.shaped_states, plot_info);
@@ -228,6 +228,11 @@ classdef benchmark < handle
         function assert_interest(this)
             props = properties(this);
             no_prop = false(length(this.interest), 1);
+
+            if yaml.isNull(this.interest)
+                this.interest = [];
+                return
+            end
 
             for i = 1:length(this.interest)
 

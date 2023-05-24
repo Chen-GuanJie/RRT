@@ -1,4 +1,4 @@
-function Astar_func(varargin)
+function output = Astar_func(varargin)
     persistent problem;
     addpath(genpath(pwd));
     args = varargin;
@@ -11,11 +11,16 @@ function Astar_func(varargin)
         problem = Astar();
     end
 
-    if utils.in_cell(args, 'run')
+    if utils.in_cell(args, 'clear')
+        utils.clear_all();
+        problem = [];
+        return
+
+    elseif utils.in_cell(args, 'run')
         close all;
         utils.get_instance().init();
         problem.init();
-        problem.start();
+        output = problem.start();
     end
 
 end

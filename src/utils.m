@@ -289,6 +289,10 @@ classdef utils < handle
 
             end
 
+            if j == 1
+                return
+            end
+
             if obj.(y_data_names{1})(end) > obj.(y_data_names{1})(1)
                 legend('Location', 'NorthWest');
             else

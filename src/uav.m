@@ -196,19 +196,16 @@ classdef uav < handle
             max_delta = this.max_delta_h * delta_dist / length(target_h);
             tmp = diff(target_h);
             index = find(abs(tmp) > max_delta);
+            n = 0;
 
-            if length (index) > 2
+            while (~isempty(index))
+                target_h = smooth(target_h)';
+                n = n + 1;
+                tmp = diff(target_h);
+                index = find(abs(tmp) > max_delta);
 
-                while (~isempty(index))
-                    old = target_h;
-                    target_h = smooth(target_h, 3);
-
-                    if (length(old) == length(target_h) && all(old == target_h)) || length(target_h) == 2
-                        break;
-                    end
-
-                    tmp = diff(target_h);
-                    index = find(abs(tmp) > max_delta);
+                if n > 3
+                    break
                 end
 
             end

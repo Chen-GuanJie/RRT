@@ -74,8 +74,8 @@ classdef rrt_plot < rrt
             x_data = [0; x_data];
             x_data = cumsum(x_data);
             x_data = x_data * this.maps.map_scale;
-            subplot(3, 1, 1)
             bp(:, 1:5) = bp(:, 1:5) * this.maps.map_scale;
+            subplot(2, 1, 1)
             plot(x_data, bp(end:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', 'aircraft altitude'); hold on
             plot(x_data, bp(end:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', 'topographic height');
             ylabel('height(m)');
@@ -83,7 +83,22 @@ classdef rrt_plot < rrt
             xlim([x_data(1) x_data(end)]);
             hold off
             legend('Location', 'best');
-            subplot(3, 1, 2);
+            subplot(2, 1, 2)
+            plot(x_data, bp(end:-1:1, 5), 'LineWidth', 1.5, 'color', 'b'); %,'DisplayName', 'Ground Clearance');
+            xlabel('height(m)');
+            ylabel('Ground Clearance(m)');
+            xlim([x_data(1) x_data(end)]);
+            % legend('Location', 'best');
+        end
+
+        function draw_angle(this)
+            x_data = diff(this.best_path);
+            x_data = sqrt(x_data(:, 1) .^ 2 + x_data(:, 2) .^ 2);
+            x_data = [0; x_data];
+            x_data = cumsum(x_data);
+            x_data = x_data * this.maps.map_scale;
+
+            subplot(2, 1, 1);
             n = length(this.best_path);
             angle = zeros(n - 1, 2);
 
@@ -97,17 +112,17 @@ classdef rrt_plot < rrt
             angle = [angle(1, :); angle];
             angle = diff(angle);
             angle = [angle(1, :); angle];
-            plot(x_data, angle(:, 2), 'DisplayName', 'pitch angle');
-            ylabel('angle');
+            plot(x_data, angle(:, 2)); %,'DisplayName', 'pitch angle');
+            ylabel('pitch angle');
             xlabel('distance(m)');
             xlim([x_data(1) x_data(end)]);
-            legend('Location', 'best')
-            subplot(3, 1, 3)
-            plot(x_data, angle(:, 1), 'DisplayName', 'course');
+            % legend('Location', 'best')
+            subplot(2, 1, 2)
+            plot(x_data, angle(:, 1)); %,'DisplayName', 'course');
             xlabel('distance(m)');
-            ylabel('angle');
+            ylabel('yaw angle');
             xlim([x_data(1) x_data(end)]);
-            legend('Location', 'best')
+            % legend('Location', 'best')
         end
 
     end
@@ -122,7 +137,7 @@ classdef rrt_plot < rrt
             if utils.in_cell(display_names, 'cutaway')
                 utils.get_instance().locate_figure('cutaway', display.cutaway.save_format)
                 this.path_evaluate();
-                set(gcf, 'unit', 'centimeters', 'position', [3 5 10 10])
+                set(gcf, 'unit', 'centimeters', 'position', [3 5 17 8])
                 hold off;
             end
 
@@ -144,7 +159,7 @@ classdef rrt_plot < rrt
                 view(2); axis equal;
                 ylim(y_lim); xlim(x_lim);
                 d = this.maps.X_num / this.maps.Y_num;
-                set(gcf, 'unit', 'centimeters', 'position', [3 5 10 10 * d])
+                set(gcf, 'unit', 'centimeters', 'position', [3 5 11 12 * d])
 
                 if this.maps.Y(end) > this.maps.X(end)
                     view(-90, 90);
@@ -155,18 +170,8 @@ classdef rrt_plot < rrt
 
             if utils.in_cell(display_names, 'angle')
                 utils.get_instance().locate_figure('angle', display.angle.save_format)
-                n = length(this.best_path);
-                angle = zeros(n - 1, 2);
-
-                for i = n:-1:2
-                    v = this.best_path(i - 1, 1:2) - this.best_path(i, 1:2);
-                    angle(n - i + 1, 1) = atan2(v(2), v(1));
-                    angle(n - i + 1, 2) = atan2((this.best_path(i - 1, 3) - this.best_path(i, 3)), norm(v));
-                end
-
-                plot(angle(:, 1), 'DisplayName', 'course'); hold on
-                plot(angle(:, 2), 'DisplayName', 'pitch');
-                legend
+                this.draw_angle();
+                set(gcf, 'unit', 'centimeters', 'position', [3 5 17 8])
             end
 
             if utils.in_cell(display_names, 'search_tree')
@@ -228,12 +233,12 @@ classdef rrt_plot < rrt
                 g = this.goal;
             end
 
-            this.plot_point(1).point = scatter3(s(1), s(2), s(3), 80, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
-            this.plot_point(2).point = scatter3(g(1), g(2), g(3), 80, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
+            this.plot_point(1).point = scatter3(s(1), s(2), s(3), 35, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
+            this.plot_point(2).point = scatter3(g(1), g(2), g(3), 35, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
             this.plot_point(1).text = text(s(1), s(2), s(3) + 500, '  start');
             this.plot_point(2).text = text(g(1), g(2), g(3) + 500, '  goal');
-            xlabel('x(m)'); ylabel('y(m)'); zlabel('z(m)');
-            title('RRT算法');
+            ylabel('x(m)'); xlabel('y(m)'); zlabel('z(m)');
+            % title('RRT算法');
             % end
 
         end
