@@ -1,0 +1,30 @@
+compare:
+  - name: ""
+    Color: red
+    LineStyle: --
+    LineWidth: 2
+path: output/
+save_path: output/
+display:
+  compare_node_num:
+    title_property:
+      FontSize: 10
+      FontName: bold
+    save_format: "svg"
+    x_lable:
+      txt: time(s)
+      property:
+        FontSize: 10
+        FontName: bold
+    y_lable:
+      txt: num
+      property:
+        FontSize: 10
+        FontName: bold
+    x_data: time_stamp
+    y_data:
+      node_num:
+        DisplayName:
+    eval:
+      set: gcf,'unit','centimeters','position',[3 5 13 8]
+      legend: "'Location','best'"
