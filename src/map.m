@@ -26,8 +26,14 @@ classdef map < handle
 
     methods (Access = private)
 
-        function this = map()
-            this.config_manger = configs.get_config(this.name);
+        function this = map(config_dir)
+
+            if nargin == 2
+                this.config_manger = configs.get_config([this.name, '_', config_dir]);
+            else
+                this.config_manger = configs.get_config(this.name);
+            end
+
         end
 
         function save_built_map(this, X, Y, Z)
@@ -141,13 +147,16 @@ classdef map < handle
 
     methods (Access = public)
 
+        function get_new_config(this, config_dir)
+            this.config_manger = configs.get_config([this.name, '_', config_dir]);
+        end
+
         function init(this)
             this.rand_id = rand;
             conf = this.config_manger.load(this.rand_id);
             this.start_point = cell2mat(conf.start_point);
             this.goal = cell2mat(conf.goal);
             conf.map_name = char(conf.map_name);
-
             if ~strcmp(this.map_name, conf.map_name) || ~this.validate_map()
                 this.map_name = conf.map_name;
                 n = [this.map_path, this.map_name];

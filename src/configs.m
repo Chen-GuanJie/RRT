@@ -40,14 +40,21 @@ classdef configs < handle
         end
 
         function save(this, path)
-            yaml.dumpFile([path,this.name, '_config.yaml'], this.data)
+            yaml.dumpFile([path, this.name, '_config.yaml'], this.data)
         end
 
     end
 
     methods (Access = private)
 
-        function this = configs(name)
+        function this = configs(name_dir)
+            name_dir = strsplit(name_dir, '_');
+            name = name_dir{1};
+
+            if length(name_dir) > 1
+                this.config_dir = [name_dir{2}, '/'];
+            end
+
             this.config_file = [this.config_dir, name, '.yaml'];
             utils.checkdir(this.config_dir);
 

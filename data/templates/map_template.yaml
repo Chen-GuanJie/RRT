@@ -1,17 +1,17 @@
 map_path: ./data/map/
-map_name: ""
+map_name: "map1"
 save_built_map: "mat"
 height_limit: 500
 start_point:
-  - 0
-  - 0
+  - 264
+  - 45
   - 0
   - 0
   - 0
   - 0
 goal:
-  - 0
-  - 0
+  - 45
+  - 464
   - 0
   - 0
   - 0

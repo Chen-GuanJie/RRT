@@ -82,8 +82,8 @@ classdef benchmark < handle
                     sample_table = table();
 
                     for j = 1:length(gather_index)
-                        sample_table.(fn1{j}) = s.(fn1{j});
-                        table_name = [table_name, '-', fn1{j}];
+                        sample_table.(fn1{gather_index(j)}) = s.(fn1{gather_index(j)});
+                        table_name = [table_name, '-', fn1{gather_index(j)}];
                     end
 
                     table_name(1) = [];

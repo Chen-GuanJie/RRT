@@ -44,6 +44,7 @@ classdef rrt < benchmark & tree
         compare_all = zeros(1, 2, 'single')
         compare_near = zeros(1, 1, 'single')
         is_delete = false;
+        repeat_times = 1;
     end
 
     methods (Access = public)
@@ -65,7 +66,6 @@ classdef rrt < benchmark & tree
             else
 
                 if rand < this.rand_num
-
                     sample = rand(1, 2) .* this.search_size(1, 1:2) + this.search_base(1, 1:2);
                 else
                     sample = this.goal(1, 1:2);
@@ -315,6 +315,7 @@ classdef rrt < benchmark & tree
             path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
             if mini_path_len > path_len
+                this.best_path = path;
                 mini_path_len = path_len;
                 this.prepare_informed(path_len);
             end
@@ -407,13 +408,22 @@ classdef rrt < benchmark & tree
                     this.delete_unuesd_node();
                 end
 
-                this.update_step();
+                if this.search_area_rate > 0
+                    this.update_step();
+                end
+
             end
 
             toc(t)
             [cost, path] = this.find_best_path();
             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f\n', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
             this.best_path = this.follow_ground(path);
+        end
+
+        function get_new_config(this, config_dir)
+            this.config_manger = configs.get_config([this.name, '_', config_dir]);
+            this.maps.get_new_config(config_dir);
+            this.robot.get_new_config(config_dir);
         end
 
         function init(this)
@@ -453,6 +463,17 @@ classdef rrt < benchmark & tree
             this.threshold_goal_rate = conf.threshold_goal;
             this.neighbor_range_rate = conf.neighbor_range;
             this.search_area_rate = conf.search_area_rate;
+
+            if isfield(conf, 'repeat_times')
+                this.repeat_times = conf.repeat_times;
+            else
+                this.repeat_times = 1;
+            end
+
+        end
+
+        function output = get_repeat_times(this)
+            output = this.repeat_times;
         end
 
         function save_all(this, annotation)

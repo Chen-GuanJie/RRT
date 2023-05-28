@@ -11,6 +11,15 @@ function varargout = rrt_func(varargin)
         problem = rrt_plot();
     end
 
+    if utils.in_cell(args, 'config')
+        ind = utils.in_cell(args, 'config');
+
+        if length(args) > ind
+            problem.get_new_config(args{ind + 1});
+        end
+
+    end
+
     if utils.in_cell(args, 'init')
         utils.get_instance().init();
         problem.init();
@@ -19,7 +28,9 @@ function varargout = rrt_func(varargin)
     if utils.in_cell(args, 'debug')
         ind = utils.in_cell(args, 'debug');
 
-        if length(args) > ind
+        if length(args) > ind + 1
+            varargout{1} = eval(['problem.', args{ind + 1}, ';']);
+        elseif length(args) > ind
             eval(['problem.', args{ind + 1}, ';']);
         end
 

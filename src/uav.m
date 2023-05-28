@@ -64,6 +64,10 @@ classdef uav < handle
 
         end
 
+        function get_new_config(this, config_dir)
+            this.config_manger = configs.get_config([this.name, '_', config_dir]);
+        end
+
         function init(this)
             conf = this.config_manger.load();
             this.transfer_tactics = conf.transfer_tactics;

@@ -1,6 +1,6 @@
 transfer_tactics: direct #
 direct:
-  direct_step: 8
+  direct_step: 6
 kinetic:
   deltaT: 50
   g: 9.8
@@ -8,7 +8,7 @@ kinetic:
   acc: 0
   GammaMax:
   GammaMin:
-  pitchMax:
+  pitchMax: 0.4363
   pitchMin:
   GammaStep:
   pitchstep:

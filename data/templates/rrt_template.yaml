@@ -1,21 +1,23 @@
 name: "rrt template"
-threshold_close: 0.2
-threshold_goal: 0.4
+repeat_times: 1
+threshold_close: 0.1
+threshold_goal: 1
 rand_num: 0.5
-height_cost_rate: 6
+height_cost_rate: 4
 neighbor_range: 2
 search_area_rate: 20
 delete_node:
-  max_nodes: 3000
+  max_nodes: 15000
   is_delete: false
-  rand_delete: 0.6
+  rand_delete: 0.7
 benchmark:
   is_benchmark: true
   is_time_step: true
   benchmark_record_step: 0.5
-  max_iter: 7
+  max_iter: 10
   save_output: true
   interest:
+    - best_path
     - position
     - parent
     - cost_to_parent
@@ -96,7 +98,8 @@ display:
     save_format: "fig jpg svg"
   path_best:
     save_format: "fig jpg svg"
-    title: "best path"
+    map_interval: 5
+    normal_map: true
   step_length:
     title_property:
       FontSize: 10
@@ -123,9 +126,13 @@ display:
       set: gcf,'unit','centimeters','position',[3 5 8.5 4.2]
   # search_tree:
   #   save_format: "fig jpg svg"
+  #   map_interval: 5
+  #   normal_map: true
   #   data: position
   #   save_index:
   #     - 4
   #     - 8
   # angle:
   #   save_format: "fig jpg"
+  angle:
+    save_format: "fig jpg svg"
