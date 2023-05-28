@@ -45,6 +45,8 @@ classdef rrt < benchmark & tree
         compare_near = zeros(1, 1, 'single')
         is_delete = false;
         repeat_times = 1;
+        use_informed = true;
+        start
     end
 
     methods (Access = public)
@@ -96,7 +98,7 @@ classdef rrt < benchmark & tree
             this.compare_near = zeros(this.near_nodes.num, 1);
         end
 
-        function node = get_closest(this, sample)
+        function [node, index] = get_closest(this, sample)
             this.compare_all = this.position(1:this.node_num, 1:2) - sample(1:2);
             [~, index] = min(sum(this.compare_all(:, 1:2) .^ 2, 2));
             node = this.position(index, :);
@@ -317,7 +319,11 @@ classdef rrt < benchmark & tree
             if mini_path_len > path_len
                 this.best_path = path;
                 mini_path_len = path_len;
-                this.prepare_informed(path_len);
+
+                if this.use_informed
+                    this.prepare_informed(path_len);
+                end
+
             end
 
         end
@@ -375,14 +381,88 @@ classdef rrt < benchmark & tree
 
     methods (Access = public)
 
-        function start(this)
+        function start_rrt(this)
             mini_path_len = inf;
             t = tic;
 
             while this.record(toc(t), this.num_iter)
                 this.num_iter = this.num_iter + 1;
                 sample = this.get_sample();
-                closest_node = this.get_closest(sample);
+                [closest_node, parent_id] = this.get_closest(sample);
+                this.new_node.position(1, :) = this.robot.transfer(sample, closest_node);
+                this.new_node.id_parent = parent_id;
+
+                if this.new_node.id_parent > 0
+                    this.insert_node();
+                else
+                    this.num_no_parent = this.num_no_parent + 1;
+                end
+
+                if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
+                    this.find_path(mini_path_len);
+                    break;
+                end
+
+            end
+
+            toc(t)
+            [~, path] = this.find_best_path();
+            this.best_path = this.follow_ground(path);
+        end
+
+        function start_direct(this)
+            mini_path_len = inf;
+            t = tic;
+
+            while this.record(toc(t), this.num_iter)
+                this.num_iter = this.num_iter + 1;
+                sample = this.get_sample();
+                [closest_node, ~] = this.get_closest(sample);
+                this.new_node.position(1, :) = this.robot.transfer(sample, closest_node);
+
+                if this.neighbors()
+                    continue
+                end
+
+                this.num_neighbor = this.num_neighbor + this.near_nodes.num;
+                this.choose_parent();
+
+                if this.new_node.id_parent > 0
+                    this.insert_node();
+                    this.rewire();
+
+                else
+                    this.num_no_parent = this.num_no_parent + 1;
+                end
+
+                if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
+                    [mini_path_len, ~] = this.find_path(mini_path_len);
+                end
+
+                if this.is_delete && this.node_num > this.max_nodes
+                    this.delete_unuesd_node();
+                end
+
+                if this.search_area_rate > 0
+                    this.update_step();
+                end
+
+            end
+
+            toc(t)
+            [cost, path] = this.find_best_path();
+            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f\n', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
+            this.best_path = this.follow_ground(path);
+        end
+
+        function start_kinetic(this)
+            mini_path_len = inf;
+            t = tic;
+
+            while this.record(toc(t), this.num_iter)
+                this.num_iter = this.num_iter + 1;
+                sample = this.get_sample();
+                [closest_node, ~] = this.get_closest(sample);
                 this.new_node.position(1, :) = this.robot.transfer(sample, closest_node);
 
                 if this.neighbors()
@@ -463,6 +543,7 @@ classdef rrt < benchmark & tree
             this.threshold_goal_rate = conf.threshold_goal;
             this.neighbor_range_rate = conf.neighbor_range;
             this.search_area_rate = conf.search_area_rate;
+            this. use_informed = conf.use_informed;
 
             if isfield(conf, 'repeat_times')
                 this.repeat_times = conf.repeat_times;

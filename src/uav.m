@@ -22,6 +22,7 @@ classdef uav < handle
         GammaMin = 0 %滚转角最小
         GammaStep = 0 %滚转角最大步长
         v %恒速度
+        gamma_steed = 0
         deltaT = 0 %每步长飞行时间
         g = 9.8 %重力加速度
 
@@ -164,6 +165,18 @@ classdef uav < handle
             phi1 = atan2(movingVec(2), movingVec(1));
             phi = from(4);
             deltaPhi = 2 * this.limit2pi(phi1 - phi);
+        end
+
+        function output = forward_reachable(this, node, neighbor)
+            movingVec = neighbor(1:2) - node(1:2);
+            phi1 = atan2(movingVec(2), movingVec(1));
+            phi = from(4);
+            deltaPhi = this.limit2pi(phi1 - phi);
+            gamma_steed
+        end
+
+        function output = backword_reachable(this, node, neighbor)
+
         end
 
         function newNode = transfer_kinetic(this, sample, closest_node)

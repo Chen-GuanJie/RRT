@@ -301,7 +301,7 @@ classdef rrt_plot < rrt
             while this.record(toc(t), this.num_iter)
                 this.num_iter = this.num_iter + 1;
                 sample = this.get_sample();
-                closest_node = this.get_closest(sample);
+                [closest_node, ~] = this.get_closest(sample);
                 this.new_node.position(1, :) = this.robot.transfer(sample, closest_node);
 
                 if this.neighbors()

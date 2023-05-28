@@ -1,4 +1,5 @@
 name: "rrt template"
+use_informed: true
 repeat_times: 1
 threshold_close: 0.1
 threshold_goal: 1
