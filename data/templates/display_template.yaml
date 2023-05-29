@@ -1,0 +1,105 @@
+iteration_info:
+  title_property:
+    FontSize: 10
+    FontName: bold
+    # Color: "magenta"
+  save_format: "fig jpg svg"
+  x_data: "time_stamp"
+  x_lable:
+    txt: "time(s)"
+    property:
+      FontSize: 10
+      FontName: bold
+  y_lable:
+    txt: num
+    property:
+      FontSize: 10
+      FontName: bold
+  y_data:
+    # num_close:
+    #   Color: black
+    #   LineWidth: 2
+    #   DisplayName: "too close"
+    node_num:
+      Color: red
+      LineStyle: "--"
+      LineWidth: 1
+      DisplayName: "node num"
+    num_iter:
+      Color: blue
+      LineStyle: ":"
+      LineWidth: 2
+      DisplayName: "iterations"
+    num_rewire:
+      Color: green
+      LineStyle: "-."
+      LineWidth: 1.5
+      DisplayName: "rewire num"
+  eval:
+    daspect: "[1 5000 1]"
+    set: gcf,'unit','centimeters','position',[3 5 8.5 4.2]
+    legend: "'Location','best'"
+minimun_path_cost:
+  title_property:
+    FontSize: 10
+    FontName: bold
+  save_format: "fig jpg svg"
+  x_data: "time_stamp"
+  x_lable:
+    txt: "time(s)"
+    property:
+      FontSize: 10
+      FontName: bold
+  y_lable:
+    txt: cost
+    property:
+      FontSize: 10
+      FontName: bold
+  y_data:
+    mini_cost:
+      DisplayName: "cost"
+      LineWidth: 2
+      Marker: "*"
+  eval:
+    set: gcf,'unit','centimeters','position',[3 5 8.5 4.2]
+cutaway:
+  save_format: "fig jpg svg"
+path_best:
+  save_format: "fig jpg svg"
+  map_interval: 5
+  normal_map: true
+step_length:
+  title_property:
+    FontSize: 10
+    FontName: bold
+  save_format: "fig jpg svg"
+  x_data: "time_stamp"
+  x_lable:
+    txt: "time(s)"
+    property:
+      FontSize: 10
+      FontName: bold
+  y_lable:
+    txt: num
+    property:
+      FontSize: 10
+      FontName: bold
+  y_data:
+    direct_step:
+      Color: black
+      LineWidth: 2
+      DisplayName: "step"
+  eval:
+    daspect: "[1 0.6 1]"
+    set: gcf,'unit','centimeters','position',[3 5 8.5 4.2]
+# search_tree:
+#   save_format: "fig svg"
+#   map_interval: 5
+#   normal_map: true
+#   data: position
+#   save_index:
+#     - 2
+#     - 6
+#     - 10
+angle:
+  save_format: "fig jpg svg"

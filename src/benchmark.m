@@ -1,6 +1,8 @@
 classdef benchmark < handle
 
     properties (SetAccess = private)
+        name_benchmark = 'benchmark'
+        config_manger_benchmark
         interest
         is_benchmark = false
         states
@@ -99,7 +101,7 @@ classdef benchmark < handle
     methods (Access = public)
 
         function show_result(this)
-            display = this.config_manger.load(this.rand_id).display;
+            display = this.config_manger_rrtplot.load(this.rand_id);
             fn = fieldnames(display);
 
             for i = 1:length(fn)
@@ -174,7 +176,12 @@ classdef benchmark < handle
 
         end
 
-        function start_benchmark(this, conf)
+        function this = benchmark()
+            this.config_manger_benchmark = configs.get_config(this.name_benchmark);    
+        end
+
+        function start_benchmark(this)
+            conf = this.config_manger_benchmark.load();
             this.is_benchmark = conf.is_benchmark;
 
             if this.is_benchmark
@@ -247,23 +254,23 @@ classdef benchmark < handle
         end
 
         function path = save_all(this, annotation)
-            conf = this.config_manger.load(this.rand_id);
+            conf = this.config_manger_benchmark.load(this.rand_id);
 
-            if conf.is_save
 
                 if nargin == 1
-                    path = [this.config_manger.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM'), '/'];
+                    path = [this.config_manger_benchmark.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM'), '/'];
                 elseif nargin == 2 && ~isempty(annotation)
-                    path = [this.config_manger.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM '), annotation, '/'];
+                    path = [this.config_manger_benchmark.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM '), annotation, '/'];
                 end
 
                 utils.checkdir(path, true);
                 disp(['files saved at ', path]);
                 utils.get_instance().save_figures(path);
                 this.config_manger.save(path);
+                this.config_manger_classify.save(path);
                 this.save_shaped_states(path);
                 this.save_other_states(path, conf.only_save_last);
-            end
+            
 
         end
 

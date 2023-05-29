@@ -1,0 +1,20 @@
+is_benchmark: true
+is_time_step: true
+benchmark_record_step: 0.5
+max_iter: 10
+save_output: true
+interest:
+  - best_path
+  - position
+  - parent
+  - cost_to_parent
+  - node_num
+  - num_iter
+  - num_close
+  - num_goal
+  - num_no_parent
+  - num_rewire
+  - num_neighbor
+  - on_path
+  - dying
+  - dead

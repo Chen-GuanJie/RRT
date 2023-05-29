@@ -1,10 +1,12 @@
-classdef rrt_plot < rrt
+classdef rrt_plot < classify
 
     properties (SetAccess = private)
+        name_rrtplot = 'display'
         plot_point = []
         path_plot
         replot = []
         edges = []
+        config_manger_rrtplot
     end
 
     methods (Static)
@@ -130,7 +132,7 @@ classdef rrt_plot < rrt
     methods (Access = public)
 
         function show_result(this)
-            display = this.config_manger.load(this.rand_id).display;
+            display = this.config_manger_rrtplot.load(this.rand_id);
             show_result@benchmark(this);
             display_names = fieldnames(display);
 
@@ -273,15 +275,22 @@ classdef rrt_plot < rrt
             end
 
             this.replot = [];
-            init@rrt(this);
+
+            init@classify(this);
+        end
+
+        function get_new_config(this, config_dir)
+            this.config_manger_rrtplot = configs.get_config([this.name_rrtplot, '_', config_dir]);
+            get_new_config@classify(this)
         end
 
         function this = rrt_plot()
-            this = this@rrt();
+            this = this@classify();
+            this.config_manger_rrtplot = configs.get_config(this.name_rrtplot);
         end
 
         function set_start_end(this, s, g)
-            set_start_end@rrt(s, g);
+            set_start_end@classify(s, g);
             figure(1)
             delete(this.plot_point(1).point);
             delete(this.plot_point(2).point);
@@ -294,7 +303,7 @@ classdef rrt_plot < rrt
         end
 
         function start_rtdisplay(this, delay_time)
-            mini_path_len = inf;
+            this.mini_path_len = inf;
             this.show_map();
             t = tic;
 
@@ -321,7 +330,7 @@ classdef rrt_plot < rrt
                 end
 
                 if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
-                    [mini_path_len, path] = this.find_path(mini_path_len);
+                    path = this.find_path();
 
                     if ~isempty(this.path_plot)
                         delete(this.path_plot);

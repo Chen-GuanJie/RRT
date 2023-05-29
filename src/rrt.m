@@ -40,6 +40,7 @@ classdef rrt < benchmark & tree
         num_neighbor = 0
         stamp = zeros(6, 1, 'single');
         path_id = []
+        mini_path_len = inf
         %temporary
         compare_all = zeros(1, 2, 'single')
         compare_near = zeros(1, 1, 'single')
@@ -78,17 +79,17 @@ classdef rrt < benchmark & tree
         end
 
         function flag = neighbors(this)
-            this.compare_all(:, 1:2) = this.position(1:this.node_num, 1:2) - this.new_node.position(1, 1:2);
+            this.compare_all = this.position(1:this.node_num, 1:2) - this.new_node.position(1, 1:2);
             this.compare_all(:, 1) = sum(this.compare_all(:, 1:2) .^ 2, 2);
             [tmp_value, ~] = min(this.compare_all(:, 1));
 
             if tmp_value < this.threshold_close
                 this.num_close = this.num_close + 1;
-                flag = 1;
+                flag = true;
                 return
             end
 
-            flag = 0;
+            flag = false;
             this.near_nodes = struct;
             this.near_nodes.id = find(this.compare_all(:, 1) < this.neighbor_dist);
             this.near_nodes.position = this.position(this.near_nodes.id, :);
@@ -308,7 +309,7 @@ classdef rrt < benchmark & tree
             this.path_id = this.mapping(this.path_id);
         end
 
-        function [mini_path_len, path] = find_path(this, mini_path_len)
+        function path = find_path(this)
             this.num_goal = this.num_goal + 1;
             this.path_id(this.num_goal, 1) = this.new_node.id;
             path = this.trace_back(this.new_node.id);
@@ -316,9 +317,9 @@ classdef rrt < benchmark & tree
             tmp_value = path(2:end, 1:3) - path(1:end - 1, 1:3);
             path_len = sum(sqrt(sum(tmp_value .^ 2, 2)));
 
-            if mini_path_len > path_len
+            if this.mini_path_len > path_len
                 this.best_path = path;
-                mini_path_len = path_len;
+                this.mini_path_len = path_len;
 
                 if this.use_informed
                     this.prepare_informed(path_len);
@@ -382,7 +383,7 @@ classdef rrt < benchmark & tree
     methods (Access = public)
 
         function start_rrt(this)
-            mini_path_len = inf;
+            this.mini_path_len = inf;
             t = tic;
 
             while this.record(toc(t), this.num_iter)
@@ -410,9 +411,14 @@ classdef rrt < benchmark & tree
             this.best_path = this.follow_ground(path);
         end
 
-        function start_direct(this)
-            mini_path_len = inf;
-            t = tic;
+        function start_direct(this, t, start_dying_step)
+
+            if nargin == 1
+                t = tic;
+                start_dying_step=0;
+            end
+
+            this.mini_path_len = inf;
 
             while this.record(toc(t), this.num_iter)
                 this.num_iter = this.num_iter + 1;
@@ -436,7 +442,7 @@ classdef rrt < benchmark & tree
                 end
 
                 if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
-                    [mini_path_len, ~] = this.find_path(mini_path_len);
+                    this.find_path();
                 end
 
                 if this.is_delete && this.node_num > this.max_nodes
@@ -445,6 +451,11 @@ classdef rrt < benchmark & tree
 
                 if this.search_area_rate > 0
                     this.update_step();
+
+                    if this.robot.get_step() < start_dying_step
+                        return
+                    end
+
                 end
 
             end
@@ -456,7 +467,7 @@ classdef rrt < benchmark & tree
         end
 
         function start_kinetic(this)
-            mini_path_len = inf;
+            this.mini_path_len = inf;
             t = tic;
 
             while this.record(toc(t), this.num_iter)
@@ -481,7 +492,7 @@ classdef rrt < benchmark & tree
                 end
 
                 if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
-                    [mini_path_len, ~] = this.find_path(mini_path_len);
+                    this.find_path();
                 end
 
                 if this.is_delete && this.node_num > this.max_nodes
@@ -501,6 +512,7 @@ classdef rrt < benchmark & tree
         end
 
         function get_new_config(this, config_dir)
+            get_new_config@benchmark(this)
             this.config_manger = configs.get_config([this.name, '_', config_dir]);
             this.maps.get_new_config(config_dir);
             this.robot.get_new_config(config_dir);
@@ -538,12 +550,19 @@ classdef rrt < benchmark & tree
             this.new_node.cost_to_root = 0;
             this.new_node.position = this.start_point(1, 1:this.robot.dimension);
             this.insert_node();
-            this.start_benchmark(conf.benchmark);
+            this.start_benchmark();
             this.threshold_close_rate = conf.threshold_close;
             this.threshold_goal_rate = conf.threshold_goal;
             this.neighbor_range_rate = conf.neighbor_range;
             this.search_area_rate = conf.search_area_rate;
-            this. use_informed = conf.use_informed;
+            this.use_informed = conf.use_informed;
+
+            switch conf.start
+                case 'start_direct'
+                    this.start = @this.start_direct;
+                case 'start_classify_rrt'
+                    this.start = @this.start_classify_rrt;
+            end
 
             if isfield(conf, 'repeat_times')
                 this.repeat_times = conf.repeat_times;
@@ -575,6 +594,7 @@ classdef rrt < benchmark & tree
         end
 
         function this = rrt()
+            this = this@benchmark();
             this.config_manger = configs.get_config(this.name);
             this.maps = map.get_instance();
             this.robot = uav();
