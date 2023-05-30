@@ -58,9 +58,8 @@ classdef configs < handle
             this.config_file = [this.config_dir, name, '.yaml'];
             utils.checkdir(this.config_dir);
 
-            if exist(this.config_file, 'file')
-                disp([name, ' config file exist'])
-            else
+            if ~exist(this.config_file, 'file')
+
                 disp(['copy ', name, ' config template'])
                 copyfile([this.templates_dir, name, '_template.yaml'], this.config_file)
             end

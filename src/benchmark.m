@@ -176,8 +176,12 @@ classdef benchmark < handle
 
         end
 
+        function get_new_config(this, config_dir)
+            this.config_manger_benchmark = configs.get_config([this.name_benchmark, '_', config_dir]);
+        end
+
         function this = benchmark()
-            this.config_manger_benchmark = configs.get_config(this.name_benchmark);    
+            this.config_manger_benchmark = configs.get_config(this.name_benchmark);
         end
 
         function start_benchmark(this)
@@ -256,21 +260,19 @@ classdef benchmark < handle
         function path = save_all(this, annotation)
             conf = this.config_manger_benchmark.load(this.rand_id);
 
+            if nargin == 1
+                path = [this.config_manger_benchmark.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM'), '/'];
+            elseif nargin == 2 && ~isempty(annotation)
+                path = [this.config_manger_benchmark.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM '), annotation, '/'];
+            end
 
-                if nargin == 1
-                    path = [this.config_manger_benchmark.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM'), '/'];
-                elseif nargin == 2 && ~isempty(annotation)
-                    path = [this.config_manger_benchmark.save_path, datestr(now, 'mmmm-dd-yyyy HH-MM-SS AM '), annotation, '/'];
-                end
-
-                utils.checkdir(path, true);
-                disp(['files saved at ', path]);
-                utils.get_instance().save_figures(path);
-                this.config_manger.save(path);
-                this.config_manger_classify.save(path);
-                this.save_shaped_states(path);
-                this.save_other_states(path, conf.only_save_last);
-            
+            utils.checkdir(path, true);
+            disp(['files saved at ', path]);
+            utils.get_instance().save_figures(path);
+            this.config_manger.save(path);
+            this.config_manger_classify.save(path);
+            this.save_shaped_states(path);
+            this.save_other_states(path, conf.only_save_last);
 
         end
 

@@ -1,8 +1,10 @@
+name: "rrt templete"
 is_benchmark: true
 is_time_step: true
 benchmark_record_step: 0.5
 max_iter: 10
 save_output: true
+only_save_last: true
 interest:
   - best_path
   - position

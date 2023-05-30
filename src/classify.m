@@ -188,6 +188,14 @@ classdef classify < rrt
             this.dying_speed = length(this.path_id);
         end
 
+        function result = record_fun(this)
+            result = record_fun@rrt(this);
+            result.num_on_path = length(this.on_path);
+            result.num_dying = length(this.dying);
+            result.num_dead = length(this.dead);
+            result.num_path = length(this.path_id);
+        end
+
         function start_classify_rrt(this)
             t = tic;
             this.start_direct(t, this.start_dying_step);
@@ -196,7 +204,6 @@ classdef classify < rrt
             dying_id = this.alive(~ismember(this.alive(:, 1), this.on_path(:, 1)));
             this.dying(1:length(dying_id), 1) = dying_id;
             this.dying(1:length(dying_id), 2) = this.T_max;
-            disp('fsdfasdfasdf')
 
             while this.record(toc(t), this.num_iter)
                 this.num_iter = this.num_iter + 1;
@@ -260,7 +267,7 @@ classdef classify < rrt
 
         function get_new_config(this, config_dir)
             this.config_manger_classify = configs.get_config([this.name_classify, '_', config_dir]);
-            get_new_config@rrt(this)
+            get_new_config@rrt(this, config_dir)
         end
 
         function this = classify()

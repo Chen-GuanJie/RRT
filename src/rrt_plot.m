@@ -211,6 +211,44 @@ classdef rrt_plot < classify
 
             end
 
+            if utils.in_cell(display_names, 'classify_node')
+
+                for i = 1:length(display.classify_node.save_index)
+                    ind = display.classify_node.save_index{i}(1);
+                    utils.get_instance().locate_figure(['classify node ' num2str(ind)], display.classify_node.save_format)
+                    this.show_map(display.classify_node.map_interval, display.classify_node.normal_map);
+
+                    if display.search_tree.normal_map
+                        po = this.maps.to_normal_size(this.states{ind, 1}.position);
+                        y_lim = [this.maps.Y(1) this.maps.Y(end)];
+                        x_lim = [this.maps.X(1) this.maps.X(end)];
+                    else
+                        po = this.states{ind, 1}.position;
+                        y_lim = [1 this.maps.Y_num];
+                        x_lim = [1 this.maps.X_num];
+                    end
+
+                    p = this.states{ind, 1}.on_path(:, 1);
+                    dy = this.states{ind, 1}.dying(:, 1);
+                    de = this.states{ind, 1}.dead(:, 1);
+                    scatter3(po(p, 1), po(p, 2), po(p, 3), 10, 'filled', 'o', 'MarkerFaceColor', 'red', 'MarkerEdgeColor', 'red');
+                    scatter3(po(dy, 1), po(dy, 2), po(dy, 3), 7, 'filled', 'o', 'MarkerFaceColor', 'blue', 'MarkerEdgeColor', 'blue');
+                    scatter3(po(de, 1), po(de, 2), po(de, 3), 2, 'filled', 'o', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black');
+
+                    view(2); axis equal;
+                    ylim(y_lim); xlim(x_lim);
+                    d = this.maps.X_num / this.maps.Y_num;
+                    set(gcf, 'unit', 'centimeters', 'position', [3 5 20.5 20.5 * d]);
+
+                    if this.maps.Y(end) > this.maps.X(end)
+                        view(-90, 90);
+                    end
+
+                    hold off
+                end
+
+            end
+
         end
 
         function show_tree(this)
@@ -281,7 +319,7 @@ classdef rrt_plot < classify
 
         function get_new_config(this, config_dir)
             this.config_manger_rrtplot = configs.get_config([this.name_rrtplot, '_', config_dir]);
-            get_new_config@classify(this)
+            get_new_config@classify(this, config_dir)
         end
 
         function this = rrt_plot()

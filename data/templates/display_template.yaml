@@ -16,28 +16,32 @@ iteration_info:
       FontSize: 10
       FontName: bold
   y_data:
-    # num_close:
-    #   Color: black
-    #   LineWidth: 2
-    #   DisplayName: "too close"
+    num_close:
+      Color: black
+      LineWidth: 2
+      DisplayName: "close"
+      Marker: "o"
     node_num:
       Color: red
       LineStyle: "--"
       LineWidth: 1
-      DisplayName: "node num"
+      DisplayName: "node"
+      Marker: "*"
     num_iter:
       Color: blue
       LineStyle: ":"
       LineWidth: 2
-      DisplayName: "iterations"
+      DisplayName: "iter"
+      Marker: "+"
     num_rewire:
       Color: green
       LineStyle: "-."
       LineWidth: 1.5
-      DisplayName: "rewire num"
+      DisplayName: "rewire"
+      Marker: "^"
   eval:
     daspect: "[1 5000 1]"
-    set: gcf,'unit','centimeters','position',[3 5 8.5 4.2]
+    set: gcf,'unit','centimeters','position',[3 5 9 7]
     legend: "'Location','best'"
 minimun_path_cost:
   title_property:
@@ -61,45 +65,85 @@ minimun_path_cost:
       LineWidth: 2
       Marker: "*"
   eval:
-    set: gcf,'unit','centimeters','position',[3 5 8.5 4.2]
-cutaway:
-  save_format: "fig jpg svg"
+    set: gcf,'unit','centimeters','position',[3 5 9 7]
+# cutaway:
+#   save_format: "fig jpg svg"
 path_best:
   save_format: "fig jpg svg"
   map_interval: 5
   normal_map: true
-step_length:
-  title_property:
-    FontSize: 10
-    FontName: bold
-  save_format: "fig jpg svg"
-  x_data: "time_stamp"
-  x_lable:
-    txt: "time(s)"
-    property:
-      FontSize: 10
-      FontName: bold
-  y_lable:
-    txt: num
-    property:
-      FontSize: 10
-      FontName: bold
-  y_data:
-    direct_step:
-      Color: black
-      LineWidth: 2
-      DisplayName: "step"
-  eval:
-    daspect: "[1 0.6 1]"
-    set: gcf,'unit','centimeters','position',[3 5 8.5 4.2]
+# step_length:
+#   title_property:
+#     FontSize: 10
+#     FontName: bold
+#   save_format: "fig jpg svg"
+#   x_data: "time_stamp"
+#   x_lable:
+#     txt: "time(s)"
+#     property:
+#       FontSize: 10
+#       FontName: bold
+#   y_lable:
+#     txt: num
+#     property:
+#       FontSize: 10
+#       FontName: bold
+#   y_data:
+#     direct_step:
+#       Color: black
+#       LineWidth: 2
+#       DisplayName: "step"
+#   eval:
+#     daspect: "[1 0.6 1]"
+#     set: gcf,'unit','centimeters','position',[3 5 9 7]
 # search_tree:
 #   save_format: "fig svg"
 #   map_interval: 5
 #   normal_map: true
-#   data: position
 #   save_index:
 #     - 2
 #     - 6
 #     - 10
-angle:
-  save_format: "fig jpg svg"
+# angle:
+#   save_format: "fig jpg svg"
+# classify:
+#   save_format: "fig jpg svg"
+#   x_data: "time_stamp"
+#   x_lable:
+#     txt: "time(s)"
+#     property:
+#       FontSize: 10
+#       FontName: bold
+#   y_lable:
+#     txt: num
+#     property:
+#       FontSize: 10
+#       FontName: bold
+#   y_data:
+#     num_on_path:
+#       Color: red
+#       LineStyle: "--"
+#       LineWidth: 1
+#       DisplayName: "path node"
+#     num_dying:
+#       Color: blue
+#       LineStyle: ":"
+#       LineWidth: 2
+#       DisplayName: "dying"
+#     num_dead:
+#       Color: green
+#       LineStyle: "-."
+#       LineWidth: 1.5
+#       DisplayName: "dead"
+#   eval:
+#     daspect: "[1 2000 1]"
+#     set: gcf,'unit','centimeters','position',[3 5 9 7]
+#     legend: "'Location','best'"
+
+# classify_node:
+#   save_format: "fig svg"
+#   map_interval: 5
+#   normal_map: true
+#   save_index:
+#     - 2
+#     - 20

@@ -400,7 +400,7 @@ classdef rrt < benchmark & tree
                 end
 
                 if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
-                    this.find_path(mini_path_len);
+                    this.find_path();
                     break;
                 end
 
@@ -415,7 +415,7 @@ classdef rrt < benchmark & tree
 
             if nargin == 1
                 t = tic;
-                start_dying_step=0;
+                start_dying_step = 0;
             end
 
             this.mini_path_len = inf;
@@ -512,7 +512,7 @@ classdef rrt < benchmark & tree
         end
 
         function get_new_config(this, config_dir)
-            get_new_config@benchmark(this)
+            get_new_config@benchmark(this, config_dir)
             this.config_manger = configs.get_config([this.name, '_', config_dir]);
             this.maps.get_new_config(config_dir);
             this.robot.get_new_config(config_dir);
@@ -562,6 +562,8 @@ classdef rrt < benchmark & tree
                     this.start = @this.start_direct;
                 case 'start_classify_rrt'
                     this.start = @this.start_classify_rrt;
+                case 'start_rrt'
+                    this.start = @this.start_rrt;
             end
 
             if isfield(conf, 'repeat_times')

@@ -1,0 +1,209 @@
+informedRRT10times:
+  rrt:
+    repeat_times: 10
+IRRTScost1:
+  rrt:
+    height_cost_rate: 0
+IRRTScost2:
+  rrt:
+    height_cost_rate: 2
+IRRTScost3:
+  rrt:
+    height_cost_rate: 10
+IRRTSNeighborRange1:
+  rrt:
+    neighbor_range: 1.1
+IRRTSNeighborRange2:
+  rrt:
+    neighbor_range: 1.5
+IRRTSNeighborRange3:
+  rrt:
+    neighbor_range: 3
+IRRTSNeighborRange4:
+  rrt:
+    neighbor_range: 6
+IRRTSThresholdClose1:
+  rrt:
+    threshold_close: 0.3
+IRRTSThresholdClose2:
+  rrt:
+    threshold_close: 0.5
+IRRTSThresholdClose3:
+  rrt:
+    threshold_close: 0.7
+RRTS:
+  rrt:
+    use_informed: false
+  display:
+    search_tree:
+      save_format: "svg"
+      map_interval: 5
+      normal_map: true
+      save_index:
+        - 4
+        - 10
+        - 20
+IRRTSFN:
+  rrt:
+    delete_node:
+      max_nodes: 5000
+      is_delete: true
+      rand_delete: 0.5
+RRTSVS:
+  rrt:
+    search_area_rate: 20
+    repeat_times: 10
+HRRTSVS:
+  rrt:
+    start: start_classify_rrt
+    search_area_rate: 20
+    threshold_goal: 3
+    repeat_times: 10
+  display:
+    classify:
+      save_format: "fig jpg svg"
+      x_data: "time_stamp"
+      x_lable:
+        txt: "time(s)"
+        property:
+          FontSize: 10
+          FontName: bold
+      y_lable:
+        txt: num
+        property:
+          FontSize: 10
+          FontName: bold
+      y_data:
+        num_on_path:
+          Color: red
+          LineStyle: "--"
+          LineWidth: 1
+          DisplayName: "path node"
+        num_dying:
+          Color: blue
+          LineStyle: ":"
+          LineWidth: 2
+          DisplayName: "dying"
+        num_dead:
+          Color: green
+          LineStyle: "-."
+          LineWidth: 1.5
+          DisplayName: "dead"
+      eval:
+        daspect: "[1 2000 1]"
+        set: gcf,'unit','centimeters','position',[3 5 9 7]
+        legend: "'Location','best'"
+    step_length:
+      title_property:
+        FontSize: 10
+        FontName: bold
+      save_format: "fig jpg svg"
+      x_data: "time_stamp"
+      x_lable:
+        txt: "time(s)"
+        property:
+          FontSize: 10
+          FontName: bold
+      y_lable:
+        txt: num
+        property:
+          FontSize: 10
+          FontName: bold
+      y_data:
+        direct_step:
+          Color: black
+          LineWidth: 2
+          DisplayName: "step"
+      eval:
+        daspect: "[1 0.6 1]"
+        set: gcf,'unit','centimeters','position',[3 5 9 7]
+informedRRTtree:
+  display:
+    search_tree:
+      save_format: "svg"
+      map_interval: 5
+      normal_map: true
+      save_index:
+        - 4
+        - 10
+        - 20
+HRRTSVStree:
+  rrt:
+    start: start_classify_rrt
+    search_area_rate: 20
+    threshold_goal: 3
+    only_save_last: false
+  display:
+    step_length:
+      title_property:
+        FontSize: 10
+        FontName: bold
+      save_format: "fig jpg svg"
+      x_data: "time_stamp"
+      x_lable:
+        txt: "time(s)"
+        property:
+          FontSize: 10
+          FontName: bold
+      y_lable:
+        txt: num
+        property:
+          FontSize: 10
+          FontName: bold
+      y_data:
+        direct_step:
+          Color: black
+          LineWidth: 2
+          DisplayName: "step"
+      eval:
+        daspect: "[1 0.6 1]"
+        set: gcf,'unit','centimeters','position',[3 5 9 7]
+    search_tree:
+      save_format: "svg"
+      map_interval: 5
+      normal_map: true
+      save_index:
+        - 4
+        - 10
+        - 20
+    classify:
+      save_format: "fig jpg svg"
+      x_data: "time_stamp"
+      x_lable:
+        txt: "time(s)"
+        property:
+          FontSize: 10
+          FontName: bold
+      y_lable:
+        txt: num
+        property:
+          FontSize: 10
+          FontName: bold
+      y_data:
+        num_on_path:
+          Color: red
+          LineStyle: "--"
+          LineWidth: 1
+          DisplayName: "path node"
+        num_dying:
+          Color: blue
+          LineStyle: ":"
+          LineWidth: 2
+          DisplayName: "dying"
+        num_dead:
+          Color: green
+          LineStyle: "-."
+          LineWidth: 1.5
+          DisplayName: "dead"
+      eval:
+        daspect: "[1 2000 1]"
+        set: gcf,'unit','centimeters','position',[3 5 9 7]
+        legend: "'Location','best'"
+    classify_node:
+      save_format: "svg"
+      map_interval: 5
+      normal_map: true
+      save_index:
+        - 4
+        - 10
+        - 20

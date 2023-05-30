@@ -1,5 +1,6 @@
-T_delta: 100
-T_max: 500
+T_delta: 5000
+T_max: 10000
 dying_speed: 1
 alpha: 20
 mini_dying_num: 5000
+start_dying_step: 4.5

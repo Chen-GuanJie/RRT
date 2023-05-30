@@ -307,6 +307,27 @@ classdef utils < handle
             eval([func, '(', arg, ')']);
         end
 
+        function old = assign_struct(old, new)
+
+            fn = fieldnames(new);
+
+            for i = 1:length(fn)
+
+                if ~isfield(old, fn{i})
+                    old.(fn{i}) = new.(fn{i});
+                    continue
+                end
+
+                if isstruct(new.(fn{i}))
+                    old.(fn{i}) = utils.assign_struct(old.(fn{i}), new.(fn{i}));
+                else
+                    old.(fn{i}) = new.(fn{i});
+                end
+
+            end
+
+        end
+
     end
 
 end
