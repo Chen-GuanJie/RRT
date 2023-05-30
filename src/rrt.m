@@ -466,51 +466,6 @@ classdef rrt < benchmark & tree
             this.best_path = this.follow_ground(path);
         end
 
-        function start_kinetic(this)
-            this.mini_path_len = inf;
-            t = tic;
-
-            while this.record(toc(t), this.num_iter)
-                this.num_iter = this.num_iter + 1;
-                sample = this.get_sample();
-                [closest_node, ~] = this.get_closest(sample);
-                this.new_node.position(1, :) = this.robot.transfer(sample, closest_node);
-
-                if this.neighbors()
-                    continue
-                end
-
-                this.num_neighbor = this.num_neighbor + this.near_nodes.num;
-                this.choose_parent();
-
-                if this.new_node.id_parent > 0
-                    this.insert_node();
-                    this.rewire();
-
-                else
-                    this.num_no_parent = this.num_no_parent + 1;
-                end
-
-                if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
-                    this.find_path();
-                end
-
-                if this.is_delete && this.node_num > this.max_nodes
-                    this.delete_unuesd_node();
-                end
-
-                if this.search_area_rate > 0
-                    this.update_step();
-                end
-
-            end
-
-            toc(t)
-            [cost, path] = this.find_best_path();
-            fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f\n', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
-            this.best_path = this.follow_ground(path);
-        end
-
         function get_new_config(this, config_dir)
             get_new_config@benchmark(this, config_dir)
             this.config_manger = configs.get_config([this.name, '_', config_dir]);

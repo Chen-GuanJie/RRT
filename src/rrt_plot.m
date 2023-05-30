@@ -189,12 +189,17 @@ classdef rrt_plot < classify
                             this.states{ind, 1}.parent);
                         y_lim = [this.maps.Y(1) this.maps.Y(end)];
                         x_lim = [this.maps.X(1) this.maps.X(end)];
+                        bp = this.maps.to_normal_size(this.best_path);
 
                     else
                         this.show_search_tree(this.states{ind, 1}.position, this.states{ind, 1}.parent);
                         y_lim = [1 this.maps.Y_num];
                         x_lim = [1 this.maps.X_num];
+                        bp = this.best_path;
+                    end
 
+                    if isfield(display.search_tree, 'with_path') && display.search_tree.with_path
+                        plot3(bp(:, 1), bp(:, 2), bp(:, 3), 'LineWidth', 1, 'Color', 'red');
                     end
 
                     view(2); axis equal;
