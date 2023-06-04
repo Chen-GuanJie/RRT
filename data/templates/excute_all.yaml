@@ -1,6 +1,43 @@
+IRRTstep11:
+  rrt:
+    neighbor_range: 1.1
+IRRTstep14:
+  rrt:
+    neighbor_range: 1.4
+IRRTstep2:
+  rrt:
+    neighbor_range: 2
+IRRTstep3:
+  rrt:
+    neighbor_range: 3
+IRRTstep6:
+  rrt:
+    neighbor_range: 6
+IRRTstep10:
+  rrt:
+    neighbor_range: 10
+IRRTstep15:
+  rrt:
+    neighbor_range: 15
+IRRTstep20:
+  rrt:
+    neighbor_range: 20
+IRRTstep30:
+  rrt:
+    neighbor_range: 30
+IRRTstep50:
+  rrt:
+    neighbor_range: 50
+IRRTstep80:
+  rrt:
+    neighbor_range: 80
+IRRTstep120:
+  rrt:
+    neighbor_range: 120
+
 informedRRT10times:
   rrt:
-    repeat_times: 10
+    repeat_times: 1
 IRRTScost1:
   rrt:
     height_cost_rate: 0
@@ -36,7 +73,7 @@ RRTS:
     use_informed: false
   display:
     search_tree:
-      save_format: "svg"
+      save_format: "png"
       map_interval: 5
       normal_map: true
       save_index:
@@ -52,16 +89,16 @@ IRRTSFN:
 RRTSVS:
   rrt:
     search_area_rate: 20
-    repeat_times: 10
+    repeat_times: 1
 HRRTSVS:
   rrt:
     start: start_classify_rrt
     search_area_rate: 20
     threshold_goal: 3
-    repeat_times: 10
+    repeat_times: 1
   display:
     classify:
-      save_format: "fig jpg svg"
+      save_format: "png"
       x_data: "time_stamp"
       x_lable:
         txt: "time(s)"
@@ -90,14 +127,19 @@ HRRTSVS:
           LineWidth: 1.5
           DisplayName: "dead"
       eval:
-        daspect: "[1 2000 1]"
-        set: gcf,'unit','centimeters','position',[3 5 9 7]
-        legend: "'Location','best'"
+        # daspect: 
+        #   - "[1 2000 1]"
+        set: 
+          - gcf,'unit','centimeters','position',[3 5 9 7]
+        legend: 
+          - "'Location','best'"
     step_length:
-      title_property:
-        FontSize: 10
-        FontName: bold
-      save_format: "fig jpg svg"
+      title:
+        txt:
+        property:
+          FontSize: 10
+          FontName: bold
+      save_format: "png"
       x_data: "time_stamp"
       x_lable:
         txt: "time(s)"
@@ -115,12 +157,14 @@ HRRTSVS:
           LineWidth: 2
           DisplayName: "step"
       eval:
-        daspect: "[1 0.6 1]"
-        set: gcf,'unit','centimeters','position',[3 5 9 7]
+        # daspect: 
+        #   - "[1 0.6 1]"
+        set: 
+          - gcf,'unit','centimeters','position',[3 5 9 7]
 informedRRTtree:
   display:
     search_tree:
-      save_format: "svg"
+      save_format: "png"
       map_interval: 5
       normal_map: true
       save_index:
@@ -135,10 +179,12 @@ HRRTSVStree:
     only_save_last: false
   display:
     step_length:
-      title_property:
-        FontSize: 10
-        FontName: bold
-      save_format: "fig jpg svg"
+      title:
+        txt:
+        property:
+          FontSize: 10
+          FontName: bold
+      save_format: "png"
       x_data: "time_stamp"
       x_lable:
         txt: "time(s)"
@@ -156,18 +202,20 @@ HRRTSVStree:
           LineWidth: 2
           DisplayName: "step"
       eval:
-        daspect: "[1 0.6 1]"
-        set: gcf,'unit','centimeters','position',[3 5 9 7]
+        daspect: 
+          - "[1 0.6 1]"
+        set: 
+          - gcf,'unit','centimeters','position',[3 5 9 7]
     search_tree:
-      save_format: "svg"
+      save_format: "png"
       map_interval: 5
       normal_map: true
       save_index:
         - 4
-        - 10
-        - 20
+        # - 10
+        # - 20
     classify:
-      save_format: "fig jpg svg"
+      save_format: "png"
       x_data: "time_stamp"
       x_lable:
         txt: "time(s)"
@@ -196,11 +244,14 @@ HRRTSVStree:
           LineWidth: 1.5
           DisplayName: "dead"
       eval:
-        daspect: "[1 2000 1]"
-        set: gcf,'unit','centimeters','position',[3 5 9 7]
-        legend: "'Location','best'"
+        # daspect: 
+        #   - "[1 2000 1]"
+        set: 
+          - gcf,'unit','centimeters','position',[3 5 9 7]
+        legend:
+          - "'Location','best'"
     classify_node:
-      save_format: "svg"
+      save_format: "png"
       map_interval: 5
       normal_map: true
       save_index:

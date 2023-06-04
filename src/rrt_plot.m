@@ -78,17 +78,17 @@ classdef rrt_plot < classify
             x_data = x_data * this.maps.map_scale;
             bp(:, 1:5) = bp(:, 1:5) * this.maps.map_scale;
             subplot(2, 1, 1)
-            plot(x_data, bp(end:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', 'aircraft altitude'); hold on
-            plot(x_data, bp(end:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', 'topographic height');
-            ylabel('height(m)');
-            xlabel('distance(m)');
+            plot(x_data, bp(end:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞行高度'); hold on
+            plot(x_data, bp(end:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
+            ylabel('高度/m');
+            xlabel('飞行距离/m');
             xlim([x_data(1) x_data(end)]);
             hold off
             legend('Location', 'best');
             subplot(2, 1, 2)
             plot(x_data, bp(end:-1:1, 5), 'LineWidth', 1.5, 'color', 'b'); %,'DisplayName', 'Ground Clearance');
-            xlabel('height(m)');
-            ylabel('Ground Clearance(m)');
+            xlabel('飞行距离/m');
+            ylabel('离地高度/m');
             xlim([x_data(1) x_data(end)]);
             % legend('Location', 'best');
         end
@@ -115,14 +115,14 @@ classdef rrt_plot < classify
             angle = diff(angle);
             angle = [angle(1, :); angle];
             plot(x_data, angle(:, 2)); %,'DisplayName', 'pitch angle');
-            ylabel('pitch angle');
-            xlabel('distance(m)');
+            ylabel('俯仰角/度');
+            xlabel('飞行距离/m');
             xlim([x_data(1) x_data(end)]);
             % legend('Location', 'best')
             subplot(2, 1, 2)
             plot(x_data, angle(:, 1)); %,'DisplayName', 'course');
-            xlabel('distance(m)');
-            ylabel('yaw angle');
+            xlabel('飞行距离/m');
+            ylabel('航向角/度');
             xlim([x_data(1) x_data(end)]);
             % legend('Location', 'best')
         end
@@ -139,7 +139,7 @@ classdef rrt_plot < classify
             if utils.in_cell(display_names, 'cutaway')
                 utils.get_instance().locate_figure('cutaway', display.cutaway.save_format)
                 this.path_evaluate();
-                set(gcf, 'unit', 'centimeters', 'position', [3 5 17 8])
+                set(gcf, 'unit', 'centimeters', 'position', [3 5 13.5 9])
                 hold off;
             end
 
@@ -161,7 +161,7 @@ classdef rrt_plot < classify
                 view(2); axis equal;
                 ylim(y_lim); xlim(x_lim);
                 d = this.maps.X_num / this.maps.Y_num;
-                set(gcf, 'unit', 'centimeters', 'position', [3 5 11 12 * d])
+                set(gcf, 'unit', 'centimeters', 'position', [3 5 9 6.75])
 
                 if this.maps.Y(end) > this.maps.X(end)
                     view(-90, 90);
@@ -173,7 +173,7 @@ classdef rrt_plot < classify
             if utils.in_cell(display_names, 'angle')
                 utils.get_instance().locate_figure('angle', display.angle.save_format)
                 this.draw_angle();
-                set(gcf, 'unit', 'centimeters', 'position', [3 5 17 8])
+                set(gcf, 'unit', 'centimeters', 'position', [3 5 13.5 9])
             end
 
             if utils.in_cell(display_names, 'search_tree')
@@ -205,7 +205,7 @@ classdef rrt_plot < classify
                     view(2); axis equal;
                     ylim(y_lim); xlim(x_lim);
                     d = this.maps.X_num / this.maps.Y_num;
-                    set(gcf, 'unit', 'centimeters', 'position', [3 5 20.5 20.5 * d]);
+                    set(gcf, 'unit', 'centimeters', 'position', [3 5 9 6.75]);
 
                     if this.maps.Y(end) > this.maps.X(end)
                         view(-90, 90);
@@ -236,14 +236,14 @@ classdef rrt_plot < classify
                     p = this.states{ind, 1}.on_path(:, 1);
                     dy = this.states{ind, 1}.dying(:, 1);
                     de = this.states{ind, 1}.dead(:, 1);
+                    scatter3(po(de, 1), po(de, 2), po(de, 3), 1, 'filled', 'o', 'MarkerFaceColor', 'blue', 'MarkerEdgeColor', 'blue');
+                    scatter3(po(dy, 1), po(dy, 2), po(dy, 3), 7, 'filled', 'o', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black');
                     scatter3(po(p, 1), po(p, 2), po(p, 3), 10, 'filled', 'o', 'MarkerFaceColor', 'red', 'MarkerEdgeColor', 'red');
-                    scatter3(po(dy, 1), po(dy, 2), po(dy, 3), 7, 'filled', 'o', 'MarkerFaceColor', 'blue', 'MarkerEdgeColor', 'blue');
-                    scatter3(po(de, 1), po(de, 2), po(de, 3), 2, 'filled', 'o', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black');
 
                     view(2); axis equal;
                     ylim(y_lim); xlim(x_lim);
                     d = this.maps.X_num / this.maps.Y_num;
-                    set(gcf, 'unit', 'centimeters', 'position', [3 5 20.5 20.5 * d]);
+                    set(gcf, 'unit', 'centimeters', 'position', [3 5 9 6.75]);
 
                     if this.maps.Y(end) > this.maps.X(end)
                         view(-90, 90);
@@ -280,8 +280,8 @@ classdef rrt_plot < classify
 
             this.plot_point(1).point = scatter3(s(1), s(2), s(3), 35, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
             this.plot_point(2).point = scatter3(g(1), g(2), g(3), 35, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
-            this.plot_point(1).text = text(s(1), s(2), s(3) + 500, '  start');
-            this.plot_point(2).text = text(g(1), g(2), g(3) + 500, '  goal');
+            % this.plot_point(1).text = text(s(1), s(2), s(3) + 500, '  start');
+            % this.plot_point(2).text = text(g(1), g(2), g(3) + 500, '  goal');
             ylabel('x(m)'); xlabel('y(m)'); zlabel('z(m)');
             % title('RRT算法');
             % end

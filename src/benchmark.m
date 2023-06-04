@@ -112,19 +112,28 @@ classdef benchmark < handle
                     continue
                 end
 
-                % t = title(strrep(plot_name, '_', ' '));
                 xl = xlabel(plot_info.x_lable.txt);
                 yl = ylabel(plot_info.y_lable.txt);
-                % utils.assign_value(t, plot_info, 'title_property');
                 utils.assign_value(xl, plot_info.x_lable, 'property');
                 utils.assign_value(yl, plot_info.y_lable, 'property');
                 utils.draw(this.shaped_states, plot_info);
+
+                if isfield(plot_info, 'title') && isfield(plot_info.title, 'txt') && ~yaml.isNull(plot_info.title.txt)
+                    t = title(plot_info.title.txt);
+                    utils.assign_value(t, plot_info.title, 'property');
+                end
 
                 if isfield(plot_info, 'eval')
                     funcs = fieldnames(plot_info.eval);
 
                     for index = 1:length(funcs)
-                        utils.eval_execute(funcs{index}, plot_info.eval.(funcs{index}));
+                        commands = plot_info.eval.(funcs{index});
+
+                        for j = 1:length(commands)
+                            utils.eval_execute(funcs{index}, commands{j});
+
+                        end
+
                     end
 
                 end

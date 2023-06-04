@@ -1,17 +1,18 @@
 iteration_info:
-  title_property:
-    FontSize: 10
-    FontName: bold
-    # Color: "magenta"
-  save_format: "fig jpg svg"
+  title:
+    txt:
+    property:
+      FontSize: 10
+      FontName: bold
+  save_format: "png"
   x_data: "time_stamp"
   x_lable:
-    txt: "time(s)"
+    txt: "时间/s"
     property:
       FontSize: 10
       FontName: bold
   y_lable:
-    txt: num
+    txt: 数量/个
     property:
       FontSize: 10
       FontName: bold
@@ -30,32 +31,37 @@ iteration_info:
     num_iter:
       Color: blue
       LineStyle: ":"
-      LineWidth: 2
+      LineWidth: 1
       DisplayName: "iter"
       Marker: "+"
     num_rewire:
       Color: green
       LineStyle: "-."
-      LineWidth: 1.5
+      LineWidth: 1
       DisplayName: "rewire"
       Marker: "^"
   eval:
-    daspect: "[1 5000 1]"
-    set: gcf,'unit','centimeters','position',[3 5 9 7]
-    legend: "'Location','best'"
+    # daspect:
+    #   - "[1 5000 1]"
+    set:
+      - gcf,'unit','centimeters','position',[3 5 6.67 5.00]
+    # legend:
+    #   - "'Location','best'"
 minimun_path_cost:
-  title_property:
-    FontSize: 10
-    FontName: bold
-  save_format: "fig jpg svg"
+  title:
+    txt:
+    property:
+      FontSize: 10
+      FontName: bold
+  save_format: "png"
   x_data: "time_stamp"
   x_lable:
-    txt: "time(s)"
+    txt: "时间/s"
     property:
       FontSize: 10
       FontName: bold
   y_lable:
-    txt: cost
+    txt: 代价
     property:
       FontSize: 10
       FontName: bold
@@ -65,26 +71,29 @@ minimun_path_cost:
       LineWidth: 2
       Marker: "*"
   eval:
-    set: gcf,'unit','centimeters','position',[3 5 9 7]
+    set:
+      - gcf,'unit','centimeters','position',[3 5 6.67 5.00]
 # cutaway:
 #   save_format: "fig jpg svg"
 path_best:
-  save_format: "fig jpg svg"
+  save_format: "png"
   map_interval: 5
   normal_map: true
 # step_length:
-#   title_property:
+# title:
+#   txt:
+#   property:
 #     FontSize: 10
 #     FontName: bold
 #   save_format: "fig jpg svg"
 #   x_data: "time_stamp"
 #   x_lable:
-#     txt: "time(s)"
+#       txt: "时间/s"
 #     property:
 #       FontSize: 10
 #       FontName: bold
 #   y_lable:
-#     txt: num
+#     txt: 数量/个
 #     property:
 #       FontSize: 10
 #       FontName: bold
@@ -110,12 +119,12 @@ path_best:
 #   save_format: "fig jpg svg"
 #   x_data: "time_stamp"
 #   x_lable:
-#     txt: "time(s)"
+#       txt: "时间/s"
 #     property:
 #       FontSize: 10
 #       FontName: bold
 #   y_lable:
-#     txt: num
+#     txt: 数量/个
 #     property:
 #       FontSize: 10
 #       FontName: bold

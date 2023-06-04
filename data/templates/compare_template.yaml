@@ -7,9 +7,11 @@ path: output/
 save_path: output/
 display:
   compare_node_num:
-    title_property:
-      FontSize: 10
-      FontName: bold
+    title:
+      txt: 
+      property:
+        FontSize: 10
+        FontName: bold
     save_format: "svg"
     x_lable:
       txt: time(s)

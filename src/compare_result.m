@@ -14,7 +14,7 @@ function compare(config_file)
     display = conf.display;
     plots = fieldnames(display);
     data = cell(length(compare_items), 1);
-    % display_name = cell(length(compare_items), 1);
+    display_name = cell(length(compare_items), 1);
     prop = cell(length(compare_items), 1);
 
     files = dir(conf.path);
@@ -35,7 +35,7 @@ function compare(config_file)
         file_name = [conf.path, mission_map2_path(compare_items{i}.name), '/', 'sample_result'];
         file_name = join(file_name, '');
         data{i} = table2struct(readtable(file_name), 'ToScalar', true);
-        %     display_name{i} = compare_items{i}.name;
+        display_name{i} = compare_items{i}.name;
         prop{i} = rmfield (compare_items{i}, 'name');
     end
 
@@ -47,16 +47,14 @@ function compare(config_file)
             continue
         end
 
-        % t = title(strrep(plot_name, '_', ' '));
         xl = xlabel(plot_info.x_lable.txt);
         yl = ylabel(plot_info.y_lable.txt);
-        % utils.assign_value(t, plot_info, 'title_property');
         utils.assign_value(xl, plot_info.x_lable, 'property');
         utils.assign_value(yl, plot_info.y_lable, 'property');
 
         for j = 1:length(compare_items)
             y_name = fieldnames(plot_info.y_data);
-            %         plot_info.y_data.(y_name{1}).DisplayName = display_name{j};
+            plot_info.y_data.(y_name{1}).DisplayName = display_name{j};
             fn = fieldnames(prop{j});
 
             for k = 1:length(fn)
@@ -66,11 +64,21 @@ function compare(config_file)
             utils.draw(data{j}, plot_info);
         end
 
+        if isfield(plot_info, 'title') && isfield(plot_info.title, 'txt') && ~yaml.isNull(plot_info.title.txt)
+            t = title(plot_info.title.txt);
+            utils.assign_value(t, plot_info.title, 'property');
+        end
+
         if isfield(plot_info, 'eval')
             funcs = fieldnames(plot_info.eval);
 
             for index = 1:length(funcs)
-                utils.eval_execute(funcs{index}, plot_info.eval.(funcs{index}));
+                commands = plot_info.eval.(funcs{index});
+
+                for j = 1:length(commands)
+                    utils.eval_execute(funcs{index}, commands{j});
+                end
+
             end
 
         end
