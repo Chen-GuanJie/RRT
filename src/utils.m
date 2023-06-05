@@ -3,6 +3,7 @@ classdef utils < handle
     properties (SetAccess = private)
         figures
         used_figure_id
+        class_fields
     end
 
     methods (Access = private)
@@ -85,6 +86,35 @@ classdef utils < handle
             delete(this.figures(figure_name).picture);
             this.used_figure_id(this.used_figure_id == this.figures(figure_name).id) = [];
             remove(this.figures, figure_name);
+        end
+
+        function get_prop_name(this, cls)
+
+            if ~isfield(this, cls.Name)
+                this.(cls.Name).property_name = cell(length(cls.PropertyList), 1);
+                this.(cls.Name).method_name = cell(length(cls.MethodList), 1);
+
+                for i = 1:length(cls.PropertyList)
+                    this.(cls.Name).property_name{i} = cls.PropertyList(i).Name;
+                end
+
+                for i = 1:length(cls.MethodList)
+                    this.(cls.Name).method_name{i} = cls.MethodList(i).Name;
+                end
+
+            end
+
+        end
+
+        function output = check_cls(this, name, type, prop)
+
+            switch type
+                case 'prop'
+                    output = utils.in_cell(this.(name).property_name, prop);
+                case 'method'
+                    output = utils.in_cell(this.(name).method_name, prop);
+            end
+
         end
 
     end
@@ -234,7 +264,7 @@ classdef utils < handle
         end
 
         function output = in_cell(c, item)
-            output = find(strcmp(c, item));
+            output = find(ismember(item,c));
         end
 
         function flag = is_drawable(plot_name, plot_info)
@@ -326,6 +356,11 @@ classdef utils < handle
 
             end
 
+        end
+
+        function output = check_class_prop(cls, type, prop)
+            utils.get_instance().get_prop_name(cls);
+            output = utils.get_instance().check_cls(cls.Name, type, prop);
         end
 
     end

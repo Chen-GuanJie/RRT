@@ -1,5 +1,7 @@
-function varargout = rrt_func(varargin)
+function output = rrt_func(varargin)
     persistent problem;
+    % persistent class_info;
+    output = struct;
     addpath(genpath(pwd));
     args = varargin;
 
@@ -9,6 +11,7 @@ function varargout = rrt_func(varargin)
 
     if ~isa(problem, 'rrt')
         problem = rrt_plot();
+        class_info = ?rrt_plot;
     end
 
     if utils.in_cell(args, 'config')
@@ -23,18 +26,6 @@ function varargout = rrt_func(varargin)
     if utils.in_cell(args, 'init')
         utils.get_instance().init();
         problem.init();
-    end
-
-    if utils.in_cell(args, 'debug')
-        ind = utils.in_cell(args, 'debug');
-
-        if length(args) > ind + 1
-            varargout{1} = eval(['problem.', args{ind + 1}, ';']);
-        elseif length(args) > ind
-            eval(['problem.', args{ind + 1}, ';']);
-        end
-
-        return
     end
 
     if utils.in_cell(args, 'clear')
@@ -76,11 +67,66 @@ function varargout = rrt_func(varargin)
 
     end
 
+    output = utils.assign_struct(output, get(problem, args));
+    output = utils.assign_struct(output, debug_func(problem, args));
+
     if utils.in_cell(args, 'show tree')
         utils.get_instance().locate_figure('search tree')
         problem.show_map(5, false);
         problem.show_search_tree();
         return
+    end
+
+end
+
+function output = get(obj, args)
+    output.prop = struct;
+    ind_get = utils.in_cell(args, 'get');
+
+    if length(ind_get) == 1
+
+        % if utils.check_class_prop(class_info, 'prop', args{ind_get(1) + 1});
+        output.prop.(args{ind_get(1) + 1}) = problem.(args{ind_get(1) + 1});
+        % end
+
+    elseif length(ind_get) > 1
+        % ind = utils.check_class_prop(class_info, 'prop', args{ind_get(1) +1:ind_get(2) - 1});
+
+        for i = 1:ind_get(2) - ind_get(1) - 1
+            output.prop.(args{ind_get(1) +i}) = problem.(args{ind_get(1) + i});
+        end
+
+    end
+
+end
+
+function output = debug_func(obj, args)
+    output.func = struct;
+
+    ind_debug = utils.in_cell(args, 'debug');
+
+    if length(ind_debug) == 1
+
+        func_name = split(args{ind_debug + 1}, '(');
+
+        try
+
+            output.func.func_name{1} = eval(['obj.', args{ind_debug + 1}, ';']);
+        catch
+        end
+
+    elseif length(ind_debug) > 1
+
+        for i = 1:ind_debug(2) - ind_debug(1) - 1
+            func_name = split(args{ind_debug + 1}, '(');
+
+            try
+                output.prop.(args{ind_debug(1) +i}) = eval(['obj.', args{ind_debug + 1}, ';']);
+            catch
+            end
+
+        end
+
     end
 
 end

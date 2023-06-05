@@ -28,5 +28,7 @@ display:
       node_num:
         DisplayName:
     eval:
-      set: gcf,'unit','centimeters','position',[3 5 13 8]
-      legend: "'Location','best'"
+      set: 
+        - gcf,'unit','centimeters','position',[3 5 13 8]
+      legend:
+        - "'Location','best'"
