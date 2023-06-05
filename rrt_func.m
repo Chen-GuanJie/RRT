@@ -86,14 +86,14 @@ function output = get(obj, args)
     if length(ind_get) == 1
 
         % if utils.check_class_prop(class_info, 'prop', args{ind_get(1) + 1});
-        output.prop.(args{ind_get(1) + 1}) = problem.(args{ind_get(1) + 1});
+        output.prop.(args{ind_get(1) + 1}) = obj.(args{ind_get(1) + 1});
         % end
 
     elseif length(ind_get) > 1
         % ind = utils.check_class_prop(class_info, 'prop', args{ind_get(1) +1:ind_get(2) - 1});
 
         for i = 1:ind_get(2) - ind_get(1) - 1
-            output.prop.(args{ind_get(1) +i}) = problem.(args{ind_get(1) + i});
+            output.prop.(args{ind_get(1) +i}) = obj.(args{ind_get(1) + i});
         end
 
     end
@@ -102,7 +102,6 @@ end
 
 function output = debug_func(obj, args)
     output.func = struct;
-
     ind_debug = utils.in_cell(args, 'debug');
 
     if length(ind_debug) == 1
@@ -110,9 +109,9 @@ function output = debug_func(obj, args)
         func_name = split(args{ind_debug + 1}, '(');
 
         try
-
             output.func.func_name{1} = eval(['obj.', args{ind_debug + 1}, ';']);
         catch
+            eval(['obj.', args{ind_debug + 1}, ';']);
         end
 
     elseif length(ind_debug) > 1
@@ -123,6 +122,7 @@ function output = debug_func(obj, args)
             try
                 output.prop.(args{ind_debug(1) +i}) = eval(['obj.', args{ind_debug + 1}, ';']);
             catch
+                eval(['obj.', args{ind_debug + 1}, ';']);
             end
 
         end
