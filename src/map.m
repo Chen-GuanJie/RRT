@@ -250,7 +250,7 @@ classdef map < handle
             shit(:, 2) = shit(:, 2) + min(this.Y);
         end
 
-        function display_map(this, interval, normal_map)
+        function display_map(this, ax, interval, normal_map)
 
             if nargin < 3
                 interval = 5;
@@ -268,7 +268,7 @@ classdef map < handle
                 z = z * this.map_scale;
             end
 
-            meshz(x, y, z);
+            meshz(ax, x, y, z);
 
         end
 

@@ -4,6 +4,7 @@ classdef utils < handle
         figures
         used_figure_id
         class_fields
+        app
     end
 
     methods (Access = private)
@@ -52,14 +53,42 @@ classdef utils < handle
 
             for i = 1:this.figures.Count
                 figure = this.figures(names{i});
-                formats = strsplit(figure.format, ' ');
 
-                for j = 1:length(formats)
-                    saveas(figure.picture, [path, names{i}, '.', formats{j}]);
+                if isfield(figure, 'format')
+                    formats = strsplit(figure.format, ' ');
+
+                    for j = 1:length(formats)
+                        saveas(figure.picture, [path, names{i}, '.', formats{j}]);
+                    end
+
                 end
 
             end
 
+        end
+
+        function set_app(obj, a)
+
+            % if isa(a, 'matlab.apps.AppBase')
+            obj.app = a;
+            % else
+            %     error('Property value must be positive')
+            % end
+
+        end
+
+        function output = locate_axis(this, figure_name, UIAxes)
+            a = this.app.(UIAxes);
+
+            if ~isKey(this.figures, figure_name)
+                id = this.unused_id();
+                this.figures(figure_name) = struct('picture', a, 'id', id);
+            elseif ~ishandle(this.figures(figure_name))
+                id = this.figures(figure_name).id;
+                this.figures(figure_name) = struct('picture', a, 'id', id);
+            end
+
+            output = this.figures(figure_name).picture;
         end
 
         function is_exist = locate_figure(this, figure_name, format)
@@ -67,6 +96,11 @@ classdef utils < handle
 
             if nargin == 2 || (nargin == 3 && yaml.isNull(format))
                 format = {'fig'};
+            end
+
+            if contains(format, 'UI')
+                is_exist = this.locate_axis(figure_name, format);
+                return
             end
 
             if ~isKey(this.figures, figure_name)
@@ -264,7 +298,7 @@ classdef utils < handle
         end
 
         function output = in_cell(c, item)
-            output = find(ismember(item,c));
+            output = find(ismember(item, c));
         end
 
         function flag = is_drawable(plot_name, plot_info)
@@ -294,7 +328,7 @@ classdef utils < handle
 
         end
 
-        function draw(obj, plot_info)
+        function draw(obj, plot_info, app_uia)
             y_data = plot_info.y_data;
             y_data_names = fieldnames(y_data);
 
@@ -309,7 +343,11 @@ classdef utils < handle
 
                 if isfield(obj, y_data_names{j})
 
-                    p = plot(x, obj.(y_data_names{j}));
+                    if nargin == 2
+                        p = plot(x, obj.(y_data_names{j}));
+                    elseif nargin == 3
+                        p = plot(app_uia, x, obj.(y_data_names{j}));
+                    end
 
                     if ~yaml.isNull(y_data.(y_data_names{j}))
                         utils.assign_value(p, y_data, y_data_names{j});

@@ -15,6 +15,7 @@ classdef benchmark < handle
         is_time_step = true
         num_record = 1;
         shaped_states
+        output_save_path
     end
 
     properties (SetAccess = public)
@@ -282,7 +283,7 @@ classdef benchmark < handle
             this.config_manger_classify.save(path);
             this.save_shaped_states(path);
             this.save_other_states(path, conf.only_save_last);
-
+            this.output_save_path = path;
         end
 
         result = record_fun(obj)

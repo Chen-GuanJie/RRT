@@ -144,8 +144,13 @@ classdef rrt_plot < classify
             end
 
             if utils.in_cell(display_names, 'path_best')
-                utils.get_instance().locate_figure('path_best', display.path_best.save_format)
-                this.show_map(display.path_best.map_interval, display.path_best.normal_map);
+                ax = utils.get_instance().locate_figure('path_best', display.path_best.save_format);
+
+                if isa(ax, 'logical')
+                    ax = gca;
+                end
+
+                this.show_map(ax, display.path_best.map_interval, display.path_best.normal_map);
 
                 if display.path_best.normal_map
                     bp = this.maps.to_normal_size(this.best_path);
@@ -157,17 +162,17 @@ classdef rrt_plot < classify
                     x_lim = [1 this.maps.X_num];
                 end
 
-                plot3(bp(:, 1), bp(:, 2), bp(:, 3), 'LineWidth', 1, 'Color', 'red');
-                view(2); axis equal;
-                ylim(y_lim); xlim(x_lim);
+                plot3(ax, bp(:, 1), bp(:, 2), bp(:, 3), 'LineWidth', 1, 'Color', 'red');
+                view(ax, 2); axis(ax, 'equal');
+                ylim(ax, y_lim); xlim(ax, x_lim);
                 d = this.maps.X_num / this.maps.Y_num;
-                set(gcf, 'unit', 'centimeters', 'position', [3 5 9 6.75])
+                % set(gcf, 'unit', 'centimeters', 'position', [3 5 9 6.75])
 
                 if this.maps.Y(end) > this.maps.X(end)
-                    view(-90, 90);
+                    view(ax, -90, 90);
                 end
 
-                hold off;
+                hold(ax, 'off');
             end
 
             if utils.in_cell(display_names, 'angle')
@@ -260,15 +265,15 @@ classdef rrt_plot < classify
 
         end
 
-        function show_map(this, interval, normal_map)
+        function show_map(this, ax, interval, normal_map)
 
-            if nargin < 3
+            if nargin < 4
                 interval = 5;
                 normal_map = true;
             end
 
             % if ~utils.get_instance().locate_figure('main_map')
-            this.maps.display_map(interval, normal_map); hold on
+            this.maps.display_map(ax, interval, normal_map); hold (ax, 'on')
 
             if normal_map
                 s = this.maps.to_normal_size(this.start_point);
@@ -278,11 +283,11 @@ classdef rrt_plot < classify
                 g = this.goal;
             end
 
-            this.plot_point(1).point = scatter3(s(1), s(2), s(3), 35, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k'); hold on
-            this.plot_point(2).point = scatter3(g(1), g(2), g(3), 35, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
+            this.plot_point(1).point = scatter3(ax, s(1), s(2), s(3), 35, "cyan", 'filled', 'o', 'MarkerEdgeColor', 'k');
+            this.plot_point(2).point = scatter3(ax, g(1), g(2), g(3), 35, "magenta", 'filled', "o", 'MarkerEdgeColor', 'k');
             % this.plot_point(1).text = text(s(1), s(2), s(3) + 500, '  start');
             % this.plot_point(2).text = text(g(1), g(2), g(3) + 500, '  goal');
-            ylabel('x(m)'); xlabel('y(m)'); zlabel('z(m)');
+            ylabel(ax, 'x(m)'); xlabel(ax, 'y(m)'); zlabel(ax, 'z(m)');
             % title('RRT算法');
             % end
 
