@@ -185,7 +185,7 @@ classdef rrt_plot < classify
 
                 for i = 1:length(display.search_tree.save_index)
                     ind = display.search_tree.save_index{i}(1);
-                    ax = utils.get_instance().locate_figure(['search tree ' num2str(ind)], display.search_tree.save_format)
+                    ax = utils.get_instance().locate_figure(['search tree ' num2str(ind)], display.search_tree.save_format);
 
                     if isa(ax, 'logical')
                         ax = gca;
@@ -230,7 +230,7 @@ classdef rrt_plot < classify
 
                 for i = 1:length(display.classify_node.save_index)
                     ind = display.classify_node.save_index{i}(1);
-                    ax = utils.get_instance().locate_figure(['classify node ' num2str(ind)], display.classify_node.save_format)
+                    ax = utils.get_instance().locate_figure(['classify node ' num2str(ind)], display.classify_node.save_format);
 
                     if isa(ax, 'logical')
                         ax = gca;
@@ -268,10 +268,6 @@ classdef rrt_plot < classify
                 end
 
             end
-
-        end
-
-        function show_tree(this)
 
         end
 
@@ -333,7 +329,6 @@ classdef rrt_plot < classify
             end
 
             this.replot = [];
-
             init@classify(this);
         end
 

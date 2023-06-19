@@ -77,7 +77,13 @@ classdef uav < handle
             switch this.transfer_tactics
                 case 'direct'
                     conf = conf.direct;
-                    this.direct_step = conf.direct_step;
+
+                    if conf.init_step == 0
+                        this.direct_step = conf.direct_step;
+                    else
+                        this.direct_step = norm(this.maps.start_point(1:2) - this.maps.goal(1:2)) / conf.init_step;
+                    end
+
                     this.transfer = @this.transfer_direct;
                     this.dimension = 3;
                 case 'kinetic'

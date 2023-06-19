@@ -11,7 +11,7 @@ function output = rrt_func(varargin)
 
     if ~isa(problem, 'rrt')
         problem = rrt_plot();
-        class_info = ?rrt_plot;
+        % class_info = ?rrt_plot;
     end
 
     if utils.in_cell(args, 'config')
@@ -106,10 +106,9 @@ function output = debug_func(obj, args)
 
     if length(ind_debug) == 1
 
-        func_name = split(args{ind_debug + 1}, '(');
-
         try
-            output.func.func_name{1} = eval(['obj.', args{ind_debug + 1}, ';']);
+            func_name = split(args{ind_debug + 1}, '(');
+            output.func.(func_name{1}) = eval(['obj.', args{ind_debug + 1}, ';']);
         catch
             eval(['obj.', args{ind_debug + 1}, ';']);
         end
@@ -117,10 +116,10 @@ function output = debug_func(obj, args)
     elseif length(ind_debug) > 1
 
         for i = 1:ind_debug(2) - ind_debug(1) - 1
-            func_name = split(args{ind_debug + 1}, '(');
 
             try
-                output.prop.(args{ind_debug(1) +i}) = eval(['obj.', args{ind_debug + 1}, ';']);
+                func_name = split(args{ind_debug(1) +i}, '(');
+                output.prop.(func_name{1}) = eval(['obj.', args{ind_debug + 1}, ';']);
             catch
                 eval(['obj.', args{ind_debug + 1}, ';']);
             end

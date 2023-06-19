@@ -12,7 +12,6 @@ classdef classify < rrt
         T_max = 500
         dying_speed = 1
         alpha = 20
-        mini_dying_num = 5000
         start_dying_step = 4
         compare_alive
     end
@@ -118,11 +117,6 @@ classdef classify < rrt
 
             dying_neighbor_ind = ismember(this.dying(:, 1), this.near_nodes.id);
             this.new_node.dying_time = mean(this.dying(dying_neighbor_ind, 2));
-
-            if isnan(this.new_node.dying_time)
-                a = 0;
-            end
-
         end
 
         function insert_node_classify(this)
@@ -252,7 +246,6 @@ classdef classify < rrt
             this.T_max = conf.T_max;
             this.dying_speed = conf.dying_speed;
             this.alpha = conf.alpha;
-            this.mini_dying_num = conf.mini_dying_num;
             this.start_dying_step = conf.start_dying_step;
             this.influence = zeros(1, 1, 'single');
             this.on_path = zeros(1, 2, 'uint32');
