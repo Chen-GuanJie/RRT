@@ -154,6 +154,7 @@ classdef map < handle
         function init(this)
             this.rand_id = rand;
             conf = this.config_manger.load(this.rand_id);
+            this.map_path = char(conf.map_path);
             this.start_point = cell2mat(conf.start_point);
             this.goal = cell2mat(conf.goal);
             conf.map_name = char(conf.map_name);
@@ -176,7 +177,18 @@ classdef map < handle
 
                 else
                     disp('build map')
-                    this.build_map(utils.load_file(this.map_path, this.map_name));
+                    data = utils.load_file(this.map_path, this.map_name);
+
+                    if length(data(1, :)) == 3
+                        this.build_map(data);
+                    else
+                        this.Z = data;
+                        this.Y = 90:90:90 * length(this.Z(1, :));
+                        this.X = 90:90:90 * length(this.Z(:, 1));
+                        this.map_scale = this.X(2) - this.X(1);
+                        this.save_built_map(this.X, this.Y, this.Z);
+                    end
+
                 end
 
             end

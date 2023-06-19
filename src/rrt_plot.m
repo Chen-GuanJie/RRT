@@ -185,8 +185,13 @@ classdef rrt_plot < classify
 
                 for i = 1:length(display.search_tree.save_index)
                     ind = display.search_tree.save_index{i}(1);
-                    utils.get_instance().locate_figure(['search tree ' num2str(ind)], display.search_tree.save_format)
-                    this.show_map(display.search_tree.map_interval, display.search_tree.normal_map);
+                    ax = utils.get_instance().locate_figure(['search tree ' num2str(ind)], display.search_tree.save_format)
+
+                    if isa(ax, 'logical')
+                        ax = gca;
+                    end
+
+                    this.show_map(ax, display.search_tree.map_interval, display.search_tree.normal_map);
 
                     if display.search_tree.normal_map
                         this.show_search_tree( ...
@@ -225,8 +230,13 @@ classdef rrt_plot < classify
 
                 for i = 1:length(display.classify_node.save_index)
                     ind = display.classify_node.save_index{i}(1);
-                    utils.get_instance().locate_figure(['classify node ' num2str(ind)], display.classify_node.save_format)
-                    this.show_map(display.classify_node.map_interval, display.classify_node.normal_map);
+                    ax = utils.get_instance().locate_figure(['classify node ' num2str(ind)], display.classify_node.save_format)
+
+                    if isa(ax, 'logical')
+                        ax = gca;
+                    end
+
+                    this.show_map(ax, display.classify_node.map_interval, display.classify_node.normal_map);
 
                     if display.search_tree.normal_map
                         po = this.maps.to_normal_size(this.states{ind, 1}.position);
