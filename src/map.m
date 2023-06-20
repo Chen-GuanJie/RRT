@@ -183,10 +183,14 @@ classdef map < handle
                         this.build_map(data);
                     else
                         this.Z = data;
+                        this.ZT = this.Z';
                         this.Y = 90:90:90 * length(this.Z(1, :));
                         this.X = 90:90:90 * length(this.Z(:, 1));
                         this.map_scale = this.X(2) - this.X(1);
                         this.save_built_map(this.X, this.Y, this.Z);
+                        this.X_num = length(this.X);
+                        this.Y_num = length(this.Y);
+                        this.Z_num = size(this.Z, 1) * size(this.Z, 2);    
                     end
 
                 end

@@ -72,7 +72,7 @@ function output = rrt_func(varargin)
 
     if utils.in_cell(args, 'show tree')
         utils.get_instance().locate_figure('search tree')
-        problem.show_map(5, false);
+        problem.show_map(gca, 5, false);
         problem.show_search_tree();
         return
     end

@@ -241,12 +241,20 @@ classdef classify < rrt
         end
 
         function init(this)
+            init@rrt(this);
             conf = this.config_manger_classify.load(this.rand_id);
             this.T_delta = conf.T_delta;
             this.T_max = conf.T_max;
             this.dying_speed = conf.dying_speed;
             this.alpha = conf.alpha;
-            this.start_dying_step = conf.start_dying_step;
+
+            switch conf.start_dying.type
+                case 'step'
+                    this.start_dying_step = conf.start_dying.data;
+                case 'rate'
+                    this.start_dying_step = conf.start_dying.data * this.robot.get_step();
+            end
+
             this.influence = zeros(1, 1, 'single');
             this.on_path = zeros(1, 2, 'uint32');
             this.dying = zeros(1, 2, 'uint32');
@@ -255,7 +263,6 @@ classdef classify < rrt
             this.on_path(1, :) = [];
             this.dying(1, :) = [];
             this.dead(1, :) = [];
-            init@rrt(this);
         end
 
         function get_new_config(this, config_dir)
