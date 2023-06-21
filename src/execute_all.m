@@ -37,7 +37,7 @@ for i = 1:length(missions)
     disp(['run ', missions{i}]);
     rrt_func('run', [missions{i}])
 
-    for j = 2:t
+    for j = 2:t.func.get_repeat_times
         disp(['run ', missions{i}, '-', num2str(j)]);
         rrt_func('run', [missions{i}, '-', num2str(j)])
     end

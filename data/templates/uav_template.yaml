@@ -1,6 +1,7 @@
 transfer_tactics: direct #
 direct:
   direct_step: 6
+  init_step: 60
 kinetic:
   deltaT: 50
   g: 9.8
