@@ -274,6 +274,7 @@ classdef rrt_plot < classify
         function show_map(this, ax, interval, normal_map)
 
             if nargin < 4
+                ax = gca;
                 interval = 5;
                 normal_map = true;
             end

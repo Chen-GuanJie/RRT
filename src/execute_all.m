@@ -1,7 +1,7 @@
 clc; clear;
 config_dir = './data/config/';
 templates_dir = './data/templates/';
-conf = yaml.loadFile([templates_dir, 'excute_all.yaml']);
+conf = yaml.loadFile([config_dir, 'excute_all.yaml']);
 missions = fieldnames(conf);
 need = {'benchmark', 'classify', 'display', 'map', 'rrt', 'uav'};
 mission_path = cell(length(missions), 1);
@@ -31,15 +31,17 @@ for i = 1:length(missions)
     end
 
 end
-
+p=[];
 for i = 1:length(missions)
     t = rrt_func('config', mission_path{i}, 'init', 'debug', 'get_repeat_times', 1);
     disp(['run ', missions{i}]);
     rrt_func('run', [missions{i}])
 
     for j = 2:t.func.get_repeat_times
+        p.(['path_',num2str(j-1)])=rrt_func('get','best_path');
         disp(['run ', missions{i}, '-', num2str(j)]);
         rrt_func('run', [missions{i}, '-', num2str(j)])
     end
+    p.(['path_',num2str(t.func.get_repeat_times)])=rrt_func('get','best_path');
 
 end

@@ -1,14 +1,14 @@
-start: start_direct
+start: start_classify_rrt
 use_informed: true
-repeat_times: 1
+repeat_times: 10
 threshold_close: 0.1
-threshold_goal: 1
+threshold_goal: 3
 rand_num: 0.5
-height_cost_rate: 6
+height_cost_rate: 20
 neighbor_range: 2
-search_area_rate: 0
+search_area_rate: 20
 delete_node:
   max_nodes: 10000
   is_delete: false
   rand_delete: 0.7
-is_save: true
+is_save: false
