@@ -67,7 +67,7 @@ classdef rrt_plot < classify
 
         function path_evaluate(this, bp)
 
-            if nargin == 1
+            if nargin == 2
                 bp = this.best_path;
             end
 
@@ -78,19 +78,19 @@ classdef rrt_plot < classify
             x_data = x_data * this.maps.map_scale;
             bp(:, 1:5) = bp(:, 1:5) * this.maps.map_scale;
             subplot(2, 1, 1)
-            plot(x_data, bp(end:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞行高度'); hold on
+            plot(x_data, bp(end:-1:1, 3), 'LineWidth', 1.5, 'color', 'b', 'DisplayName', '飞行高度'); hold('on')
             plot(x_data, bp(end:-1:1, 4), 'LineWidth', 1.5, 'color', 'r', 'DisplayName', '地形高度');
             ylabel('高度/m');
             xlabel('飞行距离/m');
             xlim([x_data(1) x_data(end)]);
-            hold off
+            hold('off')
             legend('Location', 'best');
             subplot(2, 1, 2)
             plot(x_data, bp(end:-1:1, 5), 'LineWidth', 1.5, 'color', 'b'); %,'DisplayName', 'Ground Clearance');
             xlabel('飞行距离/m');
             ylabel('离地高度/m');
             xlim([x_data(1) x_data(end)]);
-            % legend('Location', 'best');
+            legend('Location', 'best');
         end
 
         function draw_angle(this)
@@ -99,7 +99,7 @@ classdef rrt_plot < classify
             x_data = [0; x_data];
             x_data = cumsum(x_data);
             x_data = x_data * this.maps.map_scale;
-
+            x_data = x_data(1:10:end);
             subplot(2, 1, 1);
             n = length(this.best_path);
             angle = zeros(n - 1, 2);
@@ -110,10 +110,14 @@ classdef rrt_plot < classify
                 angle(n - i + 1, 2) = atan2((this.best_path(i - 1, 3) - this.best_path(i, 3)), norm(v));
             end
 
+            angle = angle(1:10:end, :);
             angle = angle .* 180 ./ pi;
-            angle = [angle(1, :); angle];
             angle = diff(angle);
             angle = [angle(1, :); angle];
+            a1 = angle(:, 1) > 180;
+            angle(a1, 1) = 360 - angle(a1);
+            a2 = angle(:, 1) <- 180;
+            angle(a2, 1) = -360 - angle(a2);
             plot(x_data, angle(:, 2)); %,'DisplayName', 'pitch angle');
             ylabel('俯仰角/度');
             xlabel('飞行距离/m');
@@ -127,52 +131,64 @@ classdef rrt_plot < classify
             % legend('Location', 'best')
         end
 
-    end
+        function draw_best_path(this, name, display)
+            ax = utils.get_instance().locate_figure(name, display.save_format);
 
-    methods (Access = public)
-
-        function show_result(this)
-            display = this.config_manger_rrtplot.load(this.rand_id);
-            show_result@benchmark(this);
-            display_names = fieldnames(display);
-
-            if utils.in_cell(display_names, 'cutaway')
-                utils.get_instance().locate_figure('cutaway', display.cutaway.save_format)
-                this.path_evaluate();
-                set(gcf, 'unit', 'centimeters', 'position', [3 5 13.5 9])
-                hold off;
+            if isa(ax, 'logical')
+                ax = gca;
             end
 
-            if utils.in_cell(display_names, 'path_best')
-                ax = utils.get_instance().locate_figure('path_best', display.path_best.save_format);
+            this.show_map(ax, display.map_interval, display.normal_map);
 
-                if isa(ax, 'logical')
-                    ax = gca;
-                end
+            if display.normal_map
+                bp = this.maps.to_normal_size(this.best_path);
+                y_lim = [this.maps.Y(1) this.maps.Y(end)];
+                x_lim = [this.maps.X(1) this.maps.X(end)];
+            else
+                bp = this.best_path;
+                y_lim = [1 this.maps.Y_num];
+                x_lim = [1 this.maps.X_num];
+            end
 
-                this.show_map(ax, display.path_best.map_interval, display.path_best.normal_map);
+            plot3(ax, bp(:, 1), bp(:, 2), bp(:, 3), 'LineWidth', 1, 'Color', 'red');
+            axis(ax, 'equal');
+            ylim(ax, y_lim); xlim(ax, x_lim);
 
-                if display.path_best.normal_map
-                    bp = this.maps.to_normal_size(this.best_path);
-                    y_lim = [this.maps.Y(1) this.maps.Y(end)];
-                    x_lim = [this.maps.X(1) this.maps.X(end)];
-                else
-                    bp = this.best_path;
-                    y_lim = [1 this.maps.Y_num];
-                    x_lim = [1 this.maps.X_num];
-                end
-
-                plot3(ax, bp(:, 1), bp(:, 2), bp(:, 3), 'LineWidth', 1, 'Color', 'red');
-                view(ax, 2); axis(ax, 'equal');
-                ylim(ax, y_lim); xlim(ax, x_lim);
-                d = this.maps.X_num / this.maps.Y_num;
-                % set(gcf, 'unit', 'centimeters', 'position', [3 5 9 6.75])
+            if ~contains(name, '3D')
+                view(ax, 2);
 
                 if this.maps.Y(end) > this.maps.X(end)
                     view(ax, -90, 90);
                 end
 
-                hold(ax, 'off');
+            end
+
+            hold(ax, 'off');
+        end
+
+    end
+
+    methods (Access = public)
+
+        function show_result(this, names)
+            display = this.config_manger_rrtplot.load(this.rand_id);
+            show_result@benchmark(this);
+            display_names = fieldnames(display);
+
+            if nargin == 2
+                display_names = names;
+            end
+
+            if utils.in_cell(display_names, 'cutaway')
+                this.path_evaluate(utils.get_instance().locate_figure('cutaway', display.cutaway.save_format));
+            end
+
+            if utils.in_cell(display_names, 'path_best')
+                this.draw_best_path('path_best', display.path_best)
+            end
+
+            if utils.in_cell(display_names, 'path_best_3D')
+                this.draw_best_path('path_best_3D', display.path_best_3D);
             end
 
             if utils.in_cell(display_names, 'angle')
@@ -238,7 +254,7 @@ classdef rrt_plot < classify
 
                     this.show_map(ax, display.classify_node.map_interval, display.classify_node.normal_map);
 
-                    if display.search_tree.normal_map
+                    if display.classify_node.normal_map
                         po = this.maps.to_normal_size(this.states{ind, 1}.position);
                         y_lim = [this.maps.Y(1) this.maps.Y(end)];
                         x_lim = [this.maps.X(1) this.maps.X(end)];

@@ -298,7 +298,7 @@ classdef utils < handle
         end
 
         function output = in_cell(c, item)
-            output = find(ismember(item, c));
+            output = find(strcmp(item, c));
         end
 
         function flag = is_drawable(plot_name, plot_info)

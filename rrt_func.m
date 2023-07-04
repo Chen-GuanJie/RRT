@@ -110,7 +110,7 @@ function output = debug_func(obj, args)
             func_name = split(args{ind_debug + 1}, '(');
             output.func.(func_name{1}) = eval(['obj.', args{ind_debug + 1}, ';']);
         catch
-            eval(['obj.', args{ind_debug + 1}, ';']);
+            eval(['obj.', char(args{ind_debug + 1}), ';']);
         end
 
     elseif length(ind_debug) > 1

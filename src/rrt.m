@@ -41,6 +41,7 @@ classdef rrt < benchmark & tree
         stamp = zeros(6, 1, 'single');
         path_id = []
         mini_path_len = inf
+        save_output_path
         %temporary
         compare_all = zeros(1, 2, 'single')
         compare_near = zeros(1, 1, 'single')
@@ -546,6 +547,7 @@ classdef rrt < benchmark & tree
 
                 this.maps.config_manger.save(path);
                 this.robot.config_manger.save(path);
+                this.save_output_path = path;
             end
 
         end

@@ -2,6 +2,7 @@ map_path: ./data/map/
 map_name: "map1"
 save_built_map: "mat"
 height_limit: 500
+map_scale: 90
 start_point:
   - 264
   - 45
