@@ -79,9 +79,10 @@ classdef rrt < benchmark & tree
 
         end
 
-        function flag = neighbors(this)
+        function flag = neighbors(this, except_id)
             this.compare_all = this.position(1:this.node_num, 1:2) - this.new_node.position(1, 1:2);
             this.compare_all(:, 1) = sum(this.compare_all(:, 1:2) .^ 2, 2);
+            this.compare_all(this.compare_all(:, 1) == 0, 1) = inf;
             [tmp_value, ~] = min(this.compare_all(:, 1));
 
             if tmp_value < this.threshold_close
@@ -93,6 +94,11 @@ classdef rrt < benchmark & tree
             flag = false;
             this.near_nodes = struct;
             this.near_nodes.id = find(this.compare_all(:, 1) < this.neighbor_dist);
+
+            if nargin == 2
+                this.near_nodes.id(ismember(this.near_nodes.id, except_id)) = [];
+            end
+
             this.near_nodes.position = this.position(this.near_nodes.id, :);
             this.near_nodes.num = length(this.near_nodes.id);
             this.near_nodes.cost_to_root = this.cost_to_root(this.near_nodes.id, 1);
@@ -382,6 +388,37 @@ classdef rrt < benchmark & tree
     end
 
     methods (Access = public)
+
+        function other2(this)
+            path_costs = this.cumcost(this.path_id);
+            [~, best_path_id] = min(path_costs);
+            ids = this.get_ancestor(this.path_id(best_path_id));
+            ids(end) = [];
+            this.compare_all = zeros(this.node_num, 1, 'single');
+            queue = zeros(1, 1, 'uint32');
+            queue(1) = ids(end);
+
+            while ~isempty(queue)
+                i = queue(1);
+                queue(1) = [];
+
+                if ismember(i, ids)
+                    queue(end + 1:end + length(this.children{i})) = this.children{i};
+                    continue
+                end
+
+                this.new_node.id = i;
+                this.new_node.cost_to_root = this.cost_to_root(i);
+                this.new_node.position = this.position(i, :);
+                this.new_node.id_parent = this.parent(i);
+                this.new_node.cost_to_parent = this.cost_to_parent(i);
+                this.neighbors(ids);
+                this.choose_parent();
+                this.rewire();
+                queue(end + 1:end + length(this.children{i})) = this.children{i};
+            end
+
+        end
 
         function start_rrt(this)
             this.mini_path_len = inf;

@@ -70,6 +70,10 @@ function output = rrt_func(varargin)
     output = utils.assign_struct(output, get(problem, args));
     output = utils.assign_struct(output, debug_func(problem, args));
 
+    if utils.in_cell(args, 'three way')
+        problem.other2()
+    end
+
     if utils.in_cell(args, 'show tree')
         utils.get_instance().locate_figure('search tree')
         problem.show_map(gca, 5, false);
