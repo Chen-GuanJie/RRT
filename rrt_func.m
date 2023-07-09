@@ -71,7 +71,7 @@ function output = rrt_func(varargin)
     output = utils.assign_struct(output, debug_func(problem, args));
 
     if utils.in_cell(args, 'three way')
-        problem.other2()
+        problem.other3();
     end
 
     if utils.in_cell(args, 'show tree')

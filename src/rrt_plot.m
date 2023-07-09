@@ -284,7 +284,42 @@ classdef rrt_plot < classify
                 end
 
             end
+            if utils.in_cell(display_names, 'three_path')
 
+                ax = utils.get_instance().locate_figure('three_path', display.three_path.save_format);
+
+                if isa(ax, 'logical')
+                    ax = gca;
+                end
+    
+                this.show_map(ax, display.three_path.map_interval, display.three_path.normal_map);
+    
+                if display.three_path.normal_map
+                    bp1 = this.maps.to_normal_size(this.best_path);
+                    bp2 = this.maps.to_normal_size(this.best_path2);
+                    bp3 = this.maps.to_normal_size(this.best_path3);
+                    y_lim = [this.maps.Y(1) this.maps.Y(end)];
+                    x_lim = [this.maps.X(1) this.maps.X(end)];
+                else
+                    bp1 = this.best_path;
+                    bp2 = this.best_path2;
+                    bp3 = this.best_path3;
+                    y_lim = [1 this.maps.Y_num];
+                    x_lim = [1 this.maps.X_num];
+                end
+    
+                plot3(ax, bp1(:, 1), bp1(:, 2), bp1(:, 3), 'LineWidth', 1, 'Color', 'red');
+                plot3(ax, bp2(:, 1), bp2(:, 2), bp2(:, 3), 'LineWidth', 1, 'Color', 'red');
+                plot3(ax, bp3(:, 1), bp3(:, 2), bp3(:, 3), 'LineWidth', 1, 'Color', 'red');
+                axis(ax, 'equal');
+                ylim(ax, y_lim); xlim(ax, x_lim);
+    
+                    if this.maps.Y(end) > this.maps.X(end)
+                        view(ax, -90, 90);
+                    end
+                    hold(ax, 'off');
+    
+            end
         end
 
         function show_map(this, ax, interval, normal_map)

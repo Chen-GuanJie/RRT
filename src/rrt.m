@@ -19,6 +19,8 @@ classdef rrt < benchmark & tree
         neighbor_dist
         near_nodes = struct
         best_path
+        best_path2
+        best_path3
         rand_delete
         threshold_close_rate
         threshold_goal_rate
@@ -141,12 +143,16 @@ classdef rrt < benchmark & tree
             path = this.position(ids, 1:3);
         end
 
-        function [min_path_cost, path] = find_best_path(this)
+        function [min_path_cost, path] = find_best_path(this, ids)
 
-            if ~isempty(this.path_id)
-                path_costs = this.cumcost(this.path_id);
+            if nargin == 1
+                ids = this.path_id;
+            end
+
+            if ~isempty(ids)
+                path_costs = this.cumcost(ids);
                 [min_path_cost, best_path_id] = min(path_costs);
-                path = this.trace_back(this.path_id(best_path_id));
+                path = this.trace_back(ids(best_path_id));
                 path = [this.goal(1:3); path];
             else
                 min_path_cost = inf;
@@ -155,7 +161,7 @@ classdef rrt < benchmark & tree
 
         end
 
-        function choose_parent(this)
+        function choose_parent(this, i)
             this.compare_near(:, 1:2) = this.near_nodes.position(:, 1:2) - this.new_node.position(1, 1:2);
             this.compare_near(:, 1) = sqrt(sum(this.compare_near .^ 2, 2));
             f = false(this.near_nodes.num, 1);
@@ -167,12 +173,37 @@ classdef rrt < benchmark & tree
 
             this.compare_near(:, 1) = sqrt(this.compare_near(:, 1) .^ 2 + this.compare_near(:, 2) .^ 2);
             this.compare_near(~f, 1) = inf;
+
+            if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.neighbor_dist
+                angle1 = atan2(this.new_node.position(2) - this.goal(2), this.new_node.position(1) - this.goal(1));
+                angle2 = atan2(this.near_nodes.position(2) - this.goal(2), this.near_nodes.position(1) - this.goal(1));
+                delta_angle = angle2 - angle1;
+                delta_angle(delta_angle > pi) = delta_angle(delta_angle > pi) - 2 * pi;
+                delta_angle(delta_angle < -pi) = delta_angle(delta_angle < -pi) + 2 * pi;
+                this.compare_near(delta_angle > pi / 2, 1) = inf;
+                this.compare_near(delta_angle <- pi / 2, 1) = inf;
+            end
+
             this.near_nodes.cost_to_newNode(:, 1) = this.compare_near(:, 1);
+            old_new_node_cost = this.new_node.cost_to_root;
             % this.near_nodes.cost_to_root(:, 1) = this.cumcost(this.near_nodes.id(:, 1));
             this.compare_near = this.near_nodes.cost_to_newNode(:, 1) + this.near_nodes.cost_to_root(:, 1);
             [this.new_node.cost_to_root, ind] = min(this.compare_near(:, 1));
             this.new_node.cost_to_parent = this.near_nodes.cost_to_newNode(ind, 1);
             this.new_node.id_parent = this.near_nodes.id(ind, 1);
+            this.cost_to_parent(this.new_node.id, 1) = this.near_nodes.cost_to_newNode(ind, 1);
+
+            if nargin == 2
+                this.change_parent(this.new_node.id, this.new_node.id_parent);
+                offspring = this.get_offspring(this.new_node.id);
+
+                if ~isempty(offspring)
+                    this.cost_to_root(offspring, 1) = this.cost_to_root(offspring, 1) + this.new_node.cost_to_root - old_new_node_cost;
+                end
+
+                this.cost_to_root(this.new_node.id, 1) = this.new_node.cost_to_root;
+            end
+
         end
 
         function choose_parent_v3(this)
@@ -401,7 +432,6 @@ classdef rrt < benchmark & tree
             while ~isempty(queue)
                 i = queue(1);
                 queue(1) = [];
-
                 if ismember(i, ids)
                     queue(end + 1:end + length(this.children{i})) = this.children{i};
                     continue
@@ -413,11 +443,128 @@ classdef rrt < benchmark & tree
                 this.new_node.id_parent = this.parent(i);
                 this.new_node.cost_to_parent = this.cost_to_parent(i);
                 this.neighbors(ids);
-                this.choose_parent();
+                this.choose_parent(1);
                 this.rewire();
                 queue(end + 1:end + length(this.children{i})) = this.children{i};
             end
 
+        end
+
+        function [node, sample] = get_closest_not_path(this, bast_path)
+            sample = zeros(1, 2);
+            s = this.get_sample();
+            sample(1:2) = s(1:2);
+            compare = bast_path(:, 1:2) - sample(1:2);
+            [len, ~] = min(sum(compare(:, 1:2) .^ 2, 2));
+
+            while len < this.neighbor_dist
+                s = this.get_sample();
+                sample(1:2) = s(1:2);
+                compare = bast_path(:, 1:2) - sample(1:2);
+                [len, ~] = min(sum(compare(:, 1:2) .^ 2, 2));
+            end
+
+            this.compare_all = this.position(:, 1:2) - sample(1:2);
+            [~, index] = min(sum(this.compare_all(:, 1:2) .^ 2, 2));
+            node = this.position(index, :);
+        end
+
+        function [p1, p2] = get_other2(this, ang)
+            start_point_son = this.children{1};
+            nodes = this.position(start_point_son, 1:2);
+            angs = atan2(nodes(:, 2) - this.start_point(2), nodes(:, 1) - this.start_point(1));
+            delta_angle = angs - ang;
+            delta_angle(delta_angle > pi) = delta_angle(delta_angle > pi) - 2 * pi;
+            delta_angle(delta_angle < -pi) = delta_angle(delta_angle < -pi) + 2 * pi;
+            group1 = start_point_son(delta_angle > 0);
+            % group2 = start_point_son(delta_angle(delta_angle < -pi));
+            this.path_id;
+            path1 = [];
+
+            for i = 1:length(group1)
+                offspring = this.get_offspring(group1(i));
+                path1 = [path1; this.path_id(ismember(this.path_id, offspring))];
+            end
+
+            path2 = this.path_id(~ismember(this.path_id, path1));
+            [~, p1] = this.find_best_path(path1);
+            [~, p2] = this.find_best_path(path2);
+
+        end
+
+        function other3(this)
+            path_costs = this.cumcost(this.path_id);
+            [~, best_path_id] = min(path_costs);
+            ids = this.get_ancestor(this.path_id(best_path_id));
+            old_best_path = this.position(ids, 1:3);
+            point = this.position(ids(end - 1), 1:2);
+            ang = atan2(point(2) - this.start_point(2), point(1) - this.start_point(1));
+            ids(end - 3:end) = [];
+            p = this.position(ids, 1:2);
+            mpl = this.mini_path_len;
+            this.init();
+            this.mini_path_len = inf;
+            this.prepare_informed(mpl);
+            tic
+
+            while this.record(toc, this.num_iter)
+                this.num_iter = this.num_iter + 1;
+                [closest_node, sample] = this.get_closest_not_path(p);
+                this.new_node.position(1, :) = this.robot.transfer(sample, closest_node);
+
+                if this.neighbors()
+                    continue
+                end
+
+                this.num_neighbor = this.num_neighbor + this.near_nodes.num;
+
+                try
+                    this.choose_parent();
+                catch
+                    continue
+                end
+
+                if this.new_node.id_parent > 0
+                    this.insert_node();
+                    this.rewire();
+
+                else
+                    this.num_no_parent = this.num_no_parent + 1;
+                end
+
+                if norm(this.new_node.position(1:3) - this.goal(1:3)) < this.threshold_goal
+                    this.find_path();
+                end
+
+                if this.is_delete && this.node_num > this.max_nodes
+                    this.delete_unuesd_node();
+                end
+
+                if this.search_area_rate > 0
+                    this.update_step();
+
+                    if this.robot.get_step() < start_dying_step
+                        return
+                    end
+
+                end
+
+            end
+
+            toc
+%             fprintf('一共搜索%d个点\n相邻过近的点个数%d\n延申到目标点个数%d\n未找到父节点个数%d\n重连个数%d\n邻居个数%d\n路径代价为%f\n', this.num_iter, this.num_close, this.num_goal, this.num_no_parent, this.num_rewire, this.num_neighbor, cost);
+            this.best_path = old_best_path;
+            [p1, p2] = this.get_other2(ang);
+
+            while isempty(p1) || isempty(p2)
+                this.threshold_goal = this.threshold_goal * 1.1;
+                this.path_id = find(sqrt(sum((this.position(:, 1:2) - this.goal(1, 1:2)) .^ 2, 2)) < this.threshold_goal);
+                [p1, p2] = this.get_other2(ang);
+            end
+
+            this.best_path2 = p1;
+            this.best_path3 = p2;
+            this.show_result('three_path');
         end
 
         function start_rrt(this)
