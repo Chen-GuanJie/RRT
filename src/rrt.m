@@ -191,7 +191,6 @@ classdef rrt < benchmark & tree
             [this.new_node.cost_to_root, ind] = min(this.compare_near(:, 1));
             this.new_node.cost_to_parent = this.near_nodes.cost_to_newNode(ind, 1);
             this.new_node.id_parent = this.near_nodes.id(ind, 1);
-            this.cost_to_parent(this.new_node.id, 1) = this.near_nodes.cost_to_newNode(ind, 1);
 
             if nargin == 2
                 this.change_parent(this.new_node.id, this.new_node.id_parent);
