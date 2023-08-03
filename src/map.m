@@ -158,6 +158,7 @@ classdef map < handle
             this.start_point = cell2mat(conf.start_point);
             this.goal = cell2mat(conf.goal);
             conf.map_name = char(conf.map_name);
+
             if ~strcmp(this.map_name, conf.map_name) || ~this.validate_map()
                 this.map_name = conf.map_name;
                 n = [this.map_path, this.map_name];
@@ -182,15 +183,15 @@ classdef map < handle
                     if length(data(1, :)) == 3
                         this.build_map(data);
                     else
-                        this.Z = data;
+                        this.map_scale = conf.map_scale;
+                        this.Z = data/this.map_scale;
                         this.ZT = this.Z';
-                        this.Y = 90:90:90 * length(this.Z(1, :));
-                        this.X = 90:90:90 * length(this.Z(:, 1));
-                        this.map_scale = this.X(2) - this.X(1);
+                        this.Y = this.map_scale * (1:length(this.Z(1, :)));
+                        this.X = this.map_scale * (1:length(this.Z(:, 1)));
                         this.save_built_map(this.X, this.Y, this.Z);
                         this.X_num = length(this.X);
                         this.Y_num = length(this.Y);
-                        this.Z_num = size(this.Z, 1) * size(this.Z, 2);    
+                        this.Z_num = size(this.Z, 1) * size(this.Z, 2);
                     end
 
                 end
@@ -212,6 +213,7 @@ classdef map < handle
         end
 
         function [ground_h, flag] = checkPath(this, from, to)
+            %获得两点之间的地形
             flag = true;
             start_insdex = round(from(1:2));
             end_insdex = round(to(1:2));
